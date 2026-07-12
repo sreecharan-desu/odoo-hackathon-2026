@@ -27,30 +27,47 @@ No double-booking · cargo ≤ max load · expired/suspended licenses blocked ·
 
 ## Run locally (one command)
 
-**Requirement:** Docker Desktop (or Docker Engine + Compose)
+**Requirement:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Mac/Windows) or Docker Engine + Compose (Linux).  
+No local Node, Python, or Postgres install needed.
 
 ```bash
 git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
 cd odoo-hackathon-2026
-cp .env.example .env
-docker-compose up --build
+cp .env.example .env          # Windows CMD: copy .env.example .env
+docker compose up --build     # or: docker-compose up --build
 ```
+
+Wait until containers are healthy, then open:
 
 | | |
 |--|--|
 | **App** | http://localhost:8080 |
-| **API docs** | http://localhost:8000/docs |
+| **API docs** | http://localhost:8080/docs *(or :8000/docs if that port is free)* |
 | **Login** | `fleet@example.com` / `Password123!` |
 
-That starts Postgres, the API (migrations + seed if empty), and the web UI.
+The UI talks to the API through the same origin (`/api` → nginx → API), so it works even if host port `8000` is busy.
 
 ```bash
-docker-compose down          # stop
-make up                      # same as docker-compose up --build -d
+docker compose down           # stop
+make up                       # docker compose up --build -d
 ```
 
-If port `8000` is busy:  
-`BACKEND_PORT=8001 VITE_API_URL=http://localhost:8001 docker-compose up --build`
+### Port already in use?
+
+| Conflict | Fix (Mac/Linux) | Fix (Windows PowerShell) |
+|----------|-----------------|---------------------------|
+| App `8080` | `WEB_PORT=8081 docker compose up --build` | `$env:WEB_PORT=8081; docker compose up --build` |
+| API `8000` | *(optional)* `BACKEND_PORT=8001 docker compose up --build` — **app at :8080 still works** | `$env:BACKEND_PORT=8001; docker compose up --build` |
+| DB `5433` | `POSTGRES_PORT=5434 docker compose up --build` | `$env:POSTGRES_PORT=5434; docker compose up --build` |
+
+### Fresh database / reseed
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+`-v` deletes the Postgres volume so seed data loads again.
 
 ---
 
