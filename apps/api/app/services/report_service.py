@@ -51,6 +51,34 @@ STYLE_DATE = ParagraphStyle(
 )
 
 
+# ── Formatting helpers ─────────────────────────────────────────
+
+def _fmt_inr(amount: float, decimals: int = 0) -> str:
+    """Format *amount* as Indian Rupees, e.g. Rs 12,345."""
+    if not isinstance(amount, (int, float)) or amount != amount:  # NaN check
+        return "Rs 0"
+    sign = "-" if amount < 0 else ""
+    val = abs(amount)
+    integer_part = int(val)
+    frac = f".{int((val - integer_part) * 10**decimals):0{decimals}d}" if decimals else ""
+
+    # Indian grouping: last 3 digits, then groups of 2
+    s = str(integer_part)
+    if len(s) > 3:
+        last3 = s[-3:]
+        rest = s[:-3]
+        grouped = ",".join([rest[max(i - 2, 0):i] for i in range(len(rest), 0, -2)][::-1])
+        s = f"{grouped},{last3}"
+    return f"{sign}Rs {s}{frac}"
+
+
+def _fmt_roi(roi: float | None) -> str:
+    """Format ROI as a percentage string."""
+    if roi is None or roi != roi:  # NaN check
+        return "—"
+    return f"{(roi * 100):.1f}%"
+
+
 class ReportService:
     """Generates beautiful PDF operational reports for the fleet."""
 
