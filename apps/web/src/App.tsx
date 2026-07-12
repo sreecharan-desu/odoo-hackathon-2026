@@ -8,6 +8,7 @@ import DriversPage from "./pages/DriversPage";
 import FleetPage from "./pages/FleetPage";
 import FuelExpensesPage from "./pages/FuelExpensesPage";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import MaintenancePage from "./pages/MaintenancePage";
 import TripsPage from "./pages/TripsPage";
 
@@ -16,6 +17,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path={ROUTES.home} element={<HomePage />} />
           <Route path={ROUTES.login} element={<LoginPage />} />
           <Route
             element={
