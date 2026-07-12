@@ -276,6 +276,54 @@ class ReportService:
 
         return [section_title, table, note, Spacer(1, 12)]
 
+    # ── Cost breakdown summary ─────────────────────────────────
+    @staticmethod
+    def _build_cost_breakdown(rows: list[dict]) -> list:
+        """Render a compact cost-category breakdown."""
+        total_fuel = sum(v.get("fuel_cost", 0) for v in rows)
+        total_maint = sum(v.get("maintenance_cost", 0) for v in rows)
+        total_other = sum(v.get("other_expenses", 0) for v in rows)
+        grand = total_fuel + total_maint + total_other or 1
+
+        LABEL = ParagraphStyle("BDLabel", fontName="Helvetica", fontSize=8, textColor=BRAND_DARK)
+        VALUE = ParagraphStyle("BDValue", fontName="Helvetica-Bold", fontSize=8, textColor=BRAND_DARK)
+        PCT = ParagraphStyle("BDPct", fontName="Helvetica", fontSize=7.5, textColor=BRAND_MUTED)
+
+        breakdown_data = [
+            [
+                Paragraph("Category", ParagraphStyle("BDH", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+                Paragraph("Amount", ParagraphStyle("BDH2", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+                Paragraph("Share", ParagraphStyle("BDH3", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+            ],
+            [Paragraph("Fuel Costs", LABEL), Paragraph(_fmt_inr(total_fuel), VALUE), Paragraph(f"{total_fuel / grand * 100:.1f}%", PCT)],
+            [Paragraph("Maintenance", LABEL), Paragraph(_fmt_inr(total_maint), VALUE), Paragraph(f"{total_maint / grand * 100:.1f}%", PCT)],
+            [Paragraph("Other Expenses", LABEL), Paragraph(_fmt_inr(total_other), VALUE), Paragraph(f"{total_other / grand * 100:.1f}%", PCT)],
+            [
+                Paragraph("Total", ParagraphStyle("BDTotal", fontName="Helvetica-Bold", fontSize=8.5, textColor=BRAND_DARK)),
+                Paragraph(_fmt_inr(grand), ParagraphStyle("BDTotalV", fontName="Helvetica-Bold", fontSize=8.5, textColor=BRAND_PRIMARY)),
+                Paragraph("100%", PCT),
+            ],
+        ]
+
+        bd_table = Table(breakdown_data, colWidths=[160, 120, 60])
+        bd_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+            ("BACKGROUND", (0, -1), (-1, -1), ROW_ALT_BG),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+
+        section_title = Paragraph(
+            "Cost Breakdown Summary",
+            ParagraphStyle("BreakdownTitle", fontName="Helvetica-Bold", fontSize=12, textColor=BRAND_DARK, spaceAfter=8),
+        )
+
+        return [section_title, bd_table, Spacer(1, 16)]
+
     # ── Footer callback ─────────────────────────────────────────
     @staticmethod
     def _draw_footer(canvas, doc):
@@ -335,6 +383,7 @@ class ReportService:
         if rows:
             elements.extend(ReportService._build_kpi_summary(rows, revenue_rate, reminder_days))
             elements.extend(ReportService._build_data_table(rows))
+            elements.extend(ReportService._build_cost_breakdown(rows))
         else:
             elements.append(Spacer(1, 40))
             elements.append(
