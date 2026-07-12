@@ -1,6 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Button, Card, Spinner } from "../components/ui";
+import { TextField, PasswordField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { ROUTES } from "../types";
 import "../components/layout/shell.css";
@@ -23,6 +25,8 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +45,18 @@ export default function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    // Client-side validations
+    const emailErr = validators.email(email);
+    const passErr = validators.password(password);
+
+    setEmailError(emailErr);
+    setPasswordError(passErr);
+
+    if (emailErr || passErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await login({ email, password });
@@ -55,6 +71,8 @@ export default function LoginPage() {
   const handlePreFill = (demoEmail: string, demoPass: string) => {
     setEmail(demoEmail);
     setPassword(demoPass);
+    setEmailError(null);
+    setPasswordError(null);
     setError(null);
   };
 
@@ -100,7 +118,7 @@ export default function LoginPage() {
                     e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <strong style={{ fontSize: "0.9375rem" }}>{acc.role}</strong>
                     <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", marginLeft: "var(--space-2)" }}>
                       {acc.email}
@@ -126,29 +144,31 @@ export default function LoginPage() {
           <h2 style={{ margin: "0 0 var(--space-1)", fontSize: "1.5rem" }}>Sign in</h2>
           <p className="text-muted" style={{ margin: "0 0 var(--space-4)" }}>Enter your account details to access the dashboard</p>
           <form className="auth-form" onSubmit={(e) => void handleSubmit(e)}>
-            <div className="auth-field">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="auth-field" style={{ marginTop: "var(--space-3)" }}>
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+            <TextField
+              id="email"
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              error={emailError}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null);
+              }}
+            />
+            <PasswordField
+              id="password"
+              label="Password"
+              autoComplete="current-password"
+              required
+              value={password}
+              error={passwordError}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError(null);
+              }}
+            />
             {error && <p className="error" style={{ margin: "var(--space-2) 0 0" }}>{error}</p>}
             <Button type="submit" disabled={submitting} style={{ marginTop: "var(--space-4)", width: "100%" }}>
               {submitting ? "Signing in…" : "Sign in"}
