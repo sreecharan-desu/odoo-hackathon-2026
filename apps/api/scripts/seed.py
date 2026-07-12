@@ -43,6 +43,10 @@ CITIES = (
     "Kolkata",
     "Kochi",
 )
+STATE_CODES = (
+    "AP", "MH", "KA", "TN", "DL", "GJ", "TS", "UP", "HR", "RJ",
+    "MP", "WB", "KL", "CH", "PB"
+)
 MAINT_TITLES = (
     "Oil Change",
     "Brake Pads",
