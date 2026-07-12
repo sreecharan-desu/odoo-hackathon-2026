@@ -5,30 +5,34 @@ import { Navbar } from "../components/landing/Navbar";
 import { Hero } from "../components/landing/Hero";
 import { DashboardPreview } from "../components/landing/DashboardPreview";
 import { FeatureSection } from "../components/landing/FeatureSection";
-import { StatsSection } from "../components/landing/StatsSection";
-import { Testimonials } from "../components/landing/Testimonials";
-import { CTA } from "../components/landing/CTA";
-import { Footer } from "../components/landing/Footer";
+import { useTheme } from "../hooks/useTheme";
 
 export default function HomePage() {
-  // Ensure the body has the dark background if it doesn't already
+  const { isDark } = useTheme();
+
+  // Force dark theme on landing page first load (if no saved preference)
   useEffect(() => {
-    document.body.style.backgroundColor = "var(--bg-primary)";
-    return () => {
-      document.body.style.backgroundColor = "";
-    };
+    const stored = localStorage.getItem("transitops-theme");
+    if (!stored) {
+      // Default to dark for landing page
+      document.documentElement.classList.add("dark");
+    }
   }, []);
 
   return (
-    <div className="landing-page">
+    <div
+      className="landing-page"
+      style={{
+        background: isDark ? "var(--bg-primary, #071318)" : "var(--color-paper, #ffffff)",
+        minHeight: "100vh",
+        color: isDark ? "var(--text-main, #f0fdfa)" : "var(--color-text, #0a0a0a)",
+        transition: "background 0.3s ease, color 0.3s ease",
+      }}
+    >
       <Navbar />
       <Hero />
       <DashboardPreview />
       <FeatureSection />
-      <StatsSection />
-      <Testimonials />
-      <CTA />
-      <Footer />
     </div>
   );
 }

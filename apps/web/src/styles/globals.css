@@ -1,5 +1,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Landing page CSS variables ── */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --text-main: #0a0a0a;
+  --text-muted: #737373;
+  --accent-cyan: #0a0a0a;
+  --accent-cyan-hover: #1a1a1a;
+  --glass-bg: rgba(0, 0, 0, 0.04);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-border-hover: rgba(0, 0, 0, 0.2);
+  --nav-height: 72px;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+}
+
+html.dark {
+  --bg-primary: #071318;
+  --bg-secondary: #0a1a24;
+  --text-main: #f0fdfa;
+  --text-muted: #94a3b8;
+  --accent-cyan: #ffffff;
+  --accent-cyan-hover: #e5e5e5;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(0, 212, 161, 0.4);
+  --nav-height: 72px;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -67,12 +107,12 @@ body {
 }
 .btn-primary {
   background-color: var(--accent-cyan);
-  color: #040b10;
-  box-shadow: 0 4px 14px 0 rgba(22, 230, 216, 0.39);
+  color: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .btn-primary:hover {
   background-color: var(--accent-cyan-hover);
-  box-shadow: 0 6px 20px rgba(22, 230, 216, 0.23);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
 .btn-outline {
