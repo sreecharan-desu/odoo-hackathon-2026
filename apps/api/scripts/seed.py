@@ -1,6 +1,6 @@
 """Seed TransitOps with a compact realistic fleet dataset.
 
-Preserves demo spine (VAN-05, TRK-12, VAN-99, Alex, Expired Sam).
+Preserves demo spine (MH04AB1234, DL01XY9876, GJ05ZZ5555, Alex, Expired Sam).
 Run:  python scripts/seed.py
 """
 
@@ -42,6 +42,10 @@ CITIES = (
     "Indore",
     "Kolkata",
     "Kochi",
+)
+STATE_CODES = (
+    "AP", "MH", "KA", "TN", "DL", "GJ", "TS", "UP", "HR", "RJ",
+    "MP", "WB", "KL", "CH", "PB"
 )
 MAINT_TITLES = (
     "Oil Change",
@@ -142,6 +146,14 @@ def _license_number(prefix: str, index: int) -> str:
     return f"DL-{prefix}-{100 + index:03d}"
 
 
+def _registration_number() -> str:
+    state = RNG.choice(STATE_CODES)
+    rto = RNG.randint(1, 99)
+    chars = "".join(RNG.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=RNG.randint(1, 2)))
+    num = RNG.randint(1000, 9999)
+    return f"{state}{rto:02d}{chars}{num}"
+
+
 def _recent_days(min_days: int, max_days: int) -> int:
     return RNG.randint(min_days, max_days)
 
@@ -192,8 +204,8 @@ def seed() -> None:
         # ── Vehicles (demo spine + fleet bulk) ──────────────────────────
         vehicles: list[Vehicle] = [
             Vehicle(
-                registration_number="VAN-05",
-                name="Van-05",
+                registration_number="MH04AB1234",
+                name="Van 05",
                 vehicle_type="Van",
                 max_load_kg=500,
                 odometer=12000,
@@ -202,8 +214,8 @@ def seed() -> None:
                 region="West",
             ),
             Vehicle(
-                registration_number="TRK-12",
-                name="Truck-12",
+                registration_number="DL01XY9876",
+                name="Truck 12",
                 vehicle_type="Truck",
                 max_load_kg=2000,
                 odometer=45000,
@@ -212,8 +224,8 @@ def seed() -> None:
                 region="North",
             ),
             Vehicle(
-                registration_number="VAN-99",
-                name="Van-99",
+                registration_number="GJ05ZZ5555",
+                name="Van 99",
                 vehicle_type="Van",
                 max_load_kg=300,
                 odometer=80000,
@@ -224,11 +236,11 @@ def seed() -> None:
         ]
 
         specs = [
-            ("VAN", "Van", 400, 700, 450000, 950000),
-            ("TRK", "Truck", 1500, 5000, 900000, 2800000),
-            ("SUV", "SUV", 300, 600, 700000, 1600000),
-            ("BUS", "MiniBus", 800, 2000, 1200000, 3200000),
-            ("PICK", "Pickup", 600, 1200, 550000, 1100000),
+            ("Van", 400, 700, 450000, 950000),
+            ("Truck", 1500, 5000, 900000, 2800000),
+            ("SUV", 300, 600, 700000, 1600000),
+            ("MiniBus", 800, 2000, 1200000, 3200000),
+            ("Pickup", 600, 1200, 550000, 1100000),
         ]
         # Status mix for bulk: mostly Available, with a smaller live-ops slice.
         status_cycle = (
@@ -240,17 +252,17 @@ def seed() -> None:
         RNG.shuffle(status_cycle)
 
         n = 0
-        for prefix, vtype, lo, hi, cost_lo, cost_hi in specs[: SEED_PROFILE["vehicle_templates"]]:
+        for vtype, lo, hi, cost_lo, cost_hi in specs[: SEED_PROFILE["vehicle_templates"]]:
             for i in range(1, SEED_PROFILE["vehicles_per_template"] + 1):
                 n += 1
-                reg = f"{prefix}-{100 + i}"
-                if any(v.registration_number == reg for v in vehicles):
-                    reg = f"{prefix}-{200 + i}"
+                reg = _registration_number()
+                while any(v.registration_number == reg for v in vehicles):
+                    reg = _registration_number()
                 status = status_cycle[(n - 1) % len(status_cycle)]
                 vehicles.append(
                     Vehicle(
                         registration_number=reg,
-                        name=f"{vtype}-{i:02d}",
+                        name=f"{vtype} {i:02d}",
                         vehicle_type=vtype,
                         max_load_kg=float(RNG.randint(lo, hi)),
                         odometer=float(RNG.randint(2_000, 180_000)),
@@ -310,7 +322,7 @@ def seed() -> None:
         db.add_all(drivers)
         db.flush()
 
-        available_vehicles = [v for v in vehicles if v.status == "Available" and v.registration_number != "VAN-99"]
+        available_vehicles = [v for v in vehicles if v.status == "Available" and v.registration_number != "GJ05ZZ5555"]
         on_trip_vehicles = [v for v in vehicles if v.status == "On Trip"]
         in_shop_vehicles = [v for v in vehicles if v.status == "In Shop"]
         available_drivers = [d for d in drivers if d.status == "Available" and d.name != "Expired Sam"]
@@ -351,7 +363,7 @@ def seed() -> None:
             )
 
         # Completed trips (history) — use Available fleet + Alex heavily
-        history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
+        history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "GJ05ZZ5555"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
         for i in range(SEED_PROFILE["completed_trips"]):
             veh = RNG.choice(history_pool_v)
@@ -505,7 +517,7 @@ def seed() -> None:
         print(f"  Maintenance:  {db.query(MaintenanceLog).count()}")
         print(f"  Fuel logs:    {db.query(FuelLog).count()}")
         print(f"  Expenses:     {db.query(Expense).count()}")
-        print("  Demo spine kept: VAN-05, TRK-12 (In Shop), VAN-99 (Retired), Alex, Expired Sam")
+        print("  Demo spine kept: MH04AB1234, DL01XY9876 (In Shop), GJ05ZZ5555 (Retired), Alex, Expired Sam")
     finally:
         db.close()
 
