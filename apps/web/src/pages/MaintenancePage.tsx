@@ -353,19 +353,7 @@ export default function MaintenancePage() {
 
       {/* Open Maintenance Modal */}
       {isAdding && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: "var(--space-4)"
-        }}>
+        <div className="modal-overlay">
           <Card style={{ width: "100%", maxWidth: "500px" }}>
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Open Maintenance Log</h3>
             {loadingVehicles ? (
@@ -402,12 +390,12 @@ export default function MaintenancePage() {
                     }}
                   />
                   <div className="form-field">
-                    <label htmlFor="maintDesc" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Detailed Description</label>
+                    <label htmlFor="maintDesc" className="form-field__label">Detailed Description</label>
                     <textarea
                       id="maintDesc"
+                      className="form-field__input"
                       rows={3}
                       placeholder="Specify issue detail, components, or labor details"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)", fontFamily: "inherit" }}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                     />

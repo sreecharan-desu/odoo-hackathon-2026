@@ -748,12 +748,7 @@ export default function TripsPage() {
 
       {/* Complete Trip Modal */}
       {completingTripId !== null && (
-        <div style={{
-          position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1000, padding: "var(--space-4)",
-        }}>
+        <div className="modal-overlay">
           <Card style={{ width: "100%", maxWidth: "440px" }}>
             <h3 style={{ margin: "0 0 var(--space-3)", fontSize: "0.95rem", letterSpacing: "0.05em" }}>
               COMPLETE TRIP #{completingTripId}

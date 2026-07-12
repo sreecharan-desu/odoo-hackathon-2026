@@ -480,3 +480,66 @@
     gap: var(--space-3);
   }
 }
+
+/* ─── Modal overlay backdrop ────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+  animation: modalFadeIn 0.22s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Analytics Page Split Panes ────────────────────────── */
+@media (min-width: 769px) {
+  .shell-main:has(.analytics-page-container) {
+    overflow: hidden;
+  }
+  .analytics-page-container {
+    height: calc(100vh - 64px - 48px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .analytics-split-layout {
+    display: flex;
+    gap: var(--space-4);
+    flex: 1;
+    min-height: 0;
+  }
+  .analytics-pane-left {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  .analytics-pane-right {
+    flex: 1.2;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+@media (max-width: 768px) {
+  .analytics-split-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
