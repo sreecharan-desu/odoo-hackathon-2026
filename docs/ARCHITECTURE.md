@@ -64,6 +64,7 @@ Enforced in the service layer:
 | GET, POST | `/api/expenses` |
 | GET | `/api/dashboard/kpis` |
 | GET | `/api/vehicles/{id}/operational-cost` |
+| GET | `/api/reports/operational-costs` |
 | GET | `/api/reports/operational.csv` |
 
 Interactive docs: `http://localhost:8000/docs`
@@ -75,6 +76,19 @@ List endpoints return a paginated envelope:
 ```
 
 Query params: `limit` (1–100, default 25), `offset` (default 0). Filters such as `status` still apply.
+
+### Role-scoped UI (PDF §2)
+
+Shared shell; nav and home differ by account role (from JWT / `/api/auth/me`, never a login picker):
+
+| Role | Workspace | Nav |
+|------|-----------|-----|
+| `fleet_manager` | Ops Console | All modules |
+| `driver` | Trip Desk | Dashboard, Trips, Fuel Log |
+| `safety_officer` | Safety Desk | Dashboard, Drivers |
+| `financial_analyst` | Finance Desk | Dashboard, Fleet, Fuel & Expenses, Analytics |
+
+Reports (`/api/reports/*`, per-vehicle operational-cost) require `fleet_manager` or `financial_analyst`.
 
 ## Backend structure
 
@@ -105,7 +119,7 @@ Query params: `limit` (1–100, default 25), `offset` (default 0). Filters such 
 
 ## Out of scope (for now)
 
-PDF export, email reminders, document uploads, dark-mode toggle, and heavy chart libraries are deferred until the core flow is stable.
+PDF export, email reminders, document uploads, dark-mode toggle, and heavy chart libraries remain optional bonuses.
 
 ## Demo walkthrough
 

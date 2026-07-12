@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import { Card, Spinner } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useAuth } from "../hooks/useAuth";
+import { roleWorkspace } from "../lib/rbac";
 import { apiGet, apiGetItems, endpoints } from "../lib/api";
 import type { DashboardKpis, Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const workspace = roleWorkspace(user);
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [regionFilter, setRegionFilter] = useState("All");
@@ -80,8 +84,8 @@ export default function DashboardPage() {
   return (
     <>
       <div className="page-header">
-        <h2>Dashboard Overview</h2>
-        <p className="text-muted">Real-time fleet performance & operations monitoring</p>
+        <h2>{workspace.dashboardTitle}</h2>
+        <p className="text-muted">{workspace.dashboardSub}</p>
       </div>
 
       <div className="dashboard-filters">

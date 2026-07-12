@@ -5,7 +5,7 @@ import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
-import { canManageMaintenance } from "../lib/rbac";
+import { canManageMaintenance, pageChrome } from "../lib/rbac";
 import { formatInr } from "../constants";
 import type { MaintenanceLog, Vehicle } from "../types";
 
@@ -14,6 +14,7 @@ const PAGE_SIZE = 25;
 export default function MaintenancePage() {
   const { user } = useAuth();
   const allowManage = canManageMaintenance(user);
+  const chrome = pageChrome(user, "maintenance");
   const [offset, setOffset] = useState(0);
   const { data: logs, total, error, loading, apiMissing, refetch: refetchLogs } = useApiList<MaintenanceLog>(
     endpoints.maintenance,
@@ -99,8 +100,8 @@ export default function MaintenancePage() {
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Maintenance Orders</h2>
-          <p className="text-muted">Open and track vehicle maintenance, scheduling, and shop logs</p>
+          <h2>{chrome.title}</h2>
+          <p className="text-muted">{chrome.sub}</p>
         </div>
         {allowManage && <Button onClick={() => setIsAdding(true)}>Open Maintenance</Button>}
       </div>
