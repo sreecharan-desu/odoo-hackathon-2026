@@ -227,11 +227,100 @@ export default function TripsPage() {
     }
   };
 
+  // Visual stats computation
+  const tripList = trips ?? [];
+  const totalTrips = tripList.length;
+  const draftCount = tripList.filter(t => t.status === "Draft").length;
+  const dispatchedCount = tripList.filter(t => t.status === "Dispatched").length;
+  const completedCount = tripList.filter(t => t.status === "Completed").length;
+  const cancelledCount = tripList.filter(t => t.status === "Cancelled").length;
+
+  const draftPct = totalTrips > 0 ? (draftCount / totalTrips) * 100 : 0;
+  const dispatchedPct = totalTrips > 0 ? (dispatchedCount / totalTrips) * 100 : 0;
+  const completedPct = totalTrips > 0 ? (completedCount / totalTrips) * 100 : 0;
+  const cancelledPct = totalTrips > 0 ? (cancelledCount / totalTrips) * 100 : 0;
+
   return (
     <>
       <div className="page-header">
         <h2>{chrome.title}</h2>
         <p className="text-muted">{chrome.sub}</p>
+      </div>
+
+      {/* Visual Analytics Dashboard */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+        {/* Trip Operations Status Distribution */}
+        <Card style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Trip Status Breakdown
+            </span>
+            <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--color-text)" }}>
+              {totalTrips} Total
+            </span>
+          </div>
+
+          {/* Stacked progress track */}
+          <div style={{ display: "flex", height: "8px", borderRadius: "99px", overflow: "hidden", background: "var(--color-surface-2)" }}>
+            {draftCount > 0 && <div style={{ width: `${draftPct}%`, background: "var(--color-muted-2)", transition: "width 0.5s" }} />}
+            {dispatchedCount > 0 && <div style={{ width: `${dispatchedPct}%`, background: "#3b82f6", transition: "width 0.5s" }} />}
+            {completedCount > 0 && <div style={{ width: `${completedPct}%`, background: "#22c55e", transition: "width 0.5s" }} />}
+            {cancelledCount > 0 && <div style={{ width: `${cancelledPct}%`, background: "#ef4444", transition: "width 0.5s" }} />}
+          </div>
+
+          {/* Legend row */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "0.74rem", fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--color-muted-2)" }} />
+              <span style={{ color: "var(--color-text)" }}>Draft ({draftCount})</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#3b82f6" }} />
+              <span style={{ color: "var(--color-text)" }}>Dispatched ({dispatchedCount})</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }} />
+              <span style={{ color: "var(--color-text)" }}>Completed ({completedCount})</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }} />
+              <span style={{ color: "var(--color-text)" }}>Cancelled ({cancelledCount})</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Dispatch Pool Availability (Resources) */}
+        <Card style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Dispatch Resource Pool
+          </span>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            {/* Vehicles meter */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", fontWeight: 600 }}>
+                <span style={{ color: "var(--color-muted)" }}>Vehicles</span>
+                <span style={{ color: "var(--color-text)" }}>{dispatchPool.length}/{allVehicles.length}</span>
+              </div>
+              <div style={{ height: "5px", borderRadius: "99px", background: "var(--color-surface-2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${allVehicles.length > 0 ? (dispatchPool.length / allVehicles.length) * 100 : 0}%`, background: "#10b981", borderRadius: "99px", transition: "width 0.5s" }} />
+              </div>
+              <span style={{ fontSize: "0.65rem", color: "var(--color-muted-2)", fontWeight: 500 }}>Ready / Standby</span>
+            </div>
+
+            {/* Drivers meter */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", fontWeight: 600 }}>
+                <span style={{ color: "var(--color-muted)" }}>Drivers</span>
+                <span style={{ color: "var(--color-text)" }}>{availableDrivers.length}/{allDrivers.length}</span>
+              </div>
+              <div style={{ height: "5px", borderRadius: "99px", background: "var(--color-surface-2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${allDrivers.length > 0 ? (availableDrivers.length / allDrivers.length) * 100 : 0}%`, background: "#3b82f6", borderRadius: "99px", transition: "width 0.5s" }} />
+              </div>
+              <span style={{ fontSize: "0.65rem", color: "var(--color-muted-2)", fontWeight: 500 }}>On Duty / Idle</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <div className="split-pane-layout">
@@ -262,23 +351,23 @@ export default function TripsPage() {
                   zIndex: 1,
                 }} />
                 {[
-                  { label: "Draft", color: "var(--color-success, #22c55e)" },
-                  { label: "Dispatched", color: "var(--color-info, #3b82f6)" },
-                  { label: "Completed", color: "var(--color-border)" },
-                  { label: "Cancelled", color: "var(--color-border)" },
+                  { label: "Draft", color: "#94a3b8" },
+                  { label: "Dispatched", color: "#3b82f6" },
+                  { label: "Completed", color: "#22c55e" },
+                  { label: "Cancelled", color: "#ef4444" },
                 ].map((step, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
                     <div style={{
-                      width: "20px",
-                      height: "20px",
+                      width: "18px",
+                      height: "18px",
                       borderRadius: "50%",
-                      background: i < 2 ? step.color : "var(--color-surface)",
-                      border: `2px solid ${i < 2 ? step.color : "var(--color-border)"}`,
+                      background: "var(--color-surface)",
+                      border: `3.5px solid ${step.color}`,
                     }} />
                     <span style={{
-                      fontSize: "0.68rem",
-                      fontWeight: i < 2 ? 700 : 400,
-                      color: i < 2 ? step.color : "var(--color-muted)",
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      color: step.color,
                       whiteSpace: "nowrap",
                     }}>
                       {step.label}
@@ -351,6 +440,31 @@ export default function TripsPage() {
                       error={cargoWeightError}
                       onChange={(e) => { setCargoWeight(e.target.value); if (cargoWeightError) setCargoWeightError(null); }}
                     />
+
+                    {selectedVehicle && (
+                      <div style={{
+                        padding: "8px 10px", background: "var(--color-surface-2)",
+                        borderRadius: "8px", border: "1px solid var(--color-border)",
+                        fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "6px"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
+                          <span style={{ color: "var(--color-muted)" }}>Load Capacity Usage:</span>
+                          <span style={{ color: isOverweight ? "var(--color-danger)" : "var(--color-success)" }}>
+                            {cargoWeightVal} / {capacityLimit} kg ({((cargoWeightVal / capacityLimit) * 100).toFixed(0)}%)
+                          </span>
+                        </div>
+                        <div style={{ height: "4px", borderRadius: "2px", background: "var(--color-border)", overflow: "hidden" }}>
+                          <div style={{
+                            height: "100%",
+                            width: `${Math.min((cargoWeightVal / capacityLimit) * 100, 100)}%`,
+                            background: isOverweight ? "#ef4444" : "#22c55e",
+                            borderRadius: "2px",
+                            transition: "width 0.3s ease"
+                          }} />
+                        </div>
+                      </div>
+                    )}
+
                     <NumberField
                       id="distance"
                       label="PLANNED DISTANCE (KM)"
@@ -362,7 +476,7 @@ export default function TripsPage() {
                   </div>
 
                   {isOverweight && (
-                    <div className="warning-error-box">
+                    <div className="warning-error-box" style={{ marginTop: "12px" }}>
                       <p className="warning-error-title">Vehicle Capacity: {capacityLimit} kg</p>
                       <p className="warning-error-desc">Cargo Weight: {cargoWeightVal} kg</p>
                       <p className="warning-error-detail">
@@ -432,65 +546,178 @@ export default function TripsPage() {
                   const isDriverAvailable = driver ? driver.status === "Available" : true;
                   const assetsReady = isVehicleAvailable && isDriverAvailable;
 
-                  const etaLabel = t.status === "Dispatched" ? "In transit"
-                    : t.status === "Draft" ? "Awaiting dispatch"
+                  const etaLabel = t.status === "Dispatched" ? "In Transit"
+                    : t.status === "Draft" ? "Awaiting Dispatch"
                     : t.status === "Cancelled" ? "Cancelled"
                     : "Completed";
 
                   const tripCode = `TR${String(t.id).padStart(3, "0")}`;
                   const sc = STATUS_COLORS[t.status] ?? STATUS_COLORS["Draft"];
 
+                  // Progress markers along path
+                  const isCompleted = t.status === "Completed";
+                  const isDispatched = t.status === "Dispatched";
+                  const isCancelled = t.status === "Cancelled";
+                  let progressPct = 0;
+                  if (isDispatched) progressPct = 50;
+                  else if (isCompleted) progressPct = 100;
+
                   return (
                     <div key={t.id} className="trip-live-card">
-                      {/* Left column */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                          <strong style={{ fontSize: "0.9375rem" }}>{tripCode}</strong>
+                      {/* Top Row: Trip Code, Status Badge, ETA */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <strong style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "var(--color-text)" }}>{tripCode}</strong>
                           <span style={{
-                            padding: "2px 10px",
+                            padding: "2px 8px",
                             borderRadius: "20px",
-                            fontSize: "0.7rem",
+                            fontSize: "0.68rem",
                             fontWeight: 700,
-                            letterSpacing: "0.04em",
+                            letterSpacing: "0.02em",
                             background: sc.bg,
                             color: sc.text,
                           }}>
                             {t.status.toUpperCase()}
                           </span>
                         </div>
-                        <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {t.source} &rarr; {t.destination}
-                        </p>
-                        <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>
-                          {vehicle ? vehicle.registration_number : `V#${t.vehicle_id}`} &nbsp;·&nbsp; {driver ? driver.name : "Unassigned"}
-                        </span>
+                        <span style={{ fontSize: "0.78rem", color: "var(--color-muted)", fontWeight: 600 }}>{etaLabel}</span>
                       </div>
 
-                      {/* Right column */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
-                        <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>{etaLabel}</span>
+                      {/* Route Path Visualization */}
+                      <div style={{ padding: "12px 0 20px", position: "relative" }}>
+                        <div style={{
+                          height: "3px",
+                          borderRadius: "2px",
+                          background: isCancelled ? "rgba(239, 68, 68, 0.15)" : "var(--color-surface-2)",
+                          position: "relative",
+                          margin: "0 10px"
+                        }}>
+                          <div style={{
+                            height: "100%",
+                            width: `${progressPct}%`,
+                            background: isCompleted ? "#22c55e" : "#3b82f6",
+                            borderRadius: "2px",
+                            transition: "width 0.5s ease"
+                          }} />
+                        </div>
 
-                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        {/* Waypoints */}
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "-8px", padding: "0 4px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
+                            <span style={{
+                              width: "12px", height: "12px", borderRadius: "50%",
+                              background: isCancelled ? "#ef4444" : "#3b82f6",
+                              border: "2.5px solid var(--color-bg)",
+                              boxShadow: "0 0 0 1px var(--color-border)",
+                              zIndex: 2
+                            }} />
+                            <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--color-text)" }}>{t.source}</span>
+                            <span style={{ fontSize: "0.62rem", color: "var(--color-muted-2)" }}>Origin</span>
+                          </div>
+
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+                            <span style={{
+                              width: "12px", height: "12px", borderRadius: "50%",
+                              background: isCompleted ? "#22c55e" : "var(--color-muted-2)",
+                              border: "2.5px solid var(--color-bg)",
+                              boxShadow: "0 0 0 1px var(--color-border)",
+                              zIndex: 2
+                            }} />
+                            <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--color-text)" }}>{t.destination}</span>
+                            <span style={{ fontSize: "0.62rem", color: "var(--color-muted-2)" }}>Destination</span>
+                          </div>
+                        </div>
+
+                        {/* Truck Marker along track */}
+                        {!isCancelled && (
+                          <div style={{
+                            position: "absolute",
+                            top: "-2px",
+                            left: `calc(${progressPct}% - 10px)`,
+                            transition: "left 0.5s ease",
+                            zIndex: 3,
+                            background: "var(--color-bg)",
+                            border: `1.5px solid ${isCompleted ? "#22c55e" : "#3b82f6"}`,
+                            borderRadius: "50%",
+                            width: "22px",
+                            height: "22px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "var(--shadow-soft)"
+                          }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={isCompleted ? "#22c55e" : "#3b82f6"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="1" y="3" width="15" height="13"/>
+                              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                              <circle cx="5.5" cy="18.5" r="2.5"/>
+                              <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                          </div>
+                        )}
+
+                        {isCancelled && (
+                          <div style={{
+                            position: "absolute",
+                            top: "6px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "var(--color-danger-bg)",
+                            border: "1px solid var(--color-danger)",
+                            color: "var(--color-danger)",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            fontSize: "0.62rem",
+                            fontWeight: 700,
+                            letterSpacing: "0.05em",
+                            textTransform: "uppercase",
+                            zIndex: 3
+                          }}>
+                            Cancelled
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Cargo, distance, and resource details */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", padding: "10px 0 0", borderTop: "1px solid var(--color-border)" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{vehicle ? vehicle.registration_number : `V#${t.vehicle_id}`}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Driver</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{driver ? driver.name : "Unassigned"}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Cargo Weight</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{t.cargo_weight} kg</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Distance</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{t.planned_distance} km</span>
+                        </div>
+
+                        {/* Actions aligned to bottom right */}
+                        <div style={{ display: "flex", gap: "6px", alignItems: "flex-end", marginLeft: "auto", flexWrap: "wrap", paddingTop: "4px" }}>
                           {t.status === "Draft" && allowDispatch && (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
                               <Button
-                                style={{ padding: "3px 10px", fontSize: "0.78rem" }}
+                                style={{ padding: "4px 12px", fontSize: "0.78rem" }}
                                 onClick={() => void handleDispatch(t.id)}
                                 disabled={!assetsReady}
                               >
                                 Dispatch
                               </Button>
                               {dispatchError[t.id] && (
-                                <p className="error" style={{ fontSize: "0.7rem", margin: "2px 0 0", maxWidth: "120px", textAlign: "right" }}>
+                                <p className="error" style={{ fontSize: "0.68rem", margin: "2px 0 0", maxWidth: "120px", textAlign: "right" }}>
                                   {dispatchError[t.id]}
                                 </p>
                               )}
                             </div>
                           )}
                           {(t.status === "Draft" || t.status === "Dispatched") && allowSchedule && (
-                            <div style={{ display: "flex", gap: "4px" }}>
+                            <div style={{ display: "flex", gap: "6px" }}>
                               <Button
-                                style={{ padding: "3px 10px", fontSize: "0.78rem", background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
+                                style={{ padding: "4px 12px", fontSize: "0.78rem", background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
                                 onClick={() => setCompletingTripId(t.id)}
                               >
                                 Complete
@@ -498,12 +725,11 @@ export default function TripsPage() {
                               {allowDispatch && (
                                 <Button
                                   variant="ghost"
-                                  style={{ padding: "3px 10px", fontSize: "0.78rem", border: "1px solid var(--color-danger, #ef4444)", color: "var(--color-danger, #ef4444)" }}
+                                  style={{ padding: "4px 12px", fontSize: "0.78rem", border: "1px solid var(--color-danger, #ef4444)", color: "var(--color-danger, #ef4444)" }}
                                   onClick={() => void handleCancel(t.id)}
                                 >
                                   Cancel
                                 </Button>
-
                               )}
                             </div>
                           )}
