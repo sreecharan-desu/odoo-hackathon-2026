@@ -1,0 +1,22 @@
+## Summary
+
+Follow-up enhancements to the landing page redesign (extends #53).
+
+### FeatureSection
+- Replaced shadow cards with a **newspaper-grid layout** — cells separated by thin `1px` lines, no elevation
+- **Left-aligned section header** with label pill (Platform Features) + subtitle on the right
+- **Feature tag badges** per card (Core, People, Operations, Reliability, Automation, Insights)
+- **Monochrome icon boxes** — thin border, no color fill, consistent with B&W theme
+- **Subtle hover highlight** on each cell — background fills in on hover
+
+### DashboardPreview
+- Reduced height: `800px -> 560px` — compact, no overflow
+- Cleaner sidebar with **TransitOps logo + label**, slimmer nav items with border-active state
+- Proper **top bar** with page title and formatted date range
+- **Monochrome KPI cards** with accent-colored delta values
+- **LIVE badge** on trips table header; added **Driver column**
+- **Gradient-fill area chart** with M/T/W/T/F/S/S day labels
+- **Neutral progress bars** for top routes (no color)
+
+### globals.css
+- Hide scrollbars globally: `scrollbar-width: none`, `-ms-overflow-style: none`, `::-webkit-scrollbar { display: none }`
