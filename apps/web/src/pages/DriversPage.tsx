@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Spinner, Button, Pagination, StatusBadge } from "../components/ui";
+import { Card, Button, Pagination, StatusBadge, Skeleton } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
@@ -210,7 +210,20 @@ export default function DriversPage() {
       )}
 
       <Card>
-        {loading && <Spinner />}
+        {loading && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} style={{ display: "flex", gap: "12px", padding: "16px", background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "8px" }}>
+                <Skeleton circle width={40} height={40} />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width="40%" height={12} />
+                  <Skeleton width="80%" height={12} style={{ marginTop: 4 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {apiMissing && (
           <p className="page-empty">Drivers API not available yet. Roster will appear here.</p>
         )}
@@ -378,19 +391,7 @@ export default function DriversPage() {
 
       {/* Add Driver Modal */}
       {isAdding && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: "var(--space-4)"
-        }}>
+        <div className="modal-overlay">
           <Card style={{ width: "100%", maxWidth: "500px", position: "relative" }}>
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Add New Driver</h3>
             <form onSubmit={(e) => void handleAddDriver(e)}>
