@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, Spinner, Button, Pagination } from "../components/ui";
+import { Card, Spinner, Button, Pagination, Skeleton } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
@@ -327,7 +327,20 @@ export default function TripsPage() {
               LIVE BOARD
             </h3>
 
-            {tripsLoading && <Spinner />}
+            {tripsLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ padding: "12px", border: "1px solid var(--color-border)", borderRadius: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Skeleton width="30%" height={16} />
+                      <Skeleton width="20%" height={16} />
+                    </div>
+                    <Skeleton width="80%" height={12} style={{ marginBottom: 6 }} />
+                    <Skeleton width="50%" height={12} />
+                  </div>
+                ))}
+              </div>
+            )}
             {tripsError && <p className="error">{tripsError}</p>}
             {trips && trips.length === 0 && (
               <p className="page-empty">No active trips scheduled yet.</p>
