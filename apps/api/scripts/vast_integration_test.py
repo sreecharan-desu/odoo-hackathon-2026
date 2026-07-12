@@ -461,6 +461,19 @@ def main() -> int:
         else:
             R.bad("operational-cost fields", str(cost)[:160])
 
+        bulk = expect_code(
+            "operational-costs bulk",
+            "GET",
+            "/api/reports/operational-costs",
+            200,
+            token=fleet,
+        )
+        items = bulk.get("items") if isinstance(bulk, dict) else bulk
+        if isinstance(items, list) and items and "registration_number" in items[0] and "total_operational_cost" in items[0]:
+            R.ok("operational-costs bulk fields", f"n={len(items)}")
+        else:
+            R.bad("operational-costs bulk fields", str(bulk)[:160])
+
     csv_code, csv_body = call("GET", "/api/reports/operational.csv", token=fleet)
     if csv_code == 200 and isinstance(csv_body, str) and "registration_number" in csv_body:
         R.ok("CSV report", f"bytes~{len(csv_body)}")
@@ -513,6 +526,20 @@ def main() -> int:
             "driver cannot dispatch",
             "POST",
             "/api/trips/1/dispatch",
+            403,
+            token=driver,
+        )
+        expect_fail(
+            "driver cannot read operational cost",
+            "GET",
+            f"/api/vehicles/{van05['id'] if van05 else 1}/operational-cost",
+            403,
+            token=driver,
+        )
+        expect_fail(
+            "driver cannot read operational costs bulk",
+            "GET",
+            "/api/reports/operational-costs",
             403,
             token=driver,
         )

@@ -17,7 +17,6 @@ from app.schemas import (
     PaginatedResponse,
 )
 from app.services.fleet_ops_service import DashboardService, ExpenseService, FuelService, MaintenanceService
-from app.services.vehicle_service import VehicleService
 from app.utils.pagination import DEFAULT_LIMIT, MAX_LIMIT
 
 router = APIRouter(tags=["operations"])
@@ -102,22 +101,35 @@ def dashboard_kpis(db: Session = Depends(get_db), _: User = Depends(get_current_
 
 @router.get("/vehicles/{vehicle_id}/operational-cost")
 def operational_cost(
-    vehicle_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    vehicle_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
 ) -> dict:
     return DashboardService.operational_cost(db, vehicle_id)
 
 
+@router.get("/reports/operational-costs")
+def operational_costs_bulk(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
+) -> dict:
+    """Fleet-wide operational costs in one response (avoids N+1 from the UI)."""
+    return {"items": DashboardService.operational_costs_all(db)}
+
+
 @router.get("/reports/operational.csv")
-def operational_csv(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> PlainTextResponse:
-    vehicles = VehicleService.list_all(db)
+def operational_csv(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
+) -> PlainTextResponse:
+    rows = DashboardService.operational_costs_all(db)
     lines = [
         "vehicle_id,registration_number,status,distance_km,fuel_liters,fuel_efficiency_km_per_l,"
         "fuel_cost,maintenance_cost,other_expenses,estimated_revenue,acquisition_cost,roi,total"
     ]
-    for v in vehicles:
-        costs = DashboardService.operational_cost(db, v.id)
+    for costs in rows:
         lines.append(
-            f"{v.id},{v.registration_number},{v.status},"
+            f"{costs['vehicle_id']},{costs['registration_number']},{costs['status']},"
             f"{costs['distance_km']},{costs['fuel_liters']},{costs['fuel_efficiency_km_per_l']},"
             f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},"
             f"{costs['estimated_revenue']},{costs['acquisition_cost']},{costs['roi']},"
