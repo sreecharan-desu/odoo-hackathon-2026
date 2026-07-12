@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../constants";
+import { API_BASE_URL, formatInr } from "../constants";
 import { Card, Spinner, Button } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { apiGet, apiGetItems, endpoints } from "../lib/api";
@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
                       />
                     </div>
                     <span style={{ textAlign: "right", fontSize: "0.875rem", fontWeight: "bold" }}>
-                      ${v.costs.total_operational_cost.toFixed(2)}
+                      {formatInr(v.costs.total_operational_cost, 2)}
                     </span>
                   </div>
                 );
@@ -193,10 +193,10 @@ export default function AnalyticsPage() {
                           ? `${v.costs.fuel_efficiency_km_per_l.toFixed(1)} km/L`
                           : "—"}
                       </td>
-                      <td style={{ padding: "var(--space-2)" }}>${v.costs.fuel_cost.toFixed(2)}</td>
-                      <td style={{ padding: "var(--space-2)" }}>${v.costs.maintenance_cost.toFixed(2)}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.costs.fuel_cost, 2)}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.costs.maintenance_cost, 2)}</td>
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
-                        ${v.costs.total_operational_cost.toFixed(2)}
+                        {formatInr(v.costs.total_operational_cost, 2)}
                       </td>
                       <td
                         style={{

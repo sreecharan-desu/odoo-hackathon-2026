@@ -30,3 +30,5 @@ export const STATUS_COLORS = {
 } as const;
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+export { CURRENCY_SYMBOL, formatInr } from "./money";
