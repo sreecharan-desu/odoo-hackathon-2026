@@ -1,32 +1,63 @@
 # TransitOps
 
-**TransitOps** is a fleet operations platform for vehicles, drivers, trips, maintenance, fuel and expenses, and operational KPIs.
+**Smart Transport Operations Platform** — digitize vehicle, driver, dispatch, maintenance, and expense management with enforced business rules and live operational insight.
 
-Built with **PostgreSQL**, **FastAPI**, and **React** — a custom backend and database, not a Backend-as-a-Service.
+Built with **PostgreSQL**, **FastAPI**, and **React** (custom backend and database — no Backend-as-a-Service).
 
 | Document | Description |
 |----------|-------------|
 | [Architecture](./docs/ARCHITECTURE.md) | Data model, business rules, API surface |
-| [Demo guide](./docs/DEMO.md) | Sample accounts and walkthrough |
+| [Demo guide](./docs/DEMO.md) | Sample accounts and end-to-end walkthrough |
 | [Stack](./docs/STACK.md) | Technology choices |
 
 ---
 
-## Features
+## What it solves
 
-| Area | Capability |
-|------|------------|
-| Authentication | JWT login, role-based access, protected routes |
-| Dashboard | Live KPIs from PostgreSQL |
-| Fleet | Vehicle registry with status tracking |
-| Drivers | License and availability management |
-| Trips | Create, dispatch, complete, or cancel with enforced rules |
-| Maintenance | Open and close jobs with automatic status updates |
-| Fuel & expenses | Cost logging against vehicles |
-| Analytics | Operational summary and CSV export |
-| Validation | Server-side schemas and rules, plus client-side checks |
+Logistics teams often run fleets from spreadsheets and logbooks. That leads to double-booked vehicles, expired licenses on the road, missed maintenance, and weak cost visibility.
 
-Business rules enforced in the API include no double-booking, cargo within capacity, expired or suspended licenses blocked, and In Shop / Retired vehicles excluded from dispatch.
+TransitOps is a single app for the full operations lifecycle: register assets and drivers → dispatch trips with validation → log fuel and maintenance → review KPIs and costs.
+
+### Roles
+
+| Role | Focus |
+|------|--------|
+| Fleet Manager | Fleet assets, dispatch, maintenance, operational efficiency |
+| Driver | Trip creation and active deliveries |
+| Safety Officer | License compliance and safety scores |
+| Financial Analyst | Fuel, maintenance, expenses, and cost reporting |
+
+---
+
+## Product modules
+
+| Module | Capabilities |
+|--------|----------------|
+| Authentication | Secure email/password login, JWT sessions, RBAC, protected routes |
+| Dashboard | Live KPIs: active / available vehicles, in shop, active & pending trips, drivers on duty, fleet utilization % |
+| Vehicle registry | Unique registration number, model, type, max load, odometer, acquisition cost, region, status |
+| Driver management | License number/category/expiry, contact, safety score, status |
+| Trip management | Source, destination, vehicle, driver, cargo weight, distance — Draft → Dispatched → Completed / Cancelled |
+| Maintenance | Open/close logs; open job moves vehicle to **In Shop** (removed from dispatch) |
+| Fuel & expenses | Fuel liters/cost and other costs (tolls, etc.); per-vehicle operational cost |
+| Analytics & reports | Cost breakdown visuals, CSV export of operational costs |
+| Validation | Pydantic + service rules on the API; form validators on the web |
+
+Vehicle statuses: **Available**, **On Trip**, **In Shop**, **Retired**  
+Driver statuses: **Available**, **On Trip**, **Off Duty**, **Suspended**
+
+---
+
+## Business rules (enforced in the API)
+
+1. Vehicle registration numbers are unique  
+2. Retired or In Shop vehicles never enter the dispatch pool  
+3. Drivers with expired licenses or Suspended status cannot be assigned  
+4. A vehicle or driver already On Trip cannot take another trip  
+5. Cargo weight must not exceed vehicle max load  
+6. Dispatch sets vehicle and driver to On Trip  
+7. Complete or cancel restores both to Available  
+8. Opening maintenance sets the vehicle to In Shop; closing restores Available (unless Retired)
 
 ---
 
@@ -37,10 +68,12 @@ Business rules enforced in the API include no double-booking, cargo within capac
 | API | FastAPI, Pydantic |
 | ORM | SQLAlchemy |
 | Migrations | Alembic |
-| Database | PostgreSQL 16 (Docker) |
+| Database | PostgreSQL 16 |
 | Web | React 19, TypeScript, Vite |
 | Security | Password hashing, JWT, RBAC |
-| Runtime | Docker Compose (db + api + web) |
+| Runtime | Docker Compose (Postgres + API + web) |
+
+List APIs are paginated (`items`, `total`, `limit`, `offset`).
 
 ---
 
@@ -60,7 +93,7 @@ apps/
     hooks/          # shared React logic
     lib/api/        # HTTP client
     styles/         # design tokens
-docker/             # PostgreSQL Compose
+docker/             # Compose stack
 docs/               # architecture and guides
 scripts/            # local setup helpers
 ```
@@ -72,8 +105,6 @@ Package notes: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.
 ## Getting started
 
 ### Quick start (Docker — recommended)
-
-Requires Docker Desktop (or Docker Engine + Compose).
 
 ```bash
 git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
@@ -88,9 +119,15 @@ docker-compose up --build
 | API health | http://localhost:8000/api/health |
 | OpenAPI docs | http://localhost:8000/docs |
 
-Sample login: `fleet@example.com` / `Password123!`
+Login: `fleet@example.com` / `Password123!`
 
-The API container waits for Postgres, applies Alembic migrations, and seeds demo data when the database is empty.
+The API waits for Postgres, applies Alembic migrations, and seeds demo data when the database is empty.
+
+If port **8000** is already in use on your machine:
+
+```bash
+BACKEND_PORT=8001 VITE_API_URL=http://localhost:8001 docker-compose up --build
+```
 
 Stop:
 
@@ -100,68 +137,33 @@ docker-compose down
 
 ### Local development (optional)
 
-#### Prerequisites
-
-- Docker (for Postgres)
-- Python 3.11+
-- Node.js 20 LTS
-
-#### 1. Clone and configure
+**Prerequisites:** Docker (Postgres), Python 3.11+, Node.js 20 LTS
 
 ```bash
-git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
-cd odoo-hackathon-2026
 cp .env.example .env
-```
-
-#### 2. Database
-
-```bash
 docker-compose up -d postgres
-```
 
-PostgreSQL listens on host port **5433** by default (see `.env.example`).
-
-First-time setup:
-
-```bash
-bash scripts/setup.sh
-```
-
-#### 3. API
-
-```bash
 cd apps/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 alembic upgrade head
 python scripts/seed.py
 uvicorn app.main:app --reload --port 8000
+
+# new terminal
+cd apps/web && npm install && npm run dev
 ```
-
-#### 4. Web
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-#### 5. Verify
 
 | Service | URL |
 |---------|-----|
-| Web application | http://localhost:5173 |
-| API health | http://localhost:8000/api/health |
-| OpenAPI docs | http://localhost:8000/docs |
+| Web (Vite) | http://localhost:5173 |
+| API | http://localhost:8000 |
 
-Make targets: `make up` · `make down` · `make dev-db` · `make dev-api` · `make dev-web`
+Make targets: `make up` · `make down` · `make seed` · `make dev-api` · `make dev-web`
 
 ---
 
 ## Sample accounts
-
-After seeding (`python scripts/seed.py`):
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -170,22 +172,18 @@ After seeding (`python scripts/seed.py`):
 | Safety Officer | `safety@example.com` | `Password123!` |
 | Financial Analyst | `finance@example.com` | `Password123!` |
 
-Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
+Seed includes a full fleet plus fixed demo rows (Van-05, Alex, In Shop / expired-license cases). Full walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 
 ---
 
 ## Design principles
 
-- Own PostgreSQL schema with foreign keys and uniqueness constraints
-- Custom FastAPI services (no Firebase, Supabase, or Atlas as the core backend)
-- UI reads and writes through the API against a live database
-- Clear validation errors on invalid input at API and UI
-- Paginated list APIs with total counts
-- Alembic migrations for schema lifecycle
-- Modular layered backend and separated frontend concerns
-- Hashed passwords, JWT sessions, role-aware endpoints
-- One-command Docker Compose deployment for local/demo runs
-- Product logic over unrelated tooling
+- Owned PostgreSQL schema with constraints and foreign keys  
+- Custom FastAPI services — no Firebase / Supabase / Atlas as the core backend  
+- Dynamic data end-to-end (UI ↔ API ↔ database)  
+- Clear validation errors on invalid input  
+- Modular layered API and separated frontend concerns  
+- Paginated lists, Alembic migrations, Docker Compose for one-command runs  
 
 ---
 
