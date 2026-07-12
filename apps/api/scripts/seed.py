@@ -262,7 +262,7 @@ def seed() -> None:
                 vehicles.append(
                     Vehicle(
                         registration_number=reg,
-                        name=f"{vtype}-{i:02d}",
+                        name=f"{vtype} {i:02d}",
                         vehicle_type=vtype,
                         max_load_kg=float(RNG.randint(lo, hi)),
                         odometer=float(RNG.randint(2_000, 180_000)),
