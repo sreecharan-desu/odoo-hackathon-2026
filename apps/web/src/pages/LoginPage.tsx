@@ -178,6 +178,8 @@ export default function LoginPage() {
                     if (emailError) setEmailError(null);
                   }}
                   placeholder="you@example.com"
+                  maxLength={254}
+                  required
                   style={{
                     width: "100%", padding: "12px 14px 12px 42px", background: "var(--color-surface-2)", border: "1px solid var(--color-border)",
                     borderRadius: "8px", color: "var(--color-text)", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
@@ -203,6 +205,8 @@ export default function LoginPage() {
                     if (passwordError) setPasswordError(null);
                   }}
                   placeholder="At least 8 characters"
+                  maxLength={128}
+                  required
                   style={{
                     width: "100%", padding: "12px 42px 12px 42px", background: "var(--color-surface-2)", border: "1px solid var(--color-border)",
                     borderRadius: "8px", color: "var(--color-text)", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
