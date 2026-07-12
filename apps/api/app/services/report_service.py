@@ -32,6 +32,7 @@ STYLE_TITLE = ParagraphStyle(
     "ReportTitle",
     fontName="Helvetica-Bold",
     fontSize=22,
+    leading=26,
     textColor=BRAND_DARK,
     spaceAfter=2,
 )
@@ -39,6 +40,7 @@ STYLE_SUBTITLE = ParagraphStyle(
     "ReportSubtitle",
     fontName="Helvetica",
     fontSize=10,
+    leading=14,
     textColor=BRAND_MUTED,
     spaceAfter=4,
 )
@@ -46,6 +48,7 @@ STYLE_DATE = ParagraphStyle(
     "ReportDate",
     fontName="Helvetica",
     fontSize=9,
+    leading=12,
     textColor=BRAND_MUTED,
     alignment=2,  # right-aligned
 )
