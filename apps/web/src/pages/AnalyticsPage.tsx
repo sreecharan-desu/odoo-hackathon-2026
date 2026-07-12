@@ -241,51 +241,56 @@ export default function AnalyticsPage() {
                 </p>
 
                 <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.82rem" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Distance</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Fuel Eff.</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Fuel</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Maint.</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Total Cost</th>
-                        <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ROI</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Vehicle</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Distance</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Fuel Eff.</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Fuel</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Maint.</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>Total Cost</th>
+                        <th style={{ padding: "10px 8px", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-muted)" }}>ROI</th>
                       </tr>
                     </thead>
                     <tbody>
                       {fleetCosts.map((v) => (
-                        <tr key={v.vehicle_id} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                          <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
-                            {v.registration_number}{" "}
-                            <span style={{ fontWeight: "normal", color: "var(--color-muted)", fontSize: "0.85rem" }}>
-                              ({v.name})
-                            </span>
+                        <tr key={v.vehicle_id} style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.2s" }}>
+                          <td style={{ padding: "10px 8px" }}>
+                            <div style={{ display: "inline-block", background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "4px", padding: "2px 6px", fontSize: "0.78rem", fontWeight: 700, fontFamily: "monospace", color: "var(--color-text)" }}>
+                              {v.registration_number}
+                            </div>
+                            <div style={{ fontSize: "0.74rem", color: "var(--color-muted)", marginTop: "2px" }}>
+                              {v.name}
+                            </div>
                           </td>
-                          <td style={{ padding: "var(--space-2)" }}>{v.distance_km.toFixed(0)} km</td>
-                          <td style={{ padding: "var(--space-2)" }}>
+                          <td style={{ padding: "10px 8px", fontWeight: 500 }}>{v.distance_km.toFixed(0)} km</td>
+                          <td style={{ padding: "10px 8px", fontWeight: 500 }}>
                             {v.fuel_efficiency_km_per_l != null
                               ? `${v.fuel_efficiency_km_per_l.toFixed(1)} km/L`
                               : "—"}
                           </td>
-                          <td style={{ padding: "var(--space-2)" }}>{formatInr(v.fuel_cost, 2)}</td>
-                          <td style={{ padding: "var(--space-2)" }}>{formatInr(v.maintenance_cost, 2)}</td>
-                          <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
+                          <td style={{ padding: "10px 8px" }}>{formatInr(v.fuel_cost, 2)}</td>
+                          <td style={{ padding: "10px 8px" }}>{formatInr(v.maintenance_cost, 2)}</td>
+                          <td style={{ padding: "10px 8px", fontWeight: 700 }}>
                             {formatInr(v.total_operational_cost, 2)}
                           </td>
-                          <td
-                            style={{
-                              padding: "var(--space-2)",
-                              fontWeight: "bold",
-                              color:
-                                v.roi == null
-                                  ? "var(--color-muted)"
-                                  : v.roi >= 0
-                                    ? "var(--color-success, #28a745)"
-                                    : "var(--color-error)",
-                            }}
-                          >
-                            {fmtRoi(v.roi)}
+                          <td style={{ padding: "10px 8px" }}>
+                            {v.roi == null ? (
+                              <span style={{ color: "var(--color-muted)" }}>—</span>
+                            ) : (
+                              <span style={{
+                                display: "inline-block",
+                                padding: "3px 8px",
+                                borderRadius: "6px",
+                                fontSize: "0.75rem",
+                                fontWeight: 800,
+                                background: v.roi >= 0 ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                color: v.roi >= 0 ? "#10b981" : "#ef4444"
+                              }}>
+                                {fmtRoi(v.roi)}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}

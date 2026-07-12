@@ -300,11 +300,11 @@ export default function FuelExpensesPage() {
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Fuel Refills</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.refillCount} refills</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.refillCount}</div>
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Avg Fuel Price</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.avgFuelPrice)}/L</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.avgFuelPrice)}</div>
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Other Expenses</span>
@@ -357,8 +357,8 @@ export default function FuelExpensesPage() {
                   <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
                     <defs>
                       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0.15" />
-                        <stop offset="100%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     
@@ -399,7 +399,7 @@ export default function FuelExpensesPage() {
                       <path
                         d={pathD}
                         fill="none"
-                        stroke="var(--color-primary, #3b82f6)"
+                        stroke="#22c55e"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -414,7 +414,7 @@ export default function FuelExpensesPage() {
                           cy={p.y}
                           r="4"
                           fill="var(--color-paper)"
-                          stroke="var(--color-primary, #3b82f6)"
+                          stroke="#22c55e"
                           strokeWidth="2.5"
                         />
                         <text
