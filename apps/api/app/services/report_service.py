@@ -276,6 +276,28 @@ class ReportService:
 
         return [section_title, table, note, Spacer(1, 12)]
 
+    # ── Footer callback ─────────────────────────────────────────
+    @staticmethod
+    def _draw_footer(canvas, doc):
+        """Draw page number and branding in the footer of every page."""
+        canvas.saveState()
+        page_width = A4[0]
+
+        # Divider line
+        canvas.setStrokeColor(TABLE_BORDER)
+        canvas.setLineWidth(0.5)
+        canvas.line(20 * mm, 18 * mm, page_width - 20 * mm, 18 * mm)
+
+        # Left: branding
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(BRAND_MUTED)
+        canvas.drawString(20 * mm, 14 * mm, "TransitOps Fleet Management  •  Confidential")
+
+        # Right: page number
+        canvas.drawRightString(page_width - 20 * mm, 14 * mm, f"Page {doc.page}")
+
+        canvas.restoreState()
+
     @staticmethod
     def pdf_bytes(fleet_data: list[dict] | None = None, *, revenue_rate: float = 40.0, reminder_days: int = 30) -> bytes:
         """Return a fully-formatted PDF as raw bytes.
@@ -308,12 +330,23 @@ class ReportService:
         # Header
         elements.extend(ReportService._build_header(now))
 
-        # KPI cards
+        # KPI cards + data table
         rows = fleet_data or []
         if rows:
             elements.extend(ReportService._build_kpi_summary(rows, revenue_rate, reminder_days))
-            # Data table
             elements.extend(ReportService._build_data_table(rows))
+        else:
+            elements.append(Spacer(1, 40))
+            elements.append(
+                Paragraph(
+                    "No vehicle data available. Add vehicles and log trips to see operational metrics.",
+                    ParagraphStyle("Empty", fontName="Helvetica", fontSize=11, textColor=BRAND_MUTED, alignment=1),
+                )
+            )
 
-        doc.build(elements)
+        doc.build(
+            elements,
+            onFirstPage=ReportService._draw_footer,
+            onLaterPages=ReportService._draw_footer,
+        )
         return buf.getvalue()
