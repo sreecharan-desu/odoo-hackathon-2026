@@ -183,6 +183,7 @@ erDiagram
 | Vehicle document management | Not required for core demo |
 | Search, filters, sorting | Partial on list pages |
 | Dark mode toggle | App ships with a dark UI |
+| Kubernetes / Skaffold | Optional — see note below |
 
 ---
 
@@ -202,6 +203,39 @@ apps/api/   FastAPI — controllers → services → models
 apps/web/   React SPA (role-scoped nav)
 docker/     Compose helpers
 docs/       Architecture, demo, stack
+k8s/        Optional Kubernetes manifests (future scaling)
+skaffold.yaml   Optional Skaffold dev workflow config
+```
+
+### ☸️ Kubernetes — Optional Future Enhancement
+
+> **Not required to run the project.** The standard setup is Docker Compose (see Quick start above).
+
+The `k8s/` directory and `skaffold.yaml` were contributed as a **forward-looking, production-scaling path** for when the platform outgrows a single Docker host. They are **not wired into the default development or demo workflow**.
+
+| Manifest | Purpose |
+|----------|---------|
+| `k8s/postgres-deployment-and-service.yaml` | PostgreSQL pod + ClusterIP service |
+| `k8s/database-persistent-volume-claim.yaml` | 2 Gi persistent volume for data durability |
+| `k8s/backend-deployment-and-service.yaml` | FastAPI pod + ClusterIP service |
+| `k8s/frontend-deployment-and-service.yaml` | React/Nginx pod + NodePort service |
+| `k8s/ingress.yaml` | NGINX Ingress — routes `/api` → API, `/` → Web |
+| `skaffold.yaml` | Skaffold build & deploy pipeline for local K8s dev |
+
+**When would you actually use this?**
+- Horizontal scaling (multiple API replicas behind a load balancer)
+- Zero-downtime rolling deploys via `kubectl rollout`
+- Managed cloud clusters (GKE, EKS, AKS)
+- Environments where Docker Compose is not available
+
+**To try it** (requires a running cluster such as minikube or kind):
+
+```bash
+# One-shot apply
+kubectl apply -f k8s/
+
+# Or iterative dev with live reload
+skaffold dev
 ```
 
 ---
