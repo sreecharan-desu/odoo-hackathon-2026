@@ -1,3 +1,15 @@
 export const endpoints = {
   health: "/api/health",
+  login: "/api/auth/login",
+  register: "/api/auth/register",
+  logout: "/api/auth/logout",
+  me: "/api/auth/me",
+  vehicles: "/api/vehicles",
+  drivers: "/api/drivers",
+  trips: "/api/trips",
+  maintenance: "/api/maintenance",
+  fuelLogs: "/api/fuel-logs",
+  expenses: "/api/expenses",
+  kpis: "/api/dashboard/kpis",
+  reportsCsv: "/api/reports/operational.csv",
 } as const;
