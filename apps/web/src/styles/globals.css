@@ -226,3 +226,34 @@ body {
   .container { padding: 0 16px; }
   .hide-on-mobile { display: none !important; }
 }
+
+/* pulsing skeleton loading skeleton styles */
+@keyframes skeleton-pulse {
+  0% {
+    background-color: var(--color-surface-2);
+    opacity: 0.6;
+  }
+  50% {
+    background-color: var(--color-border);
+    opacity: 0.85;
+  }
+  100% {
+    background-color: var(--color-surface-2);
+    opacity: 0.6;
+  }
+}
+
+.skeleton-box {
+  display: inline-block;
+  height: 1em;
+  width: 100%;
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}

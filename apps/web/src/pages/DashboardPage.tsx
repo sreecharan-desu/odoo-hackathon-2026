@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, Spinner } from "../components/ui";
+import { Card, Skeleton } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { useAuth } from "../hooks/useAuth";
 import { roleWorkspace } from "../lib/rbac";
@@ -552,9 +552,38 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "100px 0", flexDirection: "column", gap: "16px" }}>
-        <Spinner />
-        <span style={{ fontSize: "0.82rem", color: C.muted }}>Loading dashboard…</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", padding: "20px" }}>
+        {/* Header Skeleton */}
+        <div>
+          <Skeleton width="180px" height={28} />
+          <Skeleton width="320px" height={16} style={{ marginTop: 6 }} />
+        </div>
+
+        {/* KPI Grid Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px" }}>
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} style={{ padding: "16px" }}>
+              <Skeleton width="40%" height={12} />
+              <Skeleton width="60%" height={24} style={{ marginTop: 8 }} />
+            </Card>
+          ))}
+        </div>
+
+        {/* Dynamic Split Layout Skeletons */}
+        <div style={{ display: "flex", gap: "24px", flexDirection: "row", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: "300px" }}>
+            <Card style={{ padding: "20px" }}>
+              <Skeleton width="30%" height={16} style={{ marginBottom: 16 }} />
+              <Skeleton width="100%" height={180} />
+            </Card>
+          </div>
+          <div style={{ flex: 1, minWidth: "300px" }}>
+            <Card style={{ padding: "20px" }}>
+              <Skeleton width="30%" height={16} style={{ marginBottom: 16 }} />
+              <Skeleton width="100%" height={180} />
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
