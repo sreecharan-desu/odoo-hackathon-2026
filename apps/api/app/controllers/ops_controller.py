@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 from email.message import EmailMessage
 import smtplib
 
@@ -151,12 +151,17 @@ def operational_pdf(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
 ) -> Response:
-    _ = db
-    pdf = ReportService.pdf_bytes()
+    fleet_data = DashboardService.operational_costs_all(db)
+    pdf = ReportService.pdf_bytes(
+        fleet_data,
+        revenue_rate=settings.estimated_freight_revenue_per_km,
+        reminder_days=settings.license_reminder_days,
+    )
+    today = date.today().isoformat()
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=operational_report.pdf"},
+        headers={"Content-Disposition": f"attachment; filename=transitops_report_{today}.pdf"},
     )
 
 
@@ -301,12 +306,17 @@ def operational_pdf(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
 ) -> Response:
-    _ = db  # keeps signature aligned with other report endpoints
-    pdf = ReportService.pdf_bytes()
+    fleet_data = DashboardService.operational_costs_all(db)
+    pdf = ReportService.pdf_bytes(
+        fleet_data,
+        revenue_rate=settings.estimated_freight_revenue_per_km,
+        reminder_days=settings.license_reminder_days,
+    )
+    today = date.today().isoformat()
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=operational_report.pdf"},
+        headers={"Content-Disposition": f"attachment; filename=transitops_report_{today}.pdf"},
     )
 
 @router.get("/drivers/license-reminders", response_model=list[dict])
