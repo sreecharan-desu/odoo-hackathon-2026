@@ -1,3 +1,6 @@
+# Prefer running from repo root: `docker compose up --build`
+# This file mirrors root docker-compose.yml for scripts that use -f docker/compose.yml
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,7 +42,7 @@ services:
     build:
       context: ../apps/web
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-}
     container_name: transitops_web
     restart: unless-stopped
     depends_on:
