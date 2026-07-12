@@ -1,13 +1,13 @@
-/* TransitOps Theme */
+/* TransitOps Theme - Dark Fleet Ops */
 
 :root {
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-primary: #0284c7; /* Functional blue */
-  --color-primary-hover: #0369a1;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-bg: #0f172a;       /* Slate 900 */
+  --color-surface: #1e293b;  /* Slate 800 */
+  --color-primary: #0ea5e9;  /* Sky 500 */
+  --color-primary-hover: #0284c7; /* Sky 600 */
+  --color-text: #f8fafc;     /* Slate 50 */
+  --color-muted: #94a3b8;    /* Slate 400 */
+  --color-border: #334155;   /* Slate 700 */
   
   /* Status Colors */
   --color-success: #10b981; /* Green */
@@ -48,7 +48,7 @@ a {
   border-radius: var(--radius);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .button {
@@ -59,21 +59,27 @@ a {
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .button:hover {
   background: var(--color-primary-hover);
 }
 
+.button:active {
+  transform: translateY(1px);
+}
+
 .button--ghost {
   background: transparent;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .button--ghost:hover {
-  background: rgba(2, 132, 199, 0.05);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* KpiCard */
@@ -90,8 +96,8 @@ a {
   letter-spacing: 0.05em;
 }
 .kpi-card-value {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: var(--color-text);
 }
 
@@ -99,12 +105,12 @@ a {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.05em;
 }
 
 /* Simple Table styles */
@@ -114,50 +120,54 @@ a {
 }
 .transit-table th,
 .transit-table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   text-align: left;
   border-bottom: 1px solid var(--color-border);
 }
 .transit-table th {
   color: var(--color-muted);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.transit-table tr {
+  transition: background 0.15s;
 }
 .transit-table tr:hover td {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.03);
 }
 
-/* Sidebar Nav styles */
-.sidebar-nav-item {
-  display: block;
-  padding: var(--space-2) var(--space-3);
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px var(--space-4);
   color: var(--color-muted);
+  text-align: center;
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius);
-  margin-bottom: var(--space-1);
-  font-weight: 500;
-  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.01);
 }
-.sidebar-nav-item:hover {
-  background: #f1f5f9;
+.empty-state h3 {
+  margin: 0 0 var(--space-1);
   color: var(--color-text);
+  font-size: 1.125rem;
 }
-.sidebar-nav-item--active {
-  background: var(--color-primary);
-  color: white;
-}
-.sidebar-nav-item--active:hover {
-  background: var(--color-primary-hover);
-  color: white;
+.empty-state p {
+  margin: 0;
+  font-size: 0.9375rem;
 }
 
 /* Utils */
 .spinner {
   display: inline-block;
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
+  width: 1.25em;
+  height: 1.25em;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-right-color: currentColor;
   border-radius: 50%;
   animation: spinner-spin 0.75s linear infinite;
 }
