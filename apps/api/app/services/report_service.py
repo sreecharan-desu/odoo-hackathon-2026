@@ -324,6 +324,84 @@ class ReportService:
 
         return [section_title, bd_table, Spacer(1, 16)]
 
+    # ── Top/Bottom performers ──────────────────────────────────
+    @staticmethod
+    def _build_highlights(rows: list[dict]) -> list:
+        """Show best and worst performing vehicles."""
+        if len(rows) < 2:
+            return []
+
+        HIGHLIGHT_LABEL = ParagraphStyle("HLLabel", fontName="Helvetica", fontSize=8, textColor=BRAND_DARK)
+        HIGHLIGHT_VALUE = ParagraphStyle("HLValue", fontName="Helvetica-Bold", fontSize=8, textColor=BRAND_DARK)
+
+        # Sort by ROI
+        with_roi = [v for v in rows if v.get("roi") is not None]
+        best_roi = max(with_roi, key=lambda v: v["roi"]) if with_roi else None
+        worst_roi = min(with_roi, key=lambda v: v["roi"]) if with_roi else None
+
+        # Sort by efficiency
+        with_eff = [v for v in rows if v.get("fuel_efficiency_km_per_l") and v["fuel_efficiency_km_per_l"] > 0]
+        best_eff = max(with_eff, key=lambda v: v["fuel_efficiency_km_per_l"]) if with_eff else None
+
+        # Most expensive to operate
+        most_costly = max(rows, key=lambda v: v.get("total_operational_cost", 0))
+
+        highlight_data = [
+            [
+                Paragraph("Metric", ParagraphStyle("HLH", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+                Paragraph("Vehicle", ParagraphStyle("HLH2", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+                Paragraph("Value", ParagraphStyle("HLH3", fontName="Helvetica-Bold", fontSize=8, textColor=colors.white)),
+            ],
+        ]
+
+        if best_roi:
+            highlight_data.append([
+                Paragraph("Best ROI", HIGHLIGHT_LABEL),
+                Paragraph(best_roi["registration_number"], HIGHLIGHT_VALUE),
+                Paragraph(_fmt_roi(best_roi["roi"]), ParagraphStyle("HLGS", fontName="Helvetica-Bold", fontSize=8, textColor=BRAND_SUCCESS)),
+            ])
+        if worst_roi:
+            highlight_data.append([
+                Paragraph("Worst ROI", HIGHLIGHT_LABEL),
+                Paragraph(worst_roi["registration_number"], HIGHLIGHT_VALUE),
+                Paragraph(_fmt_roi(worst_roi["roi"]), ParagraphStyle("HLRS", fontName="Helvetica-Bold", fontSize=8, textColor=BRAND_DANGER)),
+            ])
+        if best_eff:
+            highlight_data.append([
+                Paragraph("Best Fuel Efficiency", HIGHLIGHT_LABEL),
+                Paragraph(best_eff["registration_number"], HIGHLIGHT_VALUE),
+                Paragraph(f"{best_eff['fuel_efficiency_km_per_l']:.1f} km/L", HIGHLIGHT_VALUE),
+            ])
+        highlight_data.append([
+            Paragraph("Highest Ops Cost", HIGHLIGHT_LABEL),
+            Paragraph(most_costly.get("registration_number", ""), HIGHLIGHT_VALUE),
+            Paragraph(_fmt_inr(most_costly.get("total_operational_cost", 0)), ParagraphStyle("HLWC", fontName="Helvetica-Bold", fontSize=8, textColor=BRAND_WARNING)),
+        ])
+
+        hl_table = Table(highlight_data, colWidths=[140, 130, 100])
+        hl_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+
+        # Alternating rows
+        for i in range(1, len(highlight_data)):
+            if i % 2 == 0:
+                hl_table_style = ("BACKGROUND", (0, i), (-1, i), ROW_ALT_BG)
+                hl_table.setStyle(TableStyle([hl_table_style]))
+
+        section_title = Paragraph(
+            "Performance Highlights",
+            ParagraphStyle("HighlightsTitle", fontName="Helvetica-Bold", fontSize=12, textColor=BRAND_DARK, spaceAfter=8),
+        )
+
+        return [section_title, hl_table, Spacer(1, 16)]
+
     # ── Footer callback ─────────────────────────────────────────
     @staticmethod
     def _draw_footer(canvas, doc):
@@ -384,6 +462,7 @@ class ReportService:
             elements.extend(ReportService._build_kpi_summary(rows, revenue_rate, reminder_days))
             elements.extend(ReportService._build_data_table(rows))
             elements.extend(ReportService._build_cost_breakdown(rows))
+            elements.extend(ReportService._build_highlights(rows))
         else:
             elements.append(Spacer(1, 40))
             elements.append(
