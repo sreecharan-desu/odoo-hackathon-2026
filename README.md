@@ -1,8 +1,8 @@
 # TransitOps
 
-**Smart Transport Operations Platform**
+**Smart Transport Operations Platform** · Odoo Hackathon 2026 (8 hours)
 
-One place to run a fleet: vehicles, drivers, trip dispatch, maintenance, fuel & expenses, and live KPIs — with business rules enforced in the API, not only in the UI.
+End-to-end transport operations: vehicles, drivers, dispatch, maintenance, fuel & expenses, and analytics — with **business rules enforced in the API** and **role-based access** for four operator desks.
 
 **PostgreSQL · FastAPI · React · Docker Compose**
 
@@ -32,56 +32,82 @@ docker compose down                  # stop
 docker compose down -v && docker compose up --build   # wipe DB + reseed
 ```
 
-Full demo script: [docs/DEMO.md](./docs/DEMO.md)
+Walkthrough: [docs/DEMO.md](./docs/DEMO.md) · Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ---
 
-## What it does
+## Objective
 
-| Module | Highlights |
-|--------|------------|
-| **Auth + RBAC** | Fleet Manager, Driver, Safety Officer, Financial Analyst |
-| **Dashboard** | Live KPIs; filter fleet by type, status, region |
-| **Fleet** | Unique plates, capacity, odometer, status lifecycle |
-| **Drivers** | Licenses, expiry checks, safety scores |
-| **Trips** | Draft → Dispatched → Completed / Cancelled; dispatch pool + Available drivers only |
-| **Maintenance** | Open job → vehicle **In Shop** (hidden from dispatch) |
-| **Fuel & expenses** | Cost logging; per-vehicle operational totals |
-| **Analytics** | Fuel efficiency (km/L), vehicle ROI, CSV export — amounts in **₹** |
-
-### Rules enforced by the API
-
-No double-booking · cargo ≤ max load · expired / suspended licenses blocked · In Shop / Retired excluded from dispatch · status updates on dispatch, complete, cancel, and maintenance
+Digitize the full transport operations lifecycle so logistics teams stop relying on spreadsheets and logbooks — reducing scheduling conflicts, missed maintenance, expired licenses, inaccurate expenses, and poor visibility.
 
 ---
 
-## Demo accounts
+## Target users (RBAC)
 
-| Role | Email | Password |
-|------|-------|----------|
-| Fleet Manager | fleet@example.com | Password123! |
-| Driver | driver@example.com | Password123! |
-| Safety Officer | safety@example.com | Password123! |
-| Financial Analyst | finance@example.com | Password123! |
+Role is assigned on the **user account after email/password login** (not chosen on the login form). Each role gets a dedicated nav and home.
 
-Seed includes demo spine: **VAN-05**, **TRK-12** (In Shop), **VAN-99** (Retired), **Alex**, **Expired Sam**.
+| Role | Focus | Demo login |
+|------|--------|------------|
+| **Fleet Manager** | Fleet assets, maintenance, lifecycle, operational efficiency | `fleet@example.com` |
+| **Driver** | Create trips, assign vehicle/driver, monitor deliveries | `driver@example.com` |
+| **Safety Officer** | Driver compliance, license validity, safety scores | `safety@example.com` |
+| **Financial Analyst** | Expenses, fuel, maintenance costs, profitability | `finance@example.com` |
+
+Password for all: `Password123!`
 
 ---
 
-## Stack
+## Functional coverage
 
-| Layer | Choice |
-|-------|--------|
-| Database | PostgreSQL 16 + Alembic migrations |
-| API | FastAPI + SQLAlchemy + JWT / RBAC |
-| Web | React 19 + TypeScript + Vite |
-| Run | Docker Compose (db + api + web) |
+| § | Area | In this repo |
+|---|------|----------------|
+| **3.1** | Auth | Email/password + JWT; only authenticated users reach the app |
+| **3.2** | Dashboard | Active / Available / In Maintenance vehicles; Active & Pending trips; Drivers on duty; Fleet utilization %; filters by type, status, region |
+| **3.3** | Vehicle registry | Unique registration, name/model, type, max load, odometer, acquisition cost, status (`Available`, `On Trip`, `In Shop`, `Retired`) |
+| **3.4** | Drivers | Name, license #, category, expiry, contact, safety score, status (`Available`, `On Trip`, `Off Duty`, `Suspended`) |
+| **3.5** | Trips | Source, destination, available vehicle & driver, cargo, distance; lifecycle **Draft → Dispatched → Completed / Cancelled** |
+| **3.6** | Maintenance | Open log → vehicle **In Shop** (removed from dispatch pool) |
+| **3.7** | Fuel & expenses | Liters, cost, date + other expenses; operational cost per vehicle |
+| **3.8** | Analytics | Fuel efficiency (distance/fuel), utilization, operational cost, vehicle ROI; **CSV export** (PDF optional / not required) |
 
-Owned backend and database — no Firebase / Supabase / Atlas.
+Amounts are shown in **₹**.
 
-More detail: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) · [docs/STACK.md](./docs/STACK.md)
+---
 
-### Data model
+## Mandatory business rules
+
+Enforced in the service layer (not UI-only):
+
+- Vehicle registration number is unique
+- **Retired** / **In Shop** vehicles never appear in dispatch selection
+- Expired license or **Suspended** drivers cannot be assigned
+- Vehicle or driver already **On Trip** cannot take another trip
+- Cargo weight ≤ vehicle max load
+- **Dispatch** → vehicle & driver become **On Trip**
+- **Complete** or **cancel** (dispatched) → both return to **Available**
+- Open maintenance → **In Shop**; close → **Available** (unless Retired)
+
+---
+
+## Example workflow (demo spine)
+
+1. Register vehicle **Van-05** (max 500 kg) → Available  
+2. Register driver **Alex** with a valid license  
+3. Create trip with cargo **450 kg**  
+4. System allows dispatch (450 ≤ 500)  
+5. Vehicle & driver → **On Trip**  
+6. Complete with final odometer + fuel  
+7. Both → **Available**  
+8. Open maintenance (e.g. Oil Change) → vehicle **In Shop**, hidden from dispatch  
+9. Reports refresh operational cost and fuel efficiency  
+
+Seed also includes fail-beats such as **TRK-12** (In Shop), **VAN-99** (Retired), and **Expired Sam**.
+
+---
+
+## Database entities
+
+Users (with role) · Vehicles · Drivers · Trips · Maintenance logs · Fuel logs · Expenses
 
 ```mermaid
 erDiagram
@@ -134,11 +160,46 @@ erDiagram
 
 ---
 
-## Project layout
+## Deliverables checklist
+
+| Deliverable | Status |
+|-------------|--------|
+| Responsive web UI | Done |
+| Authentication with RBAC | Done |
+| CRUD for vehicles & drivers | Done |
+| Trip management + validations | Done |
+| Automatic status transitions | Done |
+| Maintenance workflow | Done |
+| Fuel & expense tracking | Done |
+| Dashboard with KPIs | Done |
+
+### Bonus (optional)
+
+| Bonus | Notes |
+|-------|--------|
+| Charts / visual analytics | Partial (cost bars, dashboard visuals) |
+| PDF export | Optional — CSV is implemented |
+| Email license reminders | Not required for core demo |
+| Vehicle document management | Not required for core demo |
+| Search, filters, sorting | Partial on list pages |
+| Dark mode toggle | App ships with a dark UI |
+
+---
+
+## Stack
+
+| Layer | Choice |
+|-------|--------|
+| Database | PostgreSQL 16 + Alembic |
+| API | FastAPI + SQLAlchemy + JWT / RBAC |
+| Web | React 19 + TypeScript + Vite |
+| Run | Docker Compose (db + api + web) |
+
+Owned backend and database — no Firebase / Supabase / Atlas. See [docs/STACK.md](./docs/STACK.md).
 
 ```
 apps/api/   FastAPI — controllers → services → models
-apps/web/   React SPA
+apps/web/   React SPA (role-scoped nav)
 docker/     Compose helpers
 docs/       Architecture, demo, stack
 ```
@@ -165,4 +226,4 @@ docs/       Architecture, demo, stack
 | Anand Velpuri | Forms, validation, seed |
 | Naga Mohan Madicharla | Design system & UI |
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for branch and PR workflow.
+Branch / PR workflow: [CONTRIBUTING.md](./CONTRIBUTING.md)
