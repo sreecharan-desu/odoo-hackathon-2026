@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Card, Spinner, Button, Pagination } from "../components/ui";
+import { useState, useEffect, useMemo } from "react";
+import { Card, Spinner, Button, Pagination, Skeleton } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
@@ -16,6 +16,7 @@ export default function MaintenancePage() {
   const allowManage = canManageMaintenance(user);
   const chrome = pageChrome(user, "maintenance");
   const [offset, setOffset] = useState(0);
+  
   const { data: logs, total, error, loading, apiMissing, refetch: refetchLogs } = useApiList<MaintenanceLog>(
     endpoints.maintenance,
     { limit: PAGE_SIZE, offset },
@@ -38,21 +39,22 @@ export default function MaintenancePage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch all vehicles on mount to map names/registration numbers in the logs list
   useEffect(() => {
-    if (isAdding) {
-      setLoadingVehicles(true);
-      void apiGetItems<Vehicle>(endpoints.vehicles)
-        .then((res) => setVehicles(res))
-        .catch((err) => console.error(err))
-        .finally(() => setLoadingVehicles(false));
-    }
-  }, [isAdding]);
+    setLoadingVehicles(true);
+    void apiGetItems<Vehicle>(endpoints.vehicles)
+      .then((res) => setVehicles(res))
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingVehicles(false));
+  }, []);
 
   const handleOpenMaintenance = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    // Validate inputs
     const vehErr = validators.required(vehicleId, "Vehicle Selection");
     const titleErr = validators.required(title, "Maintenance Title");
     const costErr = validators.positiveNumber(estimatedCost, "Estimated Cost");
@@ -74,7 +76,6 @@ export default function MaintenancePage() {
         estimated_cost: parseFloat(estimatedCost || "0")
       });
       setIsAdding(false);
-      // Reset form
       setVehicleId("");
       setTitle("");
       setDescription("");
@@ -96,6 +97,37 @@ export default function MaintenancePage() {
     }
   };
 
+  // Compute status summary KPIs
+  const stats = useMemo(() => {
+    const logList = logs || [];
+    const openOrders = logList.filter(l => l.status === "Open");
+    const activeCost = openOrders.reduce((sum, l) => sum + l.estimated_cost, 0);
+    const uniqueVehicles = new Set(openOrders.map(l => l.vehicle_id)).size;
+    const closedCount = logList.filter(l => l.status === "Closed").length;
+    
+    return {
+      activeCount: openOrders.length,
+      activeCost,
+      inShopVehicles: uniqueVehicles,
+      completedCount: closedCount
+    };
+  }, [logs]);
+
+  // Client-side search and status filter mapping
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    return logs.filter(log => {
+      const matchStatus = statusFilter === "All" || log.status === statusFilter;
+      
+      const vehicle = vehicles.find(v => v.id === log.vehicle_id);
+      const vehicleStr = vehicle ? `${vehicle.registration_number} ${vehicle.name}` : `Vehicle #${log.vehicle_id}`;
+      const searchTarget = `${log.title} ${log.description || ""} ${vehicleStr}`.toLowerCase();
+      const matchSearch = searchTarget.includes(searchQuery.toLowerCase());
+      
+      return matchStatus && matchSearch;
+    });
+  }, [logs, statusFilter, searchQuery, vehicles]);
+
   return (
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -106,87 +138,239 @@ export default function MaintenancePage() {
         {allowManage && <Button onClick={() => setIsAdding(true)}>Open Maintenance</Button>}
       </div>
 
-      <Card>
-        {loading && <Spinner />}
-        {apiMissing && (
-          <p className="page-empty">Maintenance API not available yet. Work orders will appear here.</p>
-        )}
-        {error && <p className="error">{error}</p>}
-        {logs && logs.length === 0 && (
-          <p className="page-empty">No maintenance records yet.</p>
-        )}
-        {logs && logs.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ID</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle ID</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Issue / Title</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Description</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Est. Cost</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Opened At</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Closed At</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Status</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                    <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{log.id}</td>
-                    <td style={{ padding: "var(--space-2)" }}>Vehicle #{log.vehicle_id}</td>
-                    <td style={{ padding: "var(--space-2)" }}>{log.title}</td>
-                    <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{log.description ?? "—"}</td>
-                    <td style={{ padding: "var(--space-2)" }}>{formatInr(log.estimated_cost)}</td>
-                    <td style={{ padding: "var(--space-2)", fontSize: "0.85rem" }}>{log.opened_at ? new Date(log.opened_at).toLocaleString() : "—"}</td>
-                    <td style={{ padding: "var(--space-2)", fontSize: "0.85rem" }}>{log.closed_at ? new Date(log.closed_at).toLocaleString() : "—"}</td>
-                    <td style={{ padding: "var(--space-2)" }}>
-                      <span style={{
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        background: log.status === "Closed" ? "rgba(40, 167, 69, 0.15)" : "rgba(255, 193, 7, 0.15)",
-                        color: log.status === "Closed" ? "#28a745" : "#ffc107"
-                      }}>
-                        {log.status === "Open" ? "In Shop" : log.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "var(--space-2)" }}>
-                      {log.status === "Open" && allowManage && (
-                        <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCloseMaintenance(log.id)}>Close Order</Button>
-                      )}
-                      {log.status === "Closed" && (
-                        <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>Completed</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        {/* KPI Summaries */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          <Card style={{ padding: "16px" }}>
+            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>
+              Active Orders
+            </span>
+            <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+              {stats.activeCount}
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--color-muted-2)" }}>Currently in shop</span>
+          </Card>
+          <Card style={{ padding: "16px" }}>
+            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>
+              Estimated active cost
+            </span>
+            <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+              {formatInr(stats.activeCost)}
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--color-muted-2)" }}>Est. maintenance budget</span>
+          </Card>
+          <Card style={{ padding: "16px" }}>
+            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>
+              Vehicles in Shop
+            </span>
+            <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+              {stats.inShopVehicles}
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--color-muted-2)" }}>Unique assets offline</span>
+          </Card>
+          <Card style={{ padding: "16px" }}>
+            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>
+              Completed orders
+            </span>
+            <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+              {stats.completedCount}
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--color-muted-2)" }}>Closed logs this page</span>
+          </Card>
+        </div>
+
+        {/* Filters and Search Bar */}
+        <Card style={{ padding: "16px", display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--color-muted)" }}>Status:</span>
+            {["All", "Open", "Closed"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: "6px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  background: statusFilter === st ? "var(--color-accent)" : "var(--color-surface-2)",
+                  color: statusFilter === st ? "#000" : "var(--color-text)",
+                  transition: "background 0.2s"
+                }}
+              >
+                {st === "All" ? "All Orders" : st === "Open" ? "In Shop" : "Completed"}
+              </button>
+            ))}
           </div>
-        )}
-        {logs && (
-          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
-        )}
-      </Card>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", maxWidth: "320px" }}>
+            <input
+              type="text"
+              placeholder="Search title, description, or plate..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                background: "var(--color-bg)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text)",
+                fontSize: "0.82rem",
+                outline: "none"
+              }}
+            />
+          </div>
+        </Card>
+
+        {/* Main list container */}
+        <div>
+          {loading && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+              {[1, 2, 3, 4].map(i => (
+                <Card key={i} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <Skeleton width="40%" height={16} />
+                    <Skeleton width="20%" height={18} />
+                  </div>
+                  <Skeleton width="90%" height={14} />
+                  <Skeleton width="60%" height={14} />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                    <Skeleton width="30%" height={12} />
+                    <Skeleton width="30%" height={12} />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+          {apiMissing && (
+            <p className="page-empty">Maintenance API not available yet. Work orders will appear here.</p>
+          )}
+          {error && <p className="error">{error}</p>}
+          {logs && filteredLogs.length === 0 && (
+            <p className="page-empty">No matching work orders found.</p>
+          )}
+          
+          {logs && filteredLogs.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+              {filteredLogs.map((log) => {
+                const vehicle = vehicles.find(v => v.id === log.vehicle_id);
+                const vehicleInfo = vehicle ? `${vehicle.registration_number} — ${vehicle.name}` : `Vehicle #${log.vehicle_id}`;
+                const isOpen = log.status === "Open";
+
+                return (
+                  <Card
+                    key={log.id}
+                    style={{
+                      padding: "16px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      border: isOpen ? "1px solid rgba(255, 193, 7, 0.25)" : "1px solid var(--color-border)",
+                      transition: "transform 0.15s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>
+                          Work Order #{log.id}
+                        </span>
+                        <h4 style={{ margin: "4px 0 2px 0", fontSize: "0.92rem", fontWeight: 700, color: "var(--color-text)" }}>
+                          {log.title}
+                        </h4>
+                      </div>
+                      <span style={{
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.03em",
+                        textTransform: "uppercase",
+                        background: isOpen ? "rgba(255, 193, 7, 0.12)" : "rgba(34, 197, 94, 0.12)",
+                        color: isOpen ? "#ffc107" : "#22c55e",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}>
+                        {isOpen && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#ffc107" }} />}
+                        {isOpen ? "In Shop" : "Completed"}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      fontSize: "0.8rem",
+                      color: "var(--color-muted-2)",
+                      background: "var(--color-surface-2)",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--color-border)",
+                      minHeight: "48px",
+                      lineHeight: "1.4"
+                    }}>
+                      {log.description || "No description provided."}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "8px", fontSize: "0.78rem" }}>
+                      <div>
+                        <span style={{ color: "var(--color-muted)", display: "block", fontSize: "0.65rem", textTransform: "uppercase" }}>Vehicle</span>
+                        <strong style={{ color: "var(--color-text)" }}>{vehicleInfo}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "var(--color-muted)", display: "block", fontSize: "0.65rem", textTransform: "uppercase" }}>Est. Cost</span>
+                        <strong style={{ color: "var(--color-text)" }}>{formatInr(log.estimated_cost)}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      borderTop: "1px solid var(--color-border)",
+                      paddingTop: "12px",
+                      marginTop: "4px"
+                    }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontSize: "0.65rem", color: "var(--color-muted-2)" }}>
+                          Opened: {log.opened_at ? new Date(log.opened_at).toLocaleDateString() : "—"}
+                        </span>
+                        {log.closed_at && (
+                          <span style={{ fontSize: "0.65rem", color: "var(--color-success)" }}>
+                            Closed: {new Date(log.closed_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {isOpen && allowManage && (
+                        <Button
+                          style={{
+                            background: "var(--color-success, #22c55e)",
+                            color: "#000",
+                            border: "none",
+                            padding: "5px 12px",
+                            fontSize: "0.74rem",
+                            fontWeight: 700
+                          }}
+                          onClick={() => void handleCloseMaintenance(log.id)}
+                        >
+                          Close Order
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {logs && (
+            <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+          )}
+        </div>
+      </div>
 
       {/* Open Maintenance Modal */}
       {isAdding && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: "var(--space-4)"
-        }}>
+        <div className="modal-overlay">
           <Card style={{ width: "100%", maxWidth: "500px" }}>
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Open Maintenance Log</h3>
             {loadingVehicles ? (
@@ -223,12 +407,12 @@ export default function MaintenancePage() {
                     }}
                   />
                   <div className="form-field">
-                    <label htmlFor="maintDesc" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Detailed Description</label>
+                    <label htmlFor="maintDesc" className="form-field__label">Detailed Description</label>
                     <textarea
                       id="maintDesc"
+                      className="form-field__input"
                       rows={3}
                       placeholder="Specify issue detail, components, or labor details"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)", fontFamily: "inherit" }}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                     />
