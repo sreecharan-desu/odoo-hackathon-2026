@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -81,7 +81,7 @@ class DriverService:
 
     @staticmethod
     def assert_assignable(driver: Driver, today: date | None = None) -> None:
-        today = today or date.today()
+        today = today or datetime.now(timezone.utc).date()
         if driver.status == "Suspended":
             raise AppError(f"Driver '{driver.name}' is Suspended and cannot be assigned")
         if driver.status == "On Trip":

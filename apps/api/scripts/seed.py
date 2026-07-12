@@ -16,12 +16,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.core.security import hash_password  # noqa: E402
+from app.core.config import settings  # noqa: E402
 from app.db.session import Base, SessionLocal, engine  # noqa: E402
 from app.models import Driver, Expense, FuelLog, MaintenanceLog, Trip, User, Vehicle  # noqa: E402
 import app.models  # noqa: E402, F401
 
 DEMO_PASSWORD = "Password123!"
 RNG = random.Random(20260712)
+FREIGHT_REVENUE_PER_KM = settings.estimated_freight_revenue_per_km
 
 REGIONS = ("West", "North", "East", "South", "Central")
 CITIES = (
@@ -452,6 +454,7 @@ def seed() -> None:
               f"Dispatched={db.query(Trip).filter_by(status='Dispatched').count()}, "
               f"Completed={db.query(Trip).filter_by(status='Completed').count()}, "
               f"Cancelled={db.query(Trip).filter_by(status='Cancelled').count()})")
+          print(f"  Freight rate: ₹{FREIGHT_REVENUE_PER_KM:.2f}/km")
         print(f"  Maintenance:  {db.query(MaintenanceLog).count()}")
         print(f"  Fuel logs:    {db.query(FuelLog).count()}")
         print(f"  Expenses:     {db.query(Expense).count()}")
