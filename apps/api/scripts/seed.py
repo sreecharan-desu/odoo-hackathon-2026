@@ -133,6 +133,7 @@ def seed() -> None:
         db.add_all(users)
         db.flush()
         fleet_user_id = users[0].id
+        driver_user_id = users[1].id  # driver@example.com → linked to Alex
 
         # ── Vehicles (demo spine + fleet bulk) ──────────────────────────
         vehicles: list[Vehicle] = [
@@ -218,6 +219,7 @@ def seed() -> None:
                 contact_number="+91-9000000001",
                 safety_score=92,
                 status="Available",
+                user_id=driver_user_id,
             ),
             Driver(
                 name="Expired Sam",
