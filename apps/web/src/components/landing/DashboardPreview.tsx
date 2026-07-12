@@ -17,7 +17,7 @@ function IconTemplate({ path }: { path: string }) {
 function Sidebar() {
   const menu = [
     { label: 'Dashboard', icon: 'dashboard', active: true },
-    { label: 'Live Tracking', icon: 'tracking' },
+    { label: 'Compliance', icon: 'reports' },
     { label: 'Routes', icon: 'routes' },
     { label: 'Fleet', icon: 'fleet' },
     { label: 'Drivers', icon: 'drivers' },
@@ -29,7 +29,7 @@ function Sidebar() {
 
   return (
     <div style={{ width: "220px", borderRight: "1px solid var(--glass-border)", padding: "24px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--accent-cyan)", padding: "0 12px 24px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--color-primary)", padding: "0 12px 24px 12px" }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>
         </svg>
@@ -39,7 +39,7 @@ function Sidebar() {
           display: "flex", alignItems: "center", gap: "12px", 
           padding: "10px 12px", 
           borderRadius: "8px",
-          color: item.active ? "var(--accent-cyan)" : "var(--text-muted)",
+          color: item.active ? "var(--color-primary)" : "var(--text-muted)",
           background: item.active ? "rgba(22, 230, 216, 0.1)" : "transparent",
           fontSize: "13px", fontWeight: item.active ? 600 : 500,
           cursor: "pointer"
@@ -85,7 +85,7 @@ export function DashboardPreview() {
                   <div style={{ color: "var(--text-muted)" }}><IconTemplate path={kpi.icon} /></div>
                 </div>
                 <div style={{ fontSize: "28px", fontWeight: 700, marginBottom: "8px" }}>{kpi.val}</div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}><span style={{ color: "var(--accent-cyan)" }}>{kpi.trend}</span> from last month</div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}><span style={{ color: "var(--color-primary)" }}>{kpi.trend}</span> from last month</div>
               </div>
             ))}
           </div>
@@ -93,34 +93,35 @@ export function DashboardPreview() {
           {/* Bottom Row */}
           <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: "16px", flex: 1, minHeight: 0 }}>
             
-            {/* Live Map Preview */}
+            {/* Active Trips (Replaces Map) */}
             <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "12px", border: "1px solid var(--glass-border)", padding: "20px", display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "16px" }}>Live Map</div>
-              <div style={{ flex: 1, position: "relative", borderRadius: "8px", overflow: "hidden", background: "#06111a", border: "1px solid var(--glass-border)" }}>
-                {/* SVG Network Map Graphic */}
-                <svg width="100%" height="100%" viewBox="0 0 500 300" preserveAspectRatio="none" style={{ opacity: 0.8 }}>
-                  <path d="M50 100 L 150 250 L 250 200 L 350 280 L 480 150" stroke="#3b82f6" strokeWidth="3" fill="none" />
-                  <path d="M20 200 L 100 150 L 250 200 L 300 80 L 450 50" stroke="var(--accent-cyan)" strokeWidth="3" fill="none" />
-                  <path d="M100 50 L 200 120 L 300 80" stroke="#a855f7" strokeWidth="3" fill="none" />
-                  
-                  {/* Nodes */}
-                  <circle cx="150" cy="250" r="8" fill="#3b82f6" />
-                  <circle cx="250" cy="200" r="8" fill="var(--accent-cyan)" />
-                  <circle cx="350" cy="280" r="8" fill="#eab308" />
-                  <circle cx="300" cy="80" r="8" fill="#a855f7" />
-                  <circle cx="100" cy="150" r="8" fill="var(--accent-cyan)" />
-                  
-                  {/* Bus Markers */}
-                  <g transform="translate(250, 200)">
-                    <circle cx="0" cy="0" r="12" fill="white" />
-                    <circle cx="0" cy="0" r="4" fill="var(--bg-primary)" />
-                  </g>
-                  <g transform="translate(100, 150)">
-                    <circle cx="0" cy="0" r="12" fill="var(--accent-cyan)" />
-                    <circle cx="0" cy="0" r="4" fill="var(--bg-primary)" />
-                  </g>
-                </svg>
-              </div>
+              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "20px" }}>Active Trips</div>
+              <table style={{ width: "100%", fontSize: "13px", textAlign: "left", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--glass-border)" }}>
+                    <th style={{ paddingBottom: "12px", fontWeight: 500 }}>Route</th>
+                    <th style={{ paddingBottom: "12px", fontWeight: 500 }}>Vehicle</th>
+                    <th style={{ paddingBottom: "12px", fontWeight: 500 }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                    <td style={{ padding: "12px 0" }}>MG Road &rarr; Banjara Hills</td>
+                    <td>BUS-01A</td>
+                    <td><span style={{ color: "var(--color-primary)" }}>In Transit</span></td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                    <td style={{ padding: "12px 0" }}>Jubilee Hills &rarr; Hitec City</td>
+                    <td>BUS-42B</td>
+                    <td><span style={{ color: "var(--color-primary)" }}>In Transit</span></td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "12px 0" }}>Secunderabad &rarr; Airport</td>
+                    <td>BUS-19X</td>
+                    <td><span style={{ color: "var(--text-muted)" }}>Delayed</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* Charts */}
@@ -131,8 +132,8 @@ export function DashboardPreview() {
                   <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>This Week <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
                 </div>
                 <svg viewBox="0 0 300 120" style={{ width: "100%", height: "120px", marginTop: "16px" }}>
-                  <path d="M 0 100 Q 30 80, 60 90 T 120 60 T 180 80 T 240 40 T 300 50" fill="none" stroke="var(--accent-cyan)" strokeWidth="2" />
-                  <path d="M 0 100 Q 30 80, 60 90 T 120 60 T 180 80 T 240 40 T 300 50 L 300 120 L 0 120 Z" fill="var(--accent-cyan)" opacity="0.1" />
+                  <path d="M 0 100 Q 30 80, 60 90 T 120 60 T 180 80 T 240 40 T 300 50" fill="none" stroke="var(--color-primary)" strokeWidth="2" />
+                  <path d="M 0 100 Q 30 80, 60 90 T 120 60 T 180 80 T 240 40 T 300 50 L 300 120 L 0 120 Z" fill="var(--color-primary)" opacity="0.1" />
                 </svg>
               </div>
               <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
@@ -146,7 +147,7 @@ export function DashboardPreview() {
                     <span>92%</span>
                   </div>
                   <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}>
-                    <div style={{ width: "92%", height: "100%", background: "var(--accent-cyan)", borderRadius: "2px" }} />
+                    <div style={{ width: "92%", height: "100%", background: "var(--color-primary)", borderRadius: "2px" }} />
                   </div>
                 </div>
               </div>

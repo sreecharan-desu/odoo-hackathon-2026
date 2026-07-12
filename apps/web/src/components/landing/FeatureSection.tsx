@@ -21,10 +21,10 @@ function FeatureIcon({ type }: { type: string }) {
 export function FeatureSection() {
   const features = [
     { title: "Fleet Management", desc: "Monitor your entire fleet's health, status, and assignments in one centralized dashboard.", icon: "fleet" },
-    { title: "Real-time GPS", desc: "Track vehicles with sub-second latency and provide accurate ETAs to passengers.", icon: "gps" },
     { title: "Driver Management", desc: "Manage driver schedules, compliance, licenses, and performance metrics.", icon: "driver" },
-    { title: "Route Planning", desc: "Optimize routes dynamically based on traffic, historical data, and real-time conditions.", icon: "route" },
-    { title: "Maintenance", desc: "Predictive maintenance alerts keep your vehicles on the road and reduce downtime.", icon: "maintenance" },
+    { title: "Route Planning", desc: "Optimize routes dynamically based on traffic, historical data, and conditions.", icon: "route" },
+    { title: "Maintenance Alerts", desc: "Predictive alerts keep your vehicles on the road and reduce costly downtime.", icon: "maintenance" },
+    { title: "Smart Scheduling", desc: "Automate trip dispatch and crew assignments across your entire operation.", icon: "analytics" },
     { title: "Passenger Analytics", desc: "Understand ridership trends, peak hours, and revenue metrics instantly.", icon: "analytics" },
   ];
 
@@ -39,10 +39,17 @@ export function FeatureSection() {
 
       <div className="grid-3">
         {features.map((feat, i) => (
-          <div key={i} className="glass-panel" style={{ padding: "32px", display: "flex", flexDirection: "column" }}>
+          <div key={i} style={{
+              padding: "28px",
+              display: "flex",
+              flexDirection: "column",
+              border: "1px solid var(--glass-border)",
+              borderRadius: "12px",
+              background: "var(--glass-bg)",
+            }}>
             <FeatureIcon type={feat.icon} />
-            <h3 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 12px 0" }}>{feat.title}</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "15px", lineHeight: 1.6, margin: 0 }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, margin: "0 0 10px 0" }}>{feat.title}</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
               {feat.desc}
             </p>
           </div>

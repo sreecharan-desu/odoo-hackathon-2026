@@ -63,27 +63,27 @@
   --color-primary-hover: #171717;
 }
 
-/* ── DARK (html.dark) — GetPGN monochrome ───────────── */
+/* ── DARK (html.dark) ───────────────────────────────── */
 html.dark {
   /* Ink / Text */
-  --color-ink:          #f4f4f5;
-  --color-ink-soft:     #d4d4d8;
-  --color-muted:        #b4b4bd;
-  --color-muted-2:      #8b8b94;
-  --color-faint:        #52525b;
+  --color-ink:          #f0fdfa;
+  --color-ink-soft:     #ccfbf1;
+  --color-muted:        #94a3b8;
+  --color-muted-2:      #64748b;
+  --color-faint:        #334155;
 
   /* Paper / Surfaces */
-  --color-paper:        #0b0b0c;
-  --color-surface:      #161618;
-  --color-surface-2:    #202022;
+  --color-paper:        #071318;
+  --color-surface:      #0a1a24;
+  --color-surface-2:    #0f2533;
 
   /* Lines / Borders */
-  --color-line:         #2a2a2d;
-  --color-line-strong:  #3a3a3e;
+  --color-line:         #152e3d;
+  --color-line-strong:  #1e4054;
 
   /* Background / Foreground (compatibility) */
-  --background:         #0b0b0c;
-  --foreground:         #f4f4f5;
+  --background:         #040b10;
+  --foreground:         #f0fdfa;
 
   /* Semantic status */
   --color-positive:     #4ade80;
@@ -106,14 +106,14 @@ html.dark {
   --color-warning:     var(--color-warn);
   --color-error:       var(--color-danger);
 
-  /* Primary button — inverted ink (dark: white btn / black text) */
-  --btn-primary-bg:    #f4f4f5;
-  --btn-primary-text:  #0b0b0c;
-  --btn-primary-hover: #e4e4e7;
+  /* Primary button — cyan */
+  --btn-primary-bg:    #00d4a1;
+  --btn-primary-text:  #040b10;
+  --btn-primary-hover: #14eab8;
 
-  /* Primary accent (nav active, focus rings — monochrome) */
-  --color-primary:       #f4f4f5;
-  --color-primary-hover: #e4e4e7;
+  /* Primary accent (nav active, focus rings) */
+  --color-primary:       #00d4a1;
+  --color-primary-hover: #14eab8;
 }
 
 /* ── Smooth theme transition (skip if reduced-motion) ─── */
