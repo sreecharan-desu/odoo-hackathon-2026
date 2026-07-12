@@ -229,18 +229,18 @@ def seed() -> None:
             ("BUS", "MiniBus", 800, 2000, 1200000, 3200000),
             ("PICK", "Pickup", 600, 1200, 550000, 1100000),
         ]
-        # Status mix for bulk: mostly Available, some On Trip / In Shop / Retired
+        # Status mix for bulk: mostly Available, with a smaller live-ops slice.
         status_cycle = (
-            ["Available"] * 14
-            + ["On Trip"] * 5
-            + ["In Shop"] * 3
+            ["Available"] * 8
+            + ["On Trip"] * 4
+            + ["In Shop"] * 2
             + ["Retired"] * 2
         )
         RNG.shuffle(status_cycle)
 
         n = 0
         for prefix, vtype, lo, hi, cost_lo, cost_hi in specs:
-            for i in range(1, 7):  # 5 types × 6 = 30 + 3 demo = 33 vehicles
+            for i in range(1, SEED_PROFILE["vehicles_per_template"] + 1):
                 n += 1
                 reg = f"{prefix}-{100 + i}"
                 if any(v.registration_number == reg for v in vehicles):
