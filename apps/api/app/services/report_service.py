@@ -113,6 +113,84 @@ class ReportService:
 
         return [header_table, divider, Spacer(1, 14)]
 
+    # ── KPI summary cards ──────────────────────────────────────
+    @staticmethod
+    def _build_kpi_summary(rows: list[dict], revenue_rate: float, reminder_days: int) -> list:
+        """Compute fleet-wide KPIs and render as styled summary cards."""
+        total_vehicles = len(rows)
+        active_vehicles = sum(1 for v in rows if v.get("status") != "Retired")
+        on_trip = sum(1 for v in rows if v.get("status") == "On Trip")
+        utilization = round((on_trip / max(active_vehicles, 1)) * 100, 1)
+
+        efficiencies = [v["fuel_efficiency_km_per_l"] for v in rows if v.get("fuel_efficiency_km_per_l")]
+        avg_eff = round(sum(efficiencies) / len(efficiencies), 1) if efficiencies else 0
+
+        total_fuel = sum(v.get("fuel_cost", 0) for v in rows)
+        total_maint = sum(v.get("maintenance_cost", 0) for v in rows)
+        total_cost = sum(v.get("total_operational_cost", 0) for v in rows)
+        total_revenue = sum(v.get("estimated_revenue", 0) for v in rows)
+
+        kpi_label = ParagraphStyle("KpiLabel", fontName="Helvetica", fontSize=7.5, textColor=BRAND_MUTED)
+        kpi_value = ParagraphStyle("KpiValue", fontName="Helvetica-Bold", fontSize=13, textColor=BRAND_DARK, spaceBefore=2)
+
+        def _card(label: str, value: str) -> Table:
+            t = Table(
+                [[Paragraph(label, kpi_label)], [Paragraph(value, kpi_value)]],
+                colWidths=["100%"],
+            )
+            t.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), ROW_ALT_BG),
+                ("BOX", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+            ]))
+            return t
+
+        cards = [
+            _card("Fleet Size", f"{total_vehicles} vehicles"),
+            _card("Active / On Trip", f"{active_vehicles} / {on_trip}"),
+            _card("Utilization", f"{utilization}%"),
+            _card("Avg Fuel Efficiency", f"{avg_eff} km/L" if avg_eff else "—"),
+        ]
+
+        row1 = Table([cards], colWidths=["25%"] * 4)
+        row1.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ]))
+
+        cards2 = [
+            _card("Total Fuel Cost", _fmt_inr(total_fuel)),
+            _card("Total Maintenance", _fmt_inr(total_maint)),
+            _card("Total Ops Cost", _fmt_inr(total_cost)),
+            _card("Est. Revenue", _fmt_inr(total_revenue)),
+        ]
+
+        row2 = Table([cards2], colWidths=["25%"] * 4)
+        row2.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ]))
+
+        # Section label
+        section_title = Paragraph(
+            "Fleet Overview",
+            ParagraphStyle("SectionTitle", fontName="Helvetica-Bold", fontSize=12, textColor=BRAND_DARK, spaceBefore=0, spaceAfter=6),
+        )
+
+        # Config note
+        config_note = Paragraph(
+            f"Revenue rate: Rs {revenue_rate:.2f}/km  •  License reminder window: {reminder_days} days",
+            ParagraphStyle("ConfigNote", fontName="Helvetica", fontSize=7.5, textColor=BRAND_MUTED, spaceBefore=6),
+        )
+
+        return [section_title, row1, Spacer(1, 6), row2, config_note, Spacer(1, 18)]
+
     @staticmethod
     def pdf_bytes(fleet_data: list[dict] | None = None, *, revenue_rate: float = 40.0, reminder_days: int = 30) -> bytes:
         """Return a fully-formatted PDF as raw bytes.
@@ -144,6 +222,11 @@ class ReportService:
 
         # Header
         elements.extend(ReportService._build_header(now))
+
+        # KPI cards
+        rows = fleet_data or []
+        if rows:
+            elements.extend(ReportService._build_kpi_summary(rows, revenue_rate, reminder_days))
 
         doc.build(elements)
         return buf.getvalue()
