@@ -1,3 +1,3 @@
-from app.services.user_service import UserService
+from __future__ import annotations
 
-__all__ = ["UserService"]
+"""Domain services."""
