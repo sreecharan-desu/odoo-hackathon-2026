@@ -112,7 +112,7 @@ LAST_NAMES = (
 
 SEED_PROFILE = {
     "users": 6,
-    "vehicle_templates": 6,
+    "vehicle_templates": 5,
     "vehicles_per_template": 4,
     "driver_bulk": 10,
     "active_dispatches": 4,
@@ -240,7 +240,7 @@ def seed() -> None:
         RNG.shuffle(status_cycle)
 
         n = 0
-        for prefix, vtype, lo, hi, cost_lo, cost_hi in specs:
+        for prefix, vtype, lo, hi, cost_lo, cost_hi in specs[: SEED_PROFILE["vehicle_templates"]]:
             for i in range(1, SEED_PROFILE["vehicles_per_template"] + 1):
                 n += 1
                 reg = f"{prefix}-{100 + i}"
