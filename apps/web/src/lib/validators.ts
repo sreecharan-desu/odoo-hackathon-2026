@@ -73,8 +73,8 @@ export function licenseNotExpired(
   if (Number.isNaN(expiry.getTime())) return "License expiry date is invalid";
 
   const today = new Date(referenceDate);
-  today.setHours(0, 0, 0, 0);
-  expiry.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
+  expiry.setUTCHours(0, 0, 0, 0);
 
   if (expiry >= today) return null;
   const isoDate = trimmed.slice(0, 10);

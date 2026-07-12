@@ -494,10 +494,12 @@ export default function TripsPage() {
                               )}
                             </div>
                           )}
-                          {t.status === "Dispatched" && allowSchedule && (
+                          {(t.status === "Draft" || t.status === "Dispatched") && allowSchedule && (
                             <div style={{ display: "flex", gap: "4px" }}>
-                              <Button style={{ background: "#28a745", padding: "2px 6px", fontSize: "0.8rem", color: "#fff" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
-                              {allowDispatch && (
+                              {t.status === "Dispatched" && (
+                                <Button style={{ background: "#28a745", padding: "2px 6px", fontSize: "0.8rem", color: "#fff" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
+                              )}
+                              {allowSchedule && (
                                 <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "2px 6px", fontSize: "0.8rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
                               )}
                             </div>
