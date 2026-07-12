@@ -3,6 +3,7 @@ import { Navigate, useLocation, Link } from "react-router-dom";
 import { Spinner } from "../components/ui";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
+import { canAccessRoute, getHomeRoute } from "../lib/rbac";
 import { ROUTES } from "../types";
 import "../components/layout/shell.css";
 
@@ -25,13 +26,6 @@ const LockIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>
-);
-
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5, cursor: "pointer" }}>
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
@@ -42,11 +36,13 @@ const EyeIcon = () => (
 export default function LoginPage() {
   const { user, loading, login } = useAuth();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from ?? ROUTES.dashboard;
+  const requested = (location.state as LocationState | null)?.from;
+  const home = getHomeRoute(user);
+  const redirectTo =
+    user && requested && canAccessRoute(user, requested) ? requested : home;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState("fleet_manager");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -62,7 +58,7 @@ export default function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={redirectTo || ROUTES.dashboard} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -84,8 +80,8 @@ export default function LoginPage() {
       await login({ email, password });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
-      if (message.toLowerCase().includes("credentials") || message.toLowerCase().includes("unauthorized")) {
-        setError("Invalid credentials. Account locked after 5 failed attempts.");
+      if (message.toLowerCase().includes("credentials") || message.toLowerCase().includes("unauthorized") || message.toLowerCase().includes("password")) {
+        setError("Invalid email or password.");
       } else {
         setError(message);
       }
@@ -225,30 +221,9 @@ export default function LoginPage() {
               {passwordError && <div style={{ color: "#f85149", fontSize: "12px", marginTop: "6px" }}>{passwordError}</div>}
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Role (RBAC)</label>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <div style={{ position: "absolute", left: "14px", display: "flex", pointerEvents: "none" }}>
-                  <UserIcon />
-                </div>
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  style={{
-                    width: "100%", padding: "12px 14px 12px 42px", background: "#0a0a0a", border: "1px solid #222",
-                    borderRadius: "8px", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box", appearance: "none", cursor: "pointer"
-                  }}
-                >
-                  <option value="fleet_manager">Fleet Manager</option>
-                  <option value="driver">Driver</option>
-                  <option value="safety_officer">Safety Officer</option>
-                  <option value="financial_analyst">Financial Analyst</option>
-                </select>
-                <div style={{ position: "absolute", right: "14px", display: "flex", pointerEvents: "none", opacity: 0.5 }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
-              </div>
-            </div>
+            <p style={{ margin: 0, color: "#8b949e", fontSize: "12px", lineHeight: 1.45 }}>
+              Role is assigned on your account after sign-in (Fleet Manager, Driver, Safety Officer, or Financial Analyst).
+            </p>
 
             {error && (
               <div style={{ padding: "12px", background: "rgba(248, 81, 73, 0.1)", border: "1px solid rgba(248, 81, 73, 0.4)", borderRadius: "8px", color: "#f85149", fontSize: "13px", textAlign: "center" }}>
