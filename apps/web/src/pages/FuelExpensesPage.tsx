@@ -1,31 +1,50 @@
-import { useState, useEffect } from "react";
-import { Card, Spinner, Button, Pagination } from "../components/ui";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Card, Spinner, Button } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
-import { useApiList } from "../hooks/useApiList";
 import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
 import { canLogFuel, canManageExpenses, pageChrome } from "../lib/rbac";
 import { formatInr } from "../constants";
 import type { FuelLog, Expense, Vehicle } from "../types";
 
-const PAGE_SIZE = 25;
-
 export default function FuelExpensesPage() {
   const { user } = useAuth();
   const allowFuel = canLogFuel(user);
   const allowExpense = canManageExpenses(user);
   const chrome = pageChrome(user, "fuel");
-  const [fuelOffset, setFuelOffset] = useState(0);
-  const [expenseOffset, setExpenseOffset] = useState(0);
-  const { data: fuelLogs, total: fuelTotal, error: fuelError, loading: fuelLoading, refetch: refetchFuel } = useApiList<FuelLog>(
-    endpoints.fuelLogs,
-    { limit: PAGE_SIZE, offset: fuelOffset },
-  );
-  const { data: expenses, total: expenseTotal, error: expenseError, loading: expenseLoading, refetch: refetchExpenses } = useApiList<Expense>(
-    endpoints.expenses,
-    { limit: PAGE_SIZE, offset: expenseOffset },
-  );
+
+  const [graphCategory, setGraphCategory] = useState("All");
+  const [allFuelLogs, setAllFuelLogs] = useState<FuelLog[]>([]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [loadingGraph, setLoadingGraph] = useState(true);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
+  const fetchGraphData = async () => {
+    setLoadingGraph(true);
+    setGraphError(null);
+    try {
+      const [fuelRes, expRes] = await Promise.all([
+        apiGetItems<FuelLog>(endpoints.fuelLogs, { limit: 100 }),
+        apiGetItems<Expense>(endpoints.expenses, { limit: 100 }),
+      ]);
+      setAllFuelLogs(fuelRes);
+      setAllExpenses(expRes);
+    } catch (err) {
+      console.error("Failed to load graph data", err);
+      setGraphError(err instanceof Error ? err.message : "Failed to load operating data");
+    } finally {
+      setLoadingGraph(false);
+    }
+  };
+
+  const fetchedRef = useRef(false);
+  useEffect(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      void fetchGraphData();
+    }
+  }, []);
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
@@ -70,7 +89,6 @@ export default function FuelExpensesPage() {
     e.preventDefault();
     setFormError(null);
 
-    // Validate inputs
     const vehErr = validators.required(vehicleId, "Vehicle Selection");
     const litersErr = validators.positiveNumber(liters, "Liters");
     const costErr = validators.positiveNumber(cost, "Total Cost");
@@ -98,7 +116,7 @@ export default function FuelExpensesPage() {
       setLiters("");
       setCost("");
       setTripId("");
-      void refetchFuel();
+      void fetchGraphData();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to log fuel");
     } finally {
@@ -110,7 +128,6 @@ export default function FuelExpensesPage() {
     e.preventDefault();
     setFormError(null);
 
-    // Validate inputs
     const vehErr = validators.required(vehicleId, "Vehicle Selection");
     const catErr = validators.required(category, "Category");
     const amtErr = validators.positiveNumber(amount, "Amount");
@@ -136,13 +153,95 @@ export default function FuelExpensesPage() {
       setCategory("");
       setAmount("");
       setNote("");
-      void refetchExpenses();
+      void fetchGraphData();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to log expense");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const stats = useMemo(() => {
+    const fuelList = allFuelLogs;
+    const expenseList = allExpenses;
+
+    const totalFuelCost = fuelList.reduce((sum, log) => sum + log.cost, 0);
+    const totalFuelLiters = fuelList.reduce((sum, log) => sum + log.liters, 0);
+    const totalExpenseCost = expenseList.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalSpend = totalFuelCost + totalExpenseCost;
+    
+    const avgFuelPrice = totalFuelLiters > 0 ? totalFuelCost / totalFuelLiters : 0;
+    const refillCount = fuelList.length;
+
+    return { totalSpend, totalFuelCost, totalExpenseCost, refillCount, avgFuelPrice };
+  }, [allFuelLogs, allExpenses]);
+
+  const chartData = useMemo(() => {
+    const list: { date: Date; amount: number; type: string }[] = [];
+    
+    if (graphCategory === "All" || graphCategory === "Fuel") {
+      allFuelLogs.forEach(log => {
+        if (log.logged_at) {
+          list.push({
+            date: new Date(log.logged_at),
+            amount: log.cost,
+            type: "Fuel"
+          });
+        }
+      });
+    }
+
+    allExpenses.forEach(exp => {
+      if (exp.logged_at) {
+        if (graphCategory === "All" || graphCategory === exp.category) {
+          list.push({
+            date: new Date(exp.logged_at),
+            amount: exp.amount,
+            type: exp.category
+          });
+        }
+      }
+    });
+
+    list.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const groups: Record<string, { total: number; timestamp: number }> = {};
+    list.forEach(item => {
+      const day = item.date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (!groups[day]) {
+        groups[day] = { total: 0, timestamp: item.date.getTime() };
+      }
+      groups[day].total += item.amount;
+    });
+
+    return Object.entries(groups)
+      .map(([day, val]) => ({ day, ...val }))
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .slice(-12);
+  }, [allFuelLogs, allExpenses, graphCategory]);
+
+  const maxVal = Math.max(...chartData.map(d => d.total), 1000);
+  const width = 800;
+  const height = 220;
+  const paddingX = 55;
+  const paddingY = 30;
+
+  const points = chartData.map((d, i) => {
+    const x = paddingX + (i / Math.max(chartData.length - 1, 1)) * (width - 2 * paddingX);
+    const y = height - paddingY - (d.total / maxVal) * (height - 2 * paddingY);
+    return { x, y, label: d.day, val: d.total };
+  });
+
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const areaD = points.length > 0 
+    ? `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`
+    : "";
+
+  const gridLines = [0.25, 0.5, 0.75, 1].map(pct => {
+    const y = height - paddingY - pct * (height - 2 * paddingY);
+    const valLabel = `₹${(pct * maxVal).toFixed(0)}`;
+    return { y, valLabel };
+  });
 
   return (
     <>
@@ -158,98 +257,161 @@ export default function FuelExpensesPage() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {/* Fuel Logs Section */}
-        <Card>
-          <h3 style={{ margin: "0 0 var(--space-3)" }}>Fuel Logs</h3>
-          {fuelLoading && <Spinner />}
-          {fuelError && <p className="error">{fuelError}</p>}
-          {fuelLogs && fuelLogs.length === 0 && (
-            <p className="page-empty">No fuel records logged yet.</p>
-          )}
-          {fuelLogs && fuelLogs.length > 0 && (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ID</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle ID</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Liters</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Total Cost</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Trip ID</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Logged At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fuelLogs.map((log) => (
-                    <tr key={log.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                      <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{log.id}</td>
-                      <td style={{ padding: "var(--space-2)" }}>Vehicle #{log.vehicle_id}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{log.liters} L</td>
-                      <td style={{ padding: "var(--space-2)" }}>{formatInr(log.cost)}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{log.trip_id ? `#${log.trip_id}` : "—"}</td>
-                      <td style={{ padding: "var(--space-2)", fontSize: "0.85rem", color: "var(--color-muted)" }}>
-                        {log.logged_at ? new Date(log.logged_at).toLocaleString() : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* KPI Summary Cards & Spend Graph */}
+        <Card style={{ padding: "20px" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "0.72rem", letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>
+            Operating Spend Overview
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Total Spend</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.totalSpend)}</div>
             </div>
-          )}
-          {fuelLogs && (
-            <Pagination total={fuelTotal} limit={PAGE_SIZE} offset={fuelOffset} onChange={setFuelOffset} />
-          )}
-        </Card>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Fuel Refills</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.refillCount} refills</div>
+            </div>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Avg Fuel Price</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.avgFuelPrice)}/L</div>
+            </div>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Other Expenses</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.totalExpenseCost)}</div>
+            </div>
+          </div>
 
-        {/* Expenses Section */}
-        <Card>
-          <h3 style={{ margin: "0 0 var(--space-3)" }}>Other Operating Expenses</h3>
-          {expenseLoading && <Spinner />}
-          {expenseError && <p className="error">{expenseError}</p>}
-          {expenses && expenses.length === 0 && (
-            <p className="page-empty">No expenses logged yet.</p>
-          )}
-          {expenses && expenses.length > 0 && (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ID</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle ID</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Category</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Amount</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Note</th>
-                    <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Logged At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map((exp) => (
-                    <tr key={exp.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                      <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{exp.id}</td>
-                      <td style={{ padding: "var(--space-2)" }}>Vehicle #{exp.vehicle_id}</td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        <span style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          background: "rgba(255,255,255,0.06)",
-                          color: "var(--color-text)"
-                        }}>{exp.category}</span>
-                      </td>
-                      <td style={{ padding: "var(--space-2)" }}>{formatInr(exp.amount)}</td>
-                      <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{exp.note ?? "—"}</td>
-                      <td style={{ padding: "var(--space-2)", fontSize: "0.85rem", color: "var(--color-muted)" }}>
-                        {exp.logged_at ? new Date(exp.logged_at).toLocaleString() : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Graph Title & Filter Category selector */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--color-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>SPEND TREND</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>Category:</span>
+              <select
+                value={graphCategory}
+                onChange={(e) => setGraphCategory(e.target.value)}
+                style={{
+                  padding: "5px 10px",
+                  borderRadius: "6px",
+                  background: "var(--color-bg)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text)",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="All">All Operating Spend</option>
+                <option value="Fuel">Fuel Refills</option>
+                <option value="Toll">Toll Fees</option>
+                <option value="Permit">Permits</option>
+                <option value="Fine">Fines / Penalties</option>
+                <option value="Cleaning">Cleaning / Maintenance</option>
+                <option value="Other">Other Expenses</option>
+              </select>
             </div>
-          )}
-          {expenses && (
-            <Pagination total={expenseTotal} limit={PAGE_SIZE} offset={expenseOffset} onChange={setExpenseOffset} />
+          </div>
+
+          {/* SVG Spend Graph */}
+          {loadingGraph ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}><Spinner /></div>
+          ) : graphError ? (
+            <p className="error" style={{ textAlign: "center", padding: "20px" }}>{graphError}</p>
+          ) : chartData.length > 0 ? (
+            <div style={{ width: "100%", overflowX: "auto" }}>
+              <div style={{ minWidth: "800px", position: "relative" }}>
+                <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0.15" />
+                      <stop offset="100%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Grid Lines */}
+                  {gridLines.map((g, idx) => (
+                    <g key={idx}>
+                      <line
+                        x1={paddingX}
+                        y1={g.y}
+                        x2={width - paddingX}
+                        y2={g.y}
+                        stroke="var(--color-border)"
+                        strokeDasharray="4 4"
+                      />
+                      <text
+                        x={paddingX - 10}
+                        y={g.y + 4}
+                        fill="var(--color-muted)"
+                        fontSize="10"
+                        fontWeight="600"
+                        textAnchor="end"
+                      >
+                        {g.valLabel}
+                      </text>
+                    </g>
+                  ))}
+
+                  {/* Area path */}
+                  {areaD && (
+                    <path
+                      d={areaD}
+                      fill="url(#areaGrad)"
+                    />
+                  )}
+
+                  {/* Line path */}
+                  {pathD && (
+                    <path
+                      d={pathD}
+                      fill="none"
+                      stroke="var(--color-primary, #3b82f6)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+
+                  {/* Day labels & points */}
+                  {points.map((p, idx) => (
+                    <g key={idx}>
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r="4"
+                        fill="var(--color-paper)"
+                        stroke="var(--color-primary, #3b82f6)"
+                        strokeWidth="2.5"
+                      />
+                      <text
+                        x={p.x}
+                        y={height - 10}
+                        fill="var(--color-muted)"
+                        fontSize="10"
+                        fontWeight="600"
+                        textAnchor="middle"
+                      >
+                        {p.label}
+                      </text>
+                      <text
+                        x={p.x}
+                        y={p.y - 10}
+                        fill="var(--color-text)"
+                        fontSize="9"
+                        fontWeight="700"
+                        textAnchor="middle"
+                      >
+                        ₹{p.val.toFixed(0)}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--color-muted)", fontSize: "0.875rem", border: "1px dashed var(--color-border)", borderRadius: "8px" }}>
+              No spend data available to plot trend graph for selected category.
+            </div>
           )}
         </Card>
       </div>

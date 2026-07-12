@@ -1,8 +1,17 @@
-/* ─── Shell layout ──────────────────────────────────────── */
-.shell {
-  display: flex;
-  min-height: 100vh;
-  background: var(--color-bg);
+@media (min-width: 769px) {
+  .shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--color-bg);
+  }
+}
+@media (max-width: 768px) {
+  .shell {
+    display: flex;
+    min-height: 100vh;
+    background: var(--color-bg);
+  }
 }
 
 /* ─── Sidebar ───────────────────────────────────────────── */
@@ -427,4 +436,47 @@
   border-color: var(--color-line-strong);
   box-shadow: var(--shadow-soft);
   transform: translateY(-2px);
+}
+
+/* ─── Trips Page Split Panes ────────────────────────────── */
+@media (min-width: 769px) {
+  .shell-main:has(.trips-page-container) {
+    overflow: hidden;
+  }
+  .trips-page-container {
+    height: calc(100vh - 64px - 48px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .trips-split-layout {
+    display: flex;
+    gap: var(--space-4);
+    flex: 1;
+    min-height: 0;
+  }
+  .trips-pane-left {
+    flex: 1.8;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  .trips-pane-right {
+    flex: 1.2;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+@media (max-width: 768px) {
+  .trips-split-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
 }
