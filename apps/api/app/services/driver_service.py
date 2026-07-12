@@ -36,6 +36,10 @@ class DriverService:
         exists = db.query(Driver).filter(Driver.license_number == license_no).first()
         if exists:
             raise AppError(f"License number '{license_no}' already exists", status_code=409)
+        if data.user_id is not None:
+            linked = db.query(Driver).filter(Driver.user_id == data.user_id).first()
+            if linked:
+                raise AppError(f"User {data.user_id} is already linked to a driver", status_code=409)
         driver = Driver(
             name=data.name.strip(),
             license_number=license_no,
@@ -44,6 +48,7 @@ class DriverService:
             contact_number=data.contact_number,
             safety_score=data.safety_score,
             status="Available",
+            user_id=data.user_id,
         )
         db.add(driver)
         db.commit()
@@ -56,11 +61,23 @@ class DriverService:
         payload = data.model_dump(exclude_unset=True)
         if "status" in payload and payload["status"] not in DRIVER_STATUSES:
             raise AppError(f"Invalid driver status. Allowed: {', '.join(DRIVER_STATUSES)}")
+        if "user_id" in payload and payload["user_id"] is not None:
+            linked = (
+                db.query(Driver)
+                .filter(Driver.user_id == payload["user_id"], Driver.id != driver_id)
+                .first()
+            )
+            if linked:
+                raise AppError(f"User {payload['user_id']} is already linked to a driver", status_code=409)
         for key, value in payload.items():
             setattr(driver, key, value)
         db.commit()
         db.refresh(driver)
         return driver
+
+    @staticmethod
+    def get_by_user(db: Session, user_id: int) -> Driver | None:
+        return db.query(Driver).filter(Driver.user_id == user_id).first()
 
     @staticmethod
     def assert_assignable(driver: Driver, today: date | None = None) -> None:

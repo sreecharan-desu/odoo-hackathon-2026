@@ -22,9 +22,9 @@ The system is a modular monorepo: **PostgreSQL** for persistence, **FastAPI** fo
 |-------|------------|-------|
 | users | id, email, name, password_hash, role, created_at | Roles: `fleet_manager`, `driver`, `safety_officer`, `financial_analyst` |
 | vehicles | id, registration_number (unique), name, type, max_load_kg, odometer, acquisition_cost, status, region | Status: Available, On Trip, In Shop, Retired |
-| drivers | id, name, license_number, license_category, license_expiry, contact, safety_score, status | Status: Available, On Trip, Off Duty, Suspended |
+| drivers | id, name, license_*, contact, safety_score, status, **user_id** (nullable unique FK → users) | Links login accounts with role `driver` (e.g. Alex ↔ driver@example.com) |
 | trips | id, source, destination, vehicle_id, driver_id, cargo_weight, planned_distance, status, created_by, final_odometer, fuel_consumed | Status: Draft, Dispatched, Completed, Cancelled |
-| maintenance_logs | id, vehicle_id, title, description, status, opened_at, closed_at | Open → In Shop; close → Available (unless Retired) |
+| maintenance_logs | id, vehicle_id, title, description, status, opened_at, closed_at | Status: **Open** / **Closed**; Open → In Shop; close → Available |
 | fuel_logs | id, vehicle_id, liters, cost, logged_at, trip_id (nullable) | |
 | expenses | id, vehicle_id, category, amount, note, logged_at | |
 

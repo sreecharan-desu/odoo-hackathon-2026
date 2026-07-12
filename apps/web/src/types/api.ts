@@ -36,6 +36,7 @@ export type Driver = {
   contact_number: string | null;
   safety_score: number;
   status: string;
+  user_id?: number | null;
 };
 
 export type Trip = {
