@@ -70,12 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const login = useCallback(async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials & { roleOverride?: string }) => {
     try {
       const response = await apiPost<LoginResponse>(endpoints.login, credentials);
-      const auth = { user: response.user, token: response.access_token };
+      // Always trust the API role — never spoof client-side for RBAC demos
+      const user = { ...response.user };
+      const auth = { user, token: response.access_token };
       writeStoredAuth(auth);
-      setUser(response.user);
+      setUser(user);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 404 || err.status === 405 || err.status === 401)) {
         const emailLower = credentials.email.toLowerCase();
@@ -86,6 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role = "safety_officer";
         } else if (emailLower.includes("finance") || emailLower.includes("analyst")) {
           role = "financial_analyst";
+        } else if (emailLower.includes("driver")) {
+          role = "driver";
         }
         const demoUser: AuthUser = {
           id: 0,

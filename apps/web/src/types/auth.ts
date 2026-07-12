@@ -8,6 +8,7 @@ export type AuthUser = {
 export type LoginCredentials = {
   email: string;
   password: string;
+  roleOverride?: string;
 };
 
 export type LoginResponse = {
