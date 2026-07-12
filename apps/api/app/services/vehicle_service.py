@@ -2,6 +2,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.exceptions.handlers import AppError
+from app.models.maintenance import MaintenanceLog
 from app.models.vehicle import VEHICLE_STATUSES, Vehicle
 from app.schemas import VehicleCreate, VehicleUpdate
 from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
@@ -62,6 +63,16 @@ class VehicleService:
         payload = data.model_dump(exclude_unset=True)
         if "status" in payload and payload["status"] not in VEHICLE_STATUSES:
             raise AppError(f"Invalid vehicle status. Allowed: {', '.join(VEHICLE_STATUSES)}")
+        if payload.get("status") == "Available" and vehicle.status != "Available":
+            has_open_maintenance = (
+                db.query(MaintenanceLog.id)
+                .filter(MaintenanceLog.vehicle_id == vehicle_id, MaintenanceLog.status == "Open")
+                .first()
+            )
+            if has_open_maintenance:
+                raise AppError(
+                    f"Vehicle '{vehicle.registration_number}' cannot be marked Available while open maintenance logs exist"
+                )
         for key, value in payload.items():
             setattr(vehicle, key, value)
         db.commit()

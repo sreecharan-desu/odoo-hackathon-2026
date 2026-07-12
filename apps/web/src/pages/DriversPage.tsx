@@ -102,7 +102,8 @@ export default function DriversPage() {
   const isExpired = (expiryStr: string) => {
     const expiry = new Date(expiryStr);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
+    expiry.setUTCHours(0, 0, 0, 0);
     return expiry < today;
   };
 
