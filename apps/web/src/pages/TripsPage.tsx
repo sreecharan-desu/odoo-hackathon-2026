@@ -1,26 +1,32 @@
 import { useState, useEffect } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost, apiGet } from "../lib/api";
+import { endpoints, apiPost, apiGet, apiGetItems } from "../lib/api";
+import { canDispatchTrips, canManageTrips } from "../lib/rbac";
 import type { Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
+const PAGE_SIZE = 25;
+
 export default function TripsPage() {
   const { user } = useAuth();
-  
-  // Scoped Access check (Trips is restricted to Dispatcher)
-  const isAllowed = user?.role === "dispatcher" || user?.id === 0;
+  const allowSchedule = canManageTrips(user);
+  const allowDispatch = canDispatchTrips(user);
+  const [offset, setOffset] = useState(0);
 
-  const { data: trips, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip[]>(
-    isAllowed ? endpoints.trips : ""
+  const { data: trips, total, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip>(
+    endpoints.trips,
+    { limit: PAGE_SIZE, offset },
   );
   
-  // All assets loaded for dropdowns and lookup
+  // Full lists for row lookups; dispatch-pool + Available drivers for create form
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+  const [dispatchPool, setDispatchPool] = useState<Vehicle[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
   // Form state
@@ -58,15 +64,19 @@ export default function TripsPage() {
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
 
-  // Fetch all vehicles and drivers
   const fetchAssets = async () => {
     setLoadingAssets(true);
     try {
-      const vehicles = await apiGet<Vehicle[]>(endpoints.vehicles);
+      const [vehicles, drivers, pool, availDrivers] = await Promise.all([
+        apiGetItems<Vehicle>(endpoints.vehicles),
+        apiGetItems<Driver>(endpoints.drivers),
+        apiGet<Vehicle[]>(endpoints.vehicleDispatchPool),
+        apiGetItems<Driver>(endpoints.drivers, { status: "Available" }),
+      ]);
       setAllVehicles(vehicles);
-
-      const drivers = await apiGet<Driver[]>(endpoints.drivers);
       setAllDrivers(drivers);
+      setDispatchPool(pool);
+      setAvailableDrivers(availDrivers);
     } catch (err) {
       console.error("Failed to load assets", err);
     } finally {
@@ -75,25 +85,12 @@ export default function TripsPage() {
   };
 
   useEffect(() => {
-    if (isAllowed) {
-      void fetchAssets();
-    }
-  }, [isAllowed, trips]);
-
-  if (!isAllowed) {
-    return (
-      <div className="access-scoped-wrapper">
-        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
-          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
-          <p className="text-muted">This page is restricted to Dispatchers.</p>
-        </Card>
-      </div>
-    );
-  }
+    void fetchAssets();
+  }, [trips]);
 
   // Find currently selected vehicle and driver metadata
-  const selectedVehicle = allVehicles.find(v => v.id === parseInt(vehicleId));
-  const selectedDriver = allDrivers.find(d => d.id === parseInt(driverId));
+  const selectedVehicle = dispatchPool.find(v => v.id === parseInt(vehicleId));
+  const selectedDriver = availableDrivers.find(d => d.id === parseInt(driverId));
 
   // Determine if selected cargo weight exceeds vehicle capacity
   const capacityLimit = selectedVehicle ? selectedVehicle.max_load_kg : 0;
@@ -239,6 +236,7 @@ export default function TripsPage() {
       <div className="split-pane-layout">
         {/* Left Side: Create Trip Form + Stepper */}
         <div className="split-pane-side" style={{ flex: 1.2 }}>
+          {allowSchedule ? (
           <Card style={{ padding: "var(--space-4)" }}>
             <h3 style={{ margin: "0 0 var(--space-2)" }}>TRIP LIFECYCLE</h3>
             
@@ -307,11 +305,11 @@ export default function TripsPage() {
                     id="vehicle"
                     label="VEHICLE (AVAILABLE ONLY)"
                     required
-                    options={allVehicles.map(v => ({
+                    options={dispatchPool.map(v => ({
                       value: String(v.id),
                       label: `${v.registration_number} - ${v.max_load_kg} kg capacity`
                     }))}
-                    placeholder="-- Select Vehicle --"
+                    placeholder={dispatchPool.length ? "-- Select Vehicle --" : "-- No vehicles in dispatch pool --"}
                     value={vehicleId}
                     error={vehicleIdError}
                     onChange={(e) => {
@@ -323,11 +321,11 @@ export default function TripsPage() {
                     id="driver"
                     label="DRIVER (AVAILABLE ONLY)"
                     required
-                    options={allDrivers.map(d => ({
+                    options={availableDrivers.map(d => ({
                       value: String(d.id),
                       label: `${d.name}`
                     }))}
-                    placeholder="-- Select Driver --"
+                    placeholder={availableDrivers.length ? "-- Select Driver --" : "-- No available drivers --"}
                     value={driverId}
                     error={driverIdError}
                     onChange={(e) => {
@@ -406,6 +404,12 @@ export default function TripsPage() {
               </form>
             )}
           </Card>
+          ) : (
+            <Card style={{ padding: "var(--space-4)" }}>
+              <h3 style={{ margin: 0 }}>Trip create</h3>
+              <p className="text-muted">Your role can view the live board but cannot schedule trips.</p>
+            </Card>
+          )}
         </div>
 
         {/* Right Side: LIVE BOARD trip cards */}
@@ -425,7 +429,7 @@ export default function TripsPage() {
                   const driver = allDrivers.find(d => d.id === t.driver_id);
                   const isVehicleAvailable = vehicle ? vehicle.status === "Available" : true;
                   const isDriverAvailable = driver ? driver.status === "Available" : true;
-                  const canDispatch = isVehicleAvailable && isDriverAvailable;
+                  const assetsReady = isVehicleAvailable && isDriverAvailable;
 
                   // Format ETA text to match mockup card descriptions
                   let etaLabel = "—";
@@ -473,12 +477,12 @@ export default function TripsPage() {
                         <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>{etaLabel}</span>
 
                         <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
-                          {t.status === "Draft" && (
+                          {t.status === "Draft" && allowDispatch && (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
                               <Button 
                                 style={{ padding: "2px 6px", fontSize: "0.8rem" }} 
                                 onClick={() => void handleDispatch(t.id)}
-                                disabled={!canDispatch}
+                                disabled={!assetsReady}
                               >
                                 Dispatch
                               </Button>
@@ -489,10 +493,12 @@ export default function TripsPage() {
                               )}
                             </div>
                           )}
-                          {t.status === "Dispatched" && (
+                          {t.status === "Dispatched" && allowSchedule && (
                             <div style={{ display: "flex", gap: "4px" }}>
                               <Button style={{ background: "#28a745", padding: "2px 6px", fontSize: "0.8rem", color: "#fff" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
-                              <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "2px 6px", fontSize: "0.8rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                              {allowDispatch && (
+                                <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "2px 6px", fontSize: "0.8rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -503,6 +509,9 @@ export default function TripsPage() {
               </div>
             )}
 
+            {trips && (
+              <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+            )}
             <p style={{ marginTop: "var(--space-4)", fontSize: "0.8125rem", color: "var(--color-muted)", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "var(--space-2)" }}>
               On Complete: odometer &rarr; fuel log &rarr; expenses &rarr; Vehicle &amp; Driver Available
             </p>

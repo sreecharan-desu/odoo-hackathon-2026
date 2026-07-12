@@ -1,21 +1,24 @@
 import { useState } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
+import { canManageFleet } from "../lib/rbac";
 import type { Vehicle } from "../types";
 import "../components/layout/shell.css";
 
+const PAGE_SIZE = 50;
+
 export default function FleetPage() {
   const { user } = useAuth();
-  
-  // Scoped Access check (Fleet Registry is scoped to Fleet Manager)
-  const isAllowed = user?.role === "fleet_manager" || user?.id === 0;
+  const allowAdd = canManageFleet(user);
+  const [offset, setOffset] = useState(0);
 
-  const { data: vehicles, error, loading, apiMissing, refetch } = useApiList<Vehicle[]>(
-    isAllowed ? endpoints.vehicles : ""
+  const { data: vehicles, total, error, loading, apiMissing, refetch } = useApiList<Vehicle>(
+    endpoints.vehicles,
+    { limit: PAGE_SIZE, offset },
   );
   
   const [isAdding, setIsAdding] = useState(false);
@@ -41,17 +44,6 @@ export default function FleetPage() {
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchReg, setSearchReg] = useState("");
-
-  if (!isAllowed) {
-    return (
-      <div className="access-scoped-wrapper">
-        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
-          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
-          <p className="text-muted">This page is restricted to Fleet Managers.</p>
-        </Card>
-      </div>
-    );
-  }
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +110,9 @@ export default function FleetPage() {
           <h2>Vehicle Registry</h2>
           <p className="text-muted">Manage fleet assets, load parameters, and assignment statuses</p>
         </div>
-        <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Vehicle</Button>
+        {allowAdd && (
+          <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Vehicle</Button>
+        )}
       </div>
 
       {/* Top Filter Bar */}
@@ -172,6 +166,7 @@ export default function FleetPage() {
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>REG. NO. (UNIQUE)</th>
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>NAME/MODEL</th>
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>TYPE</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>REGION</th>
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CAPACITY</th>
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ODOMETER</th>
                   <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ACQ. COST</th>
@@ -184,6 +179,7 @@ export default function FleetPage() {
                     <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>{v.registration_number}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.name}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.vehicle_type}</td>
+                    <td style={{ padding: "var(--space-2)" }}>{v.region ?? "—"}</td>
                     <td style={{ padding: "var(--space-2)" }}>
                       {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
                     </td>
@@ -216,11 +212,10 @@ export default function FleetPage() {
             </table>
           </div>
         )}
+        {vehicles && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+        )}
       </Card>
-
-      <p className="rule-note-text">
-        Rule: Registration No. must be unique &middot; Retired/In Shop vehicles are hidden from Trip Dispatcher
-      </p>
 
       {/* Add Vehicle Modal */}
       {isAdding && (
