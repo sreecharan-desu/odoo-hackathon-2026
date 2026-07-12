@@ -1,25 +1,11 @@
-import { Outlet, useLocation } from "react-router-dom";
-import { Button } from "../ui";
+import { Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
-import { navItemsForRole, roleWorkspace } from "../../lib/rbac";
+import { roleWorkspace } from "../../lib/rbac";
 import Sidebar from "./Sidebar";
 import "./shell.css";
 
-function pageTitle(pathname: string, labels: { path: string; label: string }[]): string {
-  const match = labels.find((item) =>
-    item.path === "/" ? pathname === "/" : pathname.startsWith(item.path),
-  );
-  return match?.label ?? "TransitOps";
-}
 
-function formatRoleName(role?: string): string {
-  if (!role) return "User";
-  return role
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
 
 function getInitials(name?: string): string {
   if (!name) return "U";
@@ -54,12 +40,22 @@ function MoonIcon() {
   );
 }
 
+/* ── Logout icon ── */
+function LogoutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 export default function AppShell() {
   const { user, logout } = useAuth();
-  const { pathname } = useLocation();
   const { isDark, toggle } = useTheme();
   const workspace = roleWorkspace(user);
-  const title = pageTitle(pathname, navItemsForRole(user));
   const displayUser = user || { name: "Operator", role: "fleet_manager" };
 
   return (
@@ -67,20 +63,15 @@ export default function AppShell() {
       <Sidebar />
       <div className="shell-body">
         <header className="shell-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-            <h1 className="shell-header-title" style={{ display: "none" }}>{title}</h1>
-            <div>
-              <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--color-muted)", letterSpacing: "0.04em" }}>
-                {workspace.brandSub.toUpperCase()}
-              </p>
-              <input type="text" placeholder="Search..." className="shell-header-search" />
-            </div>
-          </div>
+          {/* Left — brand sub only, no search */}
+          <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 700, color: "var(--color-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            {workspace.brandSub}
+          </p>
 
+          {/* Right — user name, avatar, theme toggle, logout */}
           <div className="shell-header-user">
-            <span style={{ fontWeight: 600, color: "var(--color-text)" }}>{displayUser.name}</span>
-            <span className="shell-role-badge">
-              {formatRoleName(displayUser.role)}
+            <span style={{ fontWeight: 600, color: "var(--color-text)", fontSize: "0.9rem" }}>
+              {displayUser.name}
             </span>
             <div className="shell-header-avatar">{getInitials(displayUser.name)}</div>
 
@@ -95,14 +86,17 @@ export default function AppShell() {
               {isDark ? <SunIcon /> : <MoonIcon />}
             </button>
 
-            <Button
+            {/* Logout icon button */}
+            <button
               type="button"
-              variant="ghost"
-              style={{ marginLeft: "var(--space-1)" }}
+              className="theme-toggle"
               onClick={() => void logout()}
+              title="Sign out"
+              aria-label="Sign out"
+              style={{ color: "var(--color-danger)" }}
             >
-              Sign out
-            </Button>
+              <LogoutIcon />
+            </button>
           </div>
         </header>
 
