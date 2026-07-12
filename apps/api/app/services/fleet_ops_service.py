@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.exceptions.handlers import AppError
+from app.core.config import settings
 from app.models.expense import Expense
 from app.models.fuel import FuelLog
 from app.models.maintenance import MaintenanceLog
@@ -184,8 +185,8 @@ class DashboardService:
             .filter(Trip.vehicle_id == vehicle_id, Trip.status == "Completed")
             .scalar()
         )
-        # Estimated freight revenue for ROI: ₹40 per km on completed trips
-        revenue = float(distance or 0) * 40.0
+        revenue_rate = settings.estimated_freight_revenue_per_km
+        revenue = float(distance or 0) * float(revenue_rate)
         fuel = float(fuel_cost or 0)
         maintenance = float(maint or 0)
         other_exp = float(other or 0)
