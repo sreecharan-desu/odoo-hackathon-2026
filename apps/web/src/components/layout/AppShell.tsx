@@ -1,18 +1,15 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
-import { roleWorkspace } from "../../lib/rbac";
 import Sidebar from "./Sidebar";
 import "./shell.css";
-
-
 
 function getInitials(name?: string): string {
   if (!name) return "U";
   return name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2);
 }
 
-/* ── Sun icon ── */
 function SunIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -30,7 +27,6 @@ function SunIcon() {
   );
 }
 
-/* ── Moon icon ── */
 function MoonIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -40,7 +36,6 @@ function MoonIcon() {
   );
 }
 
-/* ── Logout icon ── */
 function LogoutIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -52,30 +47,55 @@ function LogoutIcon() {
   );
 }
 
+function HamburgerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6"  x2="21" y2="6"  />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
 export default function AppShell() {
   const { user, logout } = useAuth();
   const { isDark, toggle } = useTheme();
-  const workspace = roleWorkspace(user);
   const displayUser = user || { name: "Operator", role: "fleet_manager" };
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="shell" data-role={displayUser.role}>
-      <Sidebar />
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((c) => !c)}
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
+
       <div className="shell-body">
         <header className="shell-header">
-          {/* Left — brand sub only, no search */}
-          <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 700, color: "var(--color-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            {workspace.brandSub}
-          </p>
+          {/* Left: hamburger (mobile only) + brand label */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* Hamburger — mobile only */}
+            <button
+              type="button"
+              className="theme-toggle hamburger-btn"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation"
+            >
+              <HamburgerIcon />
+            </button>
+          </div>
 
-          {/* Right — user name, avatar, theme toggle, logout */}
+          {/* Right — user name, avatar, theme toggle, logout (hidden on mobile) */}
           <div className="shell-header-user">
-            <span style={{ fontWeight: 600, color: "var(--color-text)", fontSize: "0.9rem" }}>
+            <span style={{ fontWeight: 600, color: "var(--color-text)", fontSize: "0.88rem" }}>
               {displayUser.name}
             </span>
             <div className="shell-header-avatar">{getInitials(displayUser.name)}</div>
 
-            {/* Theme toggle */}
             <button
               type="button"
               className="theme-toggle"
@@ -86,10 +106,10 @@ export default function AppShell() {
               {isDark ? <SunIcon /> : <MoonIcon />}
             </button>
 
-            {/* Logout icon button */}
+            {/* Logout — hidden on mobile (moved to sidebar) */}
             <button
               type="button"
-              className="theme-toggle"
+              className="theme-toggle desktop-logout"
               onClick={() => void logout()}
               title="Sign out"
               aria-label="Sign out"
