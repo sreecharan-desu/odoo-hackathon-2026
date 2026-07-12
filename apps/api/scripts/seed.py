@@ -427,19 +427,19 @@ def seed() -> None:
                 FuelLog(
                     vehicle_id=t.vehicle_id,
                     liters=round(liters, 1),
-                    cost=round(liters * RNG.uniform(95, 115), 2),
+                    cost=round(liters * RNG.uniform(96, 112), 2),
                     trip_id=t.id,
                     logged_at=t.created_at + timedelta(hours=RNG.randint(2, 10)),
                 )
             )
-        for i in range(20):
+        for i in range(SEED_PROFILE["fuel_topups"]):
             veh = RNG.choice(vehicles)
-            liters = RNG.uniform(15, 90)
+            liters = RNG.uniform(12, 72)
             fuel_logs.append(
                 FuelLog(
                     vehicle_id=veh.id,
                     liters=round(liters, 1),
-                    cost=round(liters * RNG.uniform(95, 115), 2),
+                    cost=round(liters * RNG.uniform(96, 112), 2),
                     trip_id=None,
                     logged_at=_utc_days_ago(RNG.randint(0, 100)),
                 )
