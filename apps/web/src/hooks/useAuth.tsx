@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const login = useCallback(async (credentials: LoginCredentials & { roleOverride?: string }) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
     try {
       const response = await apiPost<LoginResponse>(endpoints.login, credentials);
       // Always trust the API role — never spoof client-side for RBAC demos
