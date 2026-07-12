@@ -23,6 +23,10 @@ function ChevronLeft() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
 }
 
+function ChevronRight() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+}
+
 function LogoutIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 }
@@ -68,23 +72,21 @@ export default function Sidebar({ collapsed, onToggle, onClose, mobileOpen }: Si
         style={{ zIndex: 200 }}
       >
         {/* Brand */}
-        <div className="shell-brand">
-          {!collapsed ? (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
-                <TransitOpsIcon size={24} />
-                <h1 className="shell-brand-title">TransitOps</h1>
-              </div>
-              <button className="sidebar-collapse-btn" onClick={onToggle} title="Collapse">
-                <ChevronLeft />
-              </button>
-            </>
-          ) : (
-            <button className="sidebar-collapse-btn" onClick={onToggle} title="Expand" style={{ margin: "0 auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <TransitOpsIcon size={24} />
-            </button>
-          )}
+        <div className="shell-brand" style={{ justifyContent: collapsed ? "center" : "flex-start" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+            <TransitOpsIcon size={24} />
+            {!collapsed && <h1 className="shell-brand-title">TransitOps</h1>}
+          </div>
         </div>
+
+        {/* Floating circular toggle button centered on right border line */}
+        <button
+          className="sidebar-collapse-btn"
+          onClick={onToggle}
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          {collapsed ? <ChevronRight /> : <ChevronLeft />}
+        </button>
 
         {/* Nav */}
         <nav className="shell-nav" aria-label="Main navigation">
