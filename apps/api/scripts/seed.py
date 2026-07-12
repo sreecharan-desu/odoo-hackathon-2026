@@ -114,6 +114,7 @@ SEED_PROFILE = {
     "users": 6,
     "vehicle_templates": 6,
     "vehicles_per_template": 4,
+    "driver_bulk": 10,
     "active_dispatches": 4,
     "completed_trips": 24,
     "draft_trips": 6,
@@ -285,15 +286,10 @@ def seed() -> None:
             ),
         ]
 
-        driver_statuses = (
-            ["Available"] * 28
-            + ["On Trip"] * 8
-            + ["Off Duty"] * 6
-            + ["Suspended"] * 3
-        )
+        driver_statuses = ["Available"] * 6 + ["On Trip"] * 2 + ["Off Duty"] * 2 + ["Suspended"] * 2
         RNG.shuffle(driver_statuses)
 
-        for i, first in enumerate(FIRST_NAMES[:12], start=1):
+        for i, first in enumerate(FIRST_NAMES[:SEED_PROFILE["driver_bulk"]], start=1):
             status = driver_statuses[(i - 1) % len(driver_statuses)]
             expiry_offset = RNG.choice([90, 180, 365, 400, 500, -5, -20]) if i % 17 == 0 else RNG.randint(60, 700)
             # Keep only Expired Sam as the intentional expired demo case for Available drivers
