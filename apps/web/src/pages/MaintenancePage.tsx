@@ -3,12 +3,16 @@ import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
+import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
+import { canManageMaintenance } from "../lib/rbac";
 import type { MaintenanceLog, Vehicle } from "../types";
 
 const PAGE_SIZE = 25;
 
 export default function MaintenancePage() {
+  const { user } = useAuth();
+  const allowManage = canManageMaintenance(user);
   const [offset, setOffset] = useState(0);
   const { data: logs, total, error, loading, apiMissing, refetch: refetchLogs } = useApiList<MaintenanceLog>(
     endpoints.maintenance,
@@ -97,7 +101,7 @@ export default function MaintenancePage() {
           <h2>Maintenance Orders</h2>
           <p className="text-muted">Open and track vehicle maintenance, scheduling, and shop logs</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Open Maintenance</Button>
+        {allowManage && <Button onClick={() => setIsAdding(true)}>Open Maintenance</Button>}
       </div>
 
       <Card>
@@ -148,7 +152,7 @@ export default function MaintenancePage() {
                       </span>
                     </td>
                     <td style={{ padding: "var(--space-2)" }}>
-                      {log.status === "open" && (
+                      {log.status === "open" && allowManage && (
                         <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCloseMaintenance(log.id)}>Close Order</Button>
                       )}
                       {log.status === "Closed" && (

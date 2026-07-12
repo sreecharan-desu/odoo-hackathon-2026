@@ -3,12 +3,16 @@ import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
+import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost } from "../lib/api";
+import { canManageDrivers } from "../lib/rbac";
 import type { Driver } from "../types";
 
 const PAGE_SIZE = 25;
 
 export default function DriversPage() {
+  const { user } = useAuth();
+  const allowAdd = canManageDrivers(user);
   const [offset, setOffset] = useState(0);
   const { data: drivers, total, error, loading, apiMissing, refetch } = useApiList<Driver>(
     endpoints.drivers,
@@ -95,7 +99,7 @@ export default function DriversPage() {
           <h2>Drivers & Safety</h2>
           <p className="text-muted">Manage driver registry, license expiration dates, and safety performance indices</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Add Driver</Button>
+        {allowAdd && <Button onClick={() => setIsAdding(true)}>Add Driver</Button>}
       </div>
 
       <Card>

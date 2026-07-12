@@ -3,12 +3,16 @@ import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
+import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost } from "../lib/api";
+import { canManageFleet } from "../lib/rbac";
 import type { Vehicle } from "../types";
 
 const PAGE_SIZE = 25;
 
 export default function FleetPage() {
+  const { user } = useAuth();
+  const allowAdd = canManageFleet(user);
   const [offset, setOffset] = useState(0);
   const { data: vehicles, total, error, loading, apiMissing, refetch } = useApiList<Vehicle>(
     endpoints.vehicles,
@@ -91,7 +95,7 @@ export default function FleetPage() {
           <h2>Vehicle Registry</h2>
           <p className="text-muted">Manage fleet assets, load parameters, and assignment statuses</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Add Vehicle</Button>
+        {allowAdd && <Button onClick={() => setIsAdding(true)}>Add Vehicle</Button>}
       </div>
 
       <Card>

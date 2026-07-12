@@ -11,13 +11,13 @@ PostgreSQL · FastAPI · React · Docker Compose
 ## Features
 
 1. **Secure login + RBAC** — Fleet Manager, Driver, Safety Officer, Financial Analyst  
-2. **Dashboard** — Active / available / in-shop vehicles, trips, drivers on duty, fleet utilization  
+2. **Dashboard** — Fleet KPIs plus filters by vehicle type, status, and region  
 3. **Vehicle registry** — Unique plates, load capacity, odometer, status lifecycle  
 4. **Driver management** — Licenses, expiry checks, safety scores  
-5. **Trip dispatch** — Draft → Dispatched → Completed / Cancelled with capacity & availability rules  
+5. **Trip dispatch** — Draft → Dispatched → Completed / Cancelled; create form uses dispatch pool + Available drivers  
 6. **Maintenance** — Open a job → vehicle goes **In Shop** (hidden from dispatch)  
 7. **Fuel & expenses** — Cost logging and per-vehicle operational totals  
-8. **Analytics** — Cost views + CSV export  
+8. **Analytics** — Fuel efficiency (km/L), vehicle ROI, cost views + CSV export  
 
 ### Rules the API enforces
 
