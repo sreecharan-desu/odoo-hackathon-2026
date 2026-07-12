@@ -109,6 +109,7 @@
 }
 
 .shell-nav-link:hover {
+  background: var(--color-surface-2);
   color: var(--color-text);
 }
 
@@ -120,6 +121,7 @@
 
 .shell-nav-link--active:hover {
   background: var(--color-primary-hover);
+  color: var(--btn-primary-text);
 }
 
 .shell-nav-label {
@@ -152,7 +154,8 @@
   overflow: hidden;
 }
 .sidebar-logout-btn:hover {
-  opacity: 0.8;
+  background: var(--color-surface-2);
+  color: var(--color-danger);
 }
 
 /* ─── Shell body ─────────────────────────────────────────── */
@@ -296,6 +299,10 @@
   cursor: pointer;
 }
 .dashboard-filter-select:focus { border-color: var(--color-line-strong); }
+.dashboard-filter-select option {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
 
 /* ─── Warnings ───────────────────────────────────────────── */
 .warning-error-box { border: 1px solid var(--color-danger); background: var(--color-danger-bg); border-radius: var(--radius); padding: var(--space-3); margin-bottom: var(--space-3); font-size: 0.875rem; }
@@ -366,3 +373,34 @@
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
 .pagination__meta { font-size: 0.875rem; }
 .pagination .button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ─── Split Pane Layout ──────────────────────────────────── */
+.split-pane-layout {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.split-pane-side {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.split-pane-main {
+  flex: 2;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .split-pane-layout {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .split-pane-side,
+  .split-pane-main {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+}
