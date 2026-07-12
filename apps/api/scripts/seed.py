@@ -204,7 +204,7 @@ def seed() -> None:
         # ── Vehicles (demo spine + fleet bulk) ──────────────────────────
         vehicles: list[Vehicle] = [
             Vehicle(
-                registration_number="VAN-05",
+                registration_number="MH04AB1234",
                 name="Van-05",
                 vehicle_type="Van",
                 max_load_kg=500,
@@ -214,7 +214,7 @@ def seed() -> None:
                 region="West",
             ),
             Vehicle(
-                registration_number="TRK-12",
+                registration_number="DL01XY9876",
                 name="Truck-12",
                 vehicle_type="Truck",
                 max_load_kg=2000,
@@ -224,7 +224,7 @@ def seed() -> None:
                 region="North",
             ),
             Vehicle(
-                registration_number="VAN-99",
+                registration_number="GJ05ZZ5555",
                 name="Van-99",
                 vehicle_type="Van",
                 max_load_kg=300,
