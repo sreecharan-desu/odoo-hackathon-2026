@@ -153,16 +153,67 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-.grid-3 {
+
+/* Responsive Grid */
+.responsive-grid-2, .responsive-grid-3, .responsive-grid-4 {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
   gap: 24px;
 }
+.responsive-grid-2 { grid-template-columns: 1fr; }
+.responsive-grid-3 { grid-template-columns: 1fr; }
+.responsive-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
 @media (min-width: 768px) {
-  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .responsive-grid-2 { grid-template-columns: 1.2fr 1fr; }
+  .responsive-grid-3 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (min-width: 1024px) {
-  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .responsive-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .responsive-grid-4 { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+}
+
+/* Feature Section Newspaper Grid (uses gap for 1px borders) */
+.feature-newspaper-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--glass-border);
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+.feature-newspaper-grid > div {
+  background: var(--bg-primary); /* Fallback */
+  background: transparent;
+  transition: background 0.2s;
+}
+.feature-newspaper-grid > div:hover {
+  background: var(--glass-bg);
+}
+
+@media (min-width: 768px) {
+  .feature-newspaper-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .feature-newspaper-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Dashboard Responsive layout */
+.dashboard-mockup-layout {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-sidebar {
+  display: none;
+}
+.dashboard-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .dashboard-mockup-layout { flex-direction: row; }
+  .dashboard-sidebar { display: flex; }
+  .dashboard-bottom-row { grid-template-columns: 1.6fr 1fr; }
 }
 
 .container {
@@ -171,8 +222,7 @@ body {
   padding: 0 24px;
 }
 
-@media (max-width: 900px) {
-  .nav-links {
-    display: none !important;
-  }
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+  .hide-on-mobile { display: none !important; }
 }

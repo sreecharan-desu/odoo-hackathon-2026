@@ -102,20 +102,18 @@ function TransitNetworkSVG() {
 
 export function Hero() {
   return (
-    <section style={{
-      position: "relative",
-      paddingTop: "88px",
-      paddingBottom: "60px",
+    <section style={{ 
+      paddingTop: "calc(var(--nav-height) + 60px)", 
+      paddingBottom: "80px",
       minHeight: "100vh",
       display: "flex",
-      alignItems: "center",
-      overflow: "hidden",
+      alignItems: "center"
     }}>
-      <div className="container" style={{ position: "relative", zIndex: 1, width: "100%" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "40px" }}>
-
-          {/* Left: Text content */}
-          <div className="animate-fade-up" style={{ flex: "1 1 420px", maxWidth: "560px" }}>
+      <div className="container">
+        <div className="responsive-grid-2" style={{ alignItems: "center" }}>
+          
+          {/* Left: Copy */}
+          <div className="animate-fade-up" style={{ maxWidth: "560px" }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
               padding: "5px 12px", background: "var(--glass-bg)",
