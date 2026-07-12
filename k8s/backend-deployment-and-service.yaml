@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: transitops-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              value: postgresql+psycopg://app:app_secret@postgres-cluster-ip-service:5432/hackathon
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_DB
+              value: hackathon
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD
+            - name: SECRET_KEY
+              value: change-me-in-production
+            - name: BACKEND_HOST
+              value: 0.0.0.0
+            - name: BACKEND_PORT
+              value: "8000"
+            - name: CORS_ORIGINS
+              value: '["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8080","http://127.0.0.1:8080"]'
+            - name: SEED_IF_EMPTY
+              value: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - port: 8000
+      targetPort: 8000
