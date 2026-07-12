@@ -68,6 +68,14 @@ Enforced in the service layer:
 
 Interactive docs: `http://localhost:8000/docs`
 
+List endpoints return a paginated envelope:
+
+```json
+{ "items": [], "total": 0, "limit": 25, "offset": 0 }
+```
+
+Query params: `limit` (1–100, default 25), `offset` (default 0). Filters such as `status` still apply.
+
 ## Backend structure
 
 | Folder | Responsibility |

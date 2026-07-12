@@ -4,11 +4,25 @@ from sqlalchemy.orm import Session
 from app.exceptions.handlers import AppError
 from app.models.vehicle import VEHICLE_STATUSES, Vehicle
 from app.schemas import VehicleCreate, VehicleUpdate
+from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
 
 
 class VehicleService:
     @staticmethod
-    def list(db: Session, status: str | None = None) -> list[Vehicle]:
+    def list(
+        db: Session,
+        status: str | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[Vehicle]:
+        q = db.query(Vehicle).order_by(Vehicle.id.desc())
+        if status:
+            q = q.filter(Vehicle.status == status)
+        return paginate(q, limit=limit, offset=offset)
+
+    @staticmethod
+    def list_all(db: Session, status: str | None = None) -> list[Vehicle]:
         q = db.query(Vehicle).order_by(Vehicle.id.desc())
         if status:
             q = q.filter(Vehicle.status == status)

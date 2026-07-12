@@ -36,9 +36,11 @@ Business rules enforced in the API include no double-booking, cargo within capac
 |-------|------------|
 | API | FastAPI, Pydantic |
 | ORM | SQLAlchemy |
+| Migrations | Alembic |
 | Database | PostgreSQL 16 (Docker) |
 | Web | React 19, TypeScript, Vite |
 | Security | Password hashing, JWT, RBAC |
+| Runtime | Docker Compose (db + api + web) |
 
 ---
 
@@ -69,13 +71,42 @@ Package notes: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.
 
 ## Getting started
 
-### Prerequisites
+### Quick start (Docker — recommended)
 
-- Docker Desktop
+Requires Docker Desktop (or Docker Engine + Compose).
+
+```bash
+git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
+cd odoo-hackathon-2026
+cp .env.example .env
+docker-compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Web application | http://localhost:8080 |
+| API health | http://localhost:8000/api/health |
+| OpenAPI docs | http://localhost:8000/docs |
+
+Sample login: `fleet@example.com` / `Password123!`
+
+The API container waits for Postgres, applies Alembic migrations, and seeds demo data when the database is empty.
+
+Stop:
+
+```bash
+docker-compose down
+```
+
+### Local development (optional)
+
+#### Prerequisites
+
+- Docker (for Postgres)
 - Python 3.11+
 - Node.js 20 LTS
 
-### 1. Clone and configure
+#### 1. Clone and configure
 
 ```bash
 git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
@@ -83,10 +114,10 @@ cd odoo-hackathon-2026
 cp .env.example .env
 ```
 
-### 2. Database
+#### 2. Database
 
 ```bash
-docker compose up -d
+docker-compose up -d postgres
 ```
 
 PostgreSQL listens on host port **5433** by default (see `.env.example`).
@@ -97,17 +128,18 @@ First-time setup:
 bash scripts/setup.sh
 ```
 
-### 3. API
+#### 3. API
 
 ```bash
 cd apps/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 python scripts/seed.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Web
+#### 4. Web
 
 ```bash
 cd apps/web
@@ -115,7 +147,7 @@ npm install
 npm run dev
 ```
 
-### 5. Verify
+#### 5. Verify
 
 | Service | URL |
 |---------|-----|
@@ -123,7 +155,7 @@ npm run dev
 | API health | http://localhost:8000/api/health |
 | OpenAPI docs | http://localhost:8000/docs |
 
-Make targets: `make dev-db` · `make dev-api` · `make dev-web`
+Make targets: `make up` · `make down` · `make dev-db` · `make dev-api` · `make dev-web`
 
 ---
 
@@ -148,8 +180,11 @@ Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 - Custom FastAPI services (no Firebase, Supabase, or Atlas as the core backend)
 - UI reads and writes through the API against a live database
 - Clear validation errors on invalid input at API and UI
+- Paginated list APIs with total counts
+- Alembic migrations for schema lifecycle
 - Modular layered backend and separated frontend concerns
 - Hashed passwords, JWT sessions, role-aware endpoints
+- One-command Docker Compose deployment for local/demo runs
 - Product logic over unrelated tooling
 
 ---
