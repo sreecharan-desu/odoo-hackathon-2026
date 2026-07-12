@@ -1,42 +1,48 @@
-# TransitOps — Odoo Hackathon 2026
+# TransitOps
 
-**TransitOps** is a smart transport operations platform: vehicles, drivers, trips, maintenance, fuel/expenses, and live KPIs. Built for the **Odoo Hackathon 2026** virtual round — own PostgreSQL + FastAPI backend, React UI, no BaaS, no AI bolted on.
+**TransitOps** is a fleet operations platform for vehicles, drivers, trips, maintenance, fuel and expenses, and operational KPIs.
 
-Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) · Tasks: [docs/TEAM_TASKS.md](./docs/TEAM_TASKS.md) · Demo: [docs/DEMO.md](./docs/DEMO.md)
+Built with **PostgreSQL**, **FastAPI**, and **React** — a custom backend and database, not a Backend-as-a-Service.
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](./docs/ARCHITECTURE.md) | Data model, business rules, API surface |
+| [Demo guide](./docs/DEMO.md) | Sample accounts and walkthrough |
+| [Stack](./docs/STACK.md) | Technology choices |
 
 ---
 
 ## Features
 
-| Area | What works |
+| Area | Capability |
 |------|------------|
-| Auth | JWT login, role-aware session, protected routes |
-| Dashboard | Live KPIs from Postgres (`/api/dashboard/kpis`) |
-| Fleet | Register / list vehicles with status badges |
-| Drivers | Register / list drivers with license checks |
-| Trips | Create → dispatch → complete / cancel with business rules |
-| Maintenance | Open / close jobs (vehicle goes In Shop / Available) |
-| Fuel & expenses | Log fuel and costs against vehicles |
-| Analytics | Operational view + CSV report endpoint |
-| Validation | Pydantic + service rules + frontend validators |
+| Authentication | JWT login, role-based access, protected routes |
+| Dashboard | Live KPIs from PostgreSQL |
+| Fleet | Vehicle registry with status tracking |
+| Drivers | License and availability management |
+| Trips | Create, dispatch, complete, or cancel with enforced rules |
+| Maintenance | Open and close jobs with automatic status updates |
+| Fuel & expenses | Cost logging against vehicles |
+| Analytics | Operational summary and CSV export |
+| Validation | Server-side schemas and rules, plus client-side checks |
 
-Hard rules enforced in the API: no double-booking, cargo ≤ max load, expired/suspended licenses blocked, In Shop / Retired vehicles excluded from dispatch.
+Business rules enforced in the API include no double-booking, cargo within capacity, expired or suspended licenses blocked, and In Shop / Retired vehicles excluded from dispatch.
 
 ---
 
 ## Tech stack
 
-| Layer | Choice |
-|-------|--------|
-| API | FastAPI + Pydantic |
+| Layer | Technology |
+|-------|------------|
+| API | FastAPI, Pydantic |
 | ORM | SQLAlchemy |
-| DB | PostgreSQL 16 (Docker) |
-| Web | React 19 + TypeScript + Vite |
-| Auth | Password hashing + JWT + RBAC |
+| Database | PostgreSQL 16 (Docker) |
+| Web | React 19, TypeScript, Vite |
+| Security | Password hashing, JWT, RBAC |
 
 ---
 
-## Project structure
+## Repository layout
 
 ```
 apps/
@@ -45,19 +51,19 @@ apps/
     services/       # business rules
     models/         # SQLAlchemy entities
     schemas/        # request/response DTOs
-    core/           # config, security, deps
+    core/           # config, security, dependencies
   web/src/
-    pages/          # Login, Dashboard, Fleet, Drivers, Trips, …
-    components/     # layout, ui, forms
-    hooks/          # auth + data hooks
-    lib/api/        # HTTP client + endpoints
-    styles/         # theme tokens
-docker/             # Postgres compose
-docs/               # architecture, demo, tasks
-scripts/            # setup helpers
+    pages/          # application screens
+    components/     # layout, UI, forms
+    hooks/          # shared React logic
+    lib/api/        # HTTP client
+    styles/         # design tokens
+docker/             # PostgreSQL Compose
+docs/               # architecture and guides
+scripts/            # local setup helpers
 ```
 
-Guides: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.md)
+Package notes: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.md)
 
 ---
 
@@ -69,7 +75,7 @@ Guides: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.md)
 - Python 3.11+
 - Node.js 20 LTS
 
-### 1. Clone
+### 1. Clone and configure
 
 ```bash
 git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
@@ -83,15 +89,15 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Postgres is on host port **5433** by default (see `.env.example`) so it does not clash with other local instances.
+PostgreSQL listens on host port **5433** by default (see `.env.example`).
 
-Or first-time everything:
+First-time setup:
 
 ```bash
 bash scripts/setup.sh
 ```
 
-### 3. API *(terminal 1)*
+### 3. API
 
 ```bash
 cd apps/api
@@ -101,7 +107,7 @@ python scripts/seed.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Web *(terminal 2)*
+### 4. Web
 
 ```bash
 cd apps/web
@@ -109,21 +115,21 @@ npm install
 npm run dev
 ```
 
-### 5. Open
+### 5. Verify
 
 | Service | URL |
 |---------|-----|
-| Web app | http://localhost:5173 |
+| Web application | http://localhost:5173 |
 | API health | http://localhost:8000/api/health |
-| API docs | http://localhost:8000/docs |
+| OpenAPI docs | http://localhost:8000/docs |
 
-Makefile: `make dev-db` · `make dev-api` · `make dev-web`
+Make targets: `make dev-db` · `make dev-api` · `make dev-web`
 
 ---
 
-## Demo login
+## Sample accounts
 
-After `python scripts/seed.py`:
+After seeding (`python scripts/seed.py`):
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -132,47 +138,37 @@ After `python scripts/seed.py`:
 | Safety Officer | `safety@example.com` | `Password123!` |
 | Financial Analyst | `finance@example.com` | `Password123!` |
 
-90-second flow: [docs/DEMO.md](./docs/DEMO.md)
+Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 
 ---
 
-## How we meet Odoo evaluation criteria
+## Design principles
 
-| Criterion | What we built |
-|-----------|----------------|
-| Database design | Normalized Postgres tables (users, vehicles, drivers, trips, maintenance, fuel, expenses) with FK/unique constraints |
-| Own backend APIs | Custom FastAPI — no Firebase / Supabase / MongoDB Atlas |
-| Dynamic data | Seed + live CRUD; UI reads from the API, not static JSON |
-| Input validation | Pydantic schemas + service-layer rules; frontend validators |
-| Collaborative Git | Four contributors; feature branches and PRs from each member |
-| Clean UI | Theme tokens, KPI cards, status badges, app shell + pages |
-| Modularity | Layered API + owned frontend folders |
-| Security | Password hashing, JWT, role-based access |
-| Logic / attention to detail | Capacity, license expiry, and status transitions enforced in services |
-| No trendy fluff | No AI / blockchain — product logic only |
+- Own PostgreSQL schema with foreign keys and uniqueness constraints
+- Custom FastAPI services (no Firebase, Supabase, or Atlas as the core backend)
+- UI reads and writes through the API against a live database
+- Clear validation errors on invalid input at API and UI
+- Modular layered backend and separated frontend concerns
+- Hashed passwords, JWT sessions, role-aware endpoints
+- Product logic over unrelated tooling
 
 ---
 
-## Team
+## Contributors
 
-| Name | Role |
-|------|------|
-| **SreeCharan Desu** | Backend, database, integration |
-| **Bhanu Prakash Alahari** | Frontend pages, layout, API wiring |
-| **Anand Velpuri** | Validation, seed data, demo |
-| **Naga Mohan Madicharla** | Theme, styles, shared UI components |
+| Name | Focus |
+|------|--------|
+| SreeCharan Desu | Backend, database, integration |
+| Bhanu Prakash Alahari | Web application |
+| Anand Velpuri | Forms, validation, seed data |
+| Naga Mohan Madicharla | Design system and shared UI |
 
-PRs and reviews before merge to `main` — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
 ## Documentation
 
-- [Architecture](./docs/ARCHITECTURE.md) — data model and API contract
-- [Team tasks](./docs/TEAM_TASKS.md) — ownership and screens
-- [Demo script](./docs/DEMO.md) — 90-second flow + credentials
-- [Stack decisions](./docs/STACK.md) — when and why we add technology
-
----
-
-Built for the **Odoo Hackathon 2026** virtual round.
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Demo guide](./docs/DEMO.md)
+- [Stack](./docs/STACK.md)
