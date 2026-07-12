@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost, apiGet } from "../lib/api";
+import { endpoints, apiPost, apiGet, apiGetItems } from "../lib/api";
 import type { Trip, Vehicle, Driver } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function TripsPage() {
-  const { data: trips, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip[]>(endpoints.trips);
+  const [offset, setOffset] = useState(0);
+  const { data: trips, total, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip>(
+    endpoints.trips,
+    { limit: PAGE_SIZE, offset },
+  );
   
   // All assets loaded for list lookup and select dropdowns
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
@@ -55,10 +61,10 @@ export default function TripsPage() {
   const fetchAssets = async () => {
     setLoadingAssets(true);
     try {
-      const vehicles = await apiGet<Vehicle[]>(endpoints.vehicles);
+      const vehicles = await apiGetItems<Vehicle>(endpoints.vehicles);
       setAllVehicles(vehicles);
 
-      const drivers = await apiGet<Driver[]>(endpoints.drivers);
+      const drivers = await apiGetItems<Driver>(endpoints.drivers);
       setAllDrivers(drivers);
     } catch (err) {
       console.error("Failed to load assets", err);
@@ -325,6 +331,9 @@ export default function TripsPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {trips && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
 

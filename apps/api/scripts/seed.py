@@ -10,6 +10,7 @@ import random
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+import os
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -103,6 +104,11 @@ def seed() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
+        if os.getenv("SEED_IF_EMPTY", "").lower() in {"1", "true", "yes"}:
+            if db.query(User).first() is not None:
+                print("✓ Seed skipped — database already has users (SEED_IF_EMPTY=1).")
+                return
+
         for model in (Expense, FuelLog, MaintenanceLog, Trip, Vehicle, Driver, User):
             db.query(model).delete()
         db.commit()

@@ -1,13 +1,19 @@
 import { useState } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import type { Driver } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function DriversPage() {
-  const { data: drivers, error, loading, apiMissing, refetch } = useApiList<Driver[]>(endpoints.drivers);
+  const [offset, setOffset] = useState(0);
+  const { data: drivers, total, error, loading, apiMissing, refetch } = useApiList<Driver>(
+    endpoints.drivers,
+    { limit: PAGE_SIZE, offset },
+  );
 
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
@@ -159,6 +165,9 @@ export default function DriversPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {drivers && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
 

@@ -177,3 +177,20 @@ a {
 
 .text-muted { color: var(--color-muted); }
 .error { color: var(--color-error); font-size: 0.875rem; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+.pagination__meta {
+  font-size: 0.875rem;
+}
+.pagination .button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
