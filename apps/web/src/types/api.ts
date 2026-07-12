@@ -27,6 +27,15 @@ export type Vehicle = {
   region: string | null;
 };
 
+export type VehicleDocument = {
+  id: number;
+  vehicle_id: number;
+  doc_type: string;
+  file_name: string;
+  file_path: string;
+  uploaded_at: string | null;
+};
+
 export type Driver = {
   id: number;
   name: string;
@@ -37,6 +46,15 @@ export type Driver = {
   safety_score: number;
   status: string;
   user_id?: number | null;
+};
+
+export type LicenseReminder = {
+  driver_id: number;
+  driver_name: string;
+  license_number: string;
+  license_expiry: string;
+  days_remaining: number;
+  email: string | null;
 };
 
 export type Trip = {

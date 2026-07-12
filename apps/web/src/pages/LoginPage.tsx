@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div style={{ background: "#000", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "var(--color-bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Spinner />
       </div>
     );
@@ -95,18 +95,17 @@ export default function LoginPage() {
       minHeight: "100vh",
       display: "flex",
       width: "100%",
-      fontFamily: "'Inter', sans-serif",
-      color: "#fff",
+      color: "var(--color-text)",
       alignItems: "stretch"
     }}>
       
       {/* LEFT PANEL */}
       <div style={{
         flex: 1,
-        backgroundColor: "#111111",
+        backgroundColor: "var(--color-surface)",
         backgroundImage: `
-          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+          linear-gradient(var(--color-border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
         `,
         backgroundSize: "60px 60px",
         backgroundPosition: "center center",
@@ -115,25 +114,25 @@ export default function LoginPage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        borderRight: "1px solid #1f1f1f",
+        borderRight: "1px solid var(--color-border)",
         padding: "40px"
       }}>
         
-        <Link to={ROUTES.home} style={{ position: "absolute", top: "32px", left: "32px", color: "#8b949e", textDecoration: "none", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+        <Link to={ROUTES.home} style={{ position: "absolute", top: "32px", left: "32px", color: "var(--color-muted)", textDecoration: "none", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back to home
         </Link>
 
         <div style={{ textAlign: "center", maxWidth: "480px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "32px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", background: "#fff", borderRadius: "6px" }}>
-              <span style={{ fontWeight: 900, fontSize: "18px", color: "#000", letterSpacing: "-1px" }}>T</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", background: "var(--color-text)", borderRadius: "6px" }}>
+              <span style={{ fontWeight: 900, fontSize: "18px", color: "var(--color-bg)", letterSpacing: "-1px" }}>T</span>
             </div>
             <span style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "-0.5px" }}>TransitOps</span>
           </div>
           
           <h1 style={{ fontSize: "36px", fontWeight: 700, margin: "0 0 16px 0", letterSpacing: "-1px" }}>Join TransitOps in seconds.</h1>
-          <p style={{ margin: 0, color: "#8b949e", fontSize: "16px", lineHeight: "1.5" }}>Your friendly transport companion is ready to turn every operation into a clean, validated workflow.</p>
+          <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "16px", lineHeight: "1.5" }}>Your friendly transport companion is ready to turn every operation into a clean, validated workflow.</p>
         </div>
 
       </div>
@@ -141,7 +140,7 @@ export default function LoginPage() {
       {/* RIGHT PANEL */}
       <div style={{
         flex: 1,
-        backgroundColor: "#000000",
+        backgroundColor: "var(--color-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -150,9 +149,9 @@ export default function LoginPage() {
         <div style={{
           width: "100%",
           maxWidth: "420px",
-          background: "#080808",
+          background: "var(--color-surface)",
           borderRadius: "16px",
-          border: "1px solid #1f1f1f",
+          border: "1px solid var(--color-border)",
           padding: "40px",
         }}>
           
@@ -160,7 +159,7 @@ export default function LoginPage() {
 
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 8px 0" }}>Sign in to your account</h2>
-            <p style={{ margin: 0, color: "#8b949e", fontSize: "13px" }}>Start managing your fleet — no card required.</p>
+            <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "13px" }}>Start managing your fleet — no card required.</p>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -180,11 +179,11 @@ export default function LoginPage() {
                   }}
                   placeholder="you@example.com"
                   style={{
-                    width: "100%", padding: "12px 14px 12px 42px", background: "#0a0a0a", border: "1px solid #222",
-                    borderRadius: "8px", color: "#fff", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
+                    width: "100%", padding: "12px 14px 12px 42px", background: "var(--color-surface-2)", border: "1px solid var(--color-border)",
+                    borderRadius: "8px", color: "var(--color-text)", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
                   }}
-                  onFocus={(e) => e.target.style.borderColor = "#444"}
-                  onBlur={(e) => e.target.style.borderColor = "#222"}
+                  onFocus={(e) => e.target.style.borderColor = "var(--color-line-strong)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--color-border)"}
                 />
               </div>
               {emailError && <div style={{ color: "#f85149", fontSize: "12px", marginTop: "6px" }}>{emailError}</div>}
@@ -205,11 +204,11 @@ export default function LoginPage() {
                   }}
                   placeholder="At least 8 characters"
                   style={{
-                    width: "100%", padding: "12px 42px 12px 42px", background: "#0a0a0a", border: "1px solid #222",
-                    borderRadius: "8px", color: "#fff", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
+                    width: "100%", padding: "12px 42px 12px 42px", background: "var(--color-surface-2)", border: "1px solid var(--color-border)",
+                    borderRadius: "8px", color: "var(--color-text)", fontSize: "14px", outline: "none", transition: "border-color 0.2s", boxSizing: "border-box"
                   }}
-                  onFocus={(e) => e.target.style.borderColor = "#444"}
-                  onBlur={(e) => e.target.style.borderColor = "#222"}
+                  onFocus={(e) => e.target.style.borderColor = "var(--color-line-strong)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--color-border)"}
                 />
                 <div 
                   style={{ position: "absolute", right: "14px", display: "flex", cursor: "pointer" }}
@@ -221,7 +220,7 @@ export default function LoginPage() {
               {passwordError && <div style={{ color: "#f85149", fontSize: "12px", marginTop: "6px" }}>{passwordError}</div>}
             </div>
 
-            <p style={{ margin: 0, color: "#8b949e", fontSize: "12px", lineHeight: 1.45 }}>
+            <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "12px", lineHeight: 1.45 }}>
               Role is assigned on your account after sign-in (Fleet Manager, Driver, Safety Officer, or Financial Analyst).
             </p>
 
@@ -234,13 +233,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                width: "100%", padding: "14px", background: "#ffffff", border: "none",
-                borderRadius: "8px", color: "#000000", fontSize: "14px", fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer",
-                transition: "all 0.2s", marginTop: "8px", boxSizing: "border-box"
-              }}
-              onMouseOver={(e) => { if(!submitting) e.currentTarget.style.background = "#f0f0f0" }}
-              onMouseOut={(e) => { if(!submitting) e.currentTarget.style.background = "#ffffff" }}
+              className="button"
+              style={{ width: "100%", padding: "14px", marginTop: "8px", boxSizing: "border-box", opacity: submitting ? 0.7 : 1 }}
             >
               {submitting ? "Signing in..." : "Sign in to account"}
             </button>
@@ -248,8 +242,8 @@ export default function LoginPage() {
           </form>
 
           <div style={{ marginTop: "24px", textAlign: "center" }}>
-            <p style={{ color: "#8b949e", fontSize: "13px", margin: 0 }}>
-              Don't have an account? <a href="#" style={{ color: "#fff", textDecoration: "none", fontWeight: 600 }} onClick={(e) => e.preventDefault()}>Contact Admin</a>
+            <p style={{ color: "var(--color-muted)", fontSize: "13px", margin: 0 }}>
+              Don't have an account? <a href="#" style={{ color: "var(--color-text)", textDecoration: "none", fontWeight: 600 }} onClick={(e) => e.preventDefault()}>Contact Admin</a>
             </p>
           </div>
         </div>
