@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 from email.message import EmailMessage
 import smtplib
 
@@ -151,12 +151,17 @@ def operational_pdf(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
 ) -> Response:
-    _ = db
-    pdf = ReportService.pdf_bytes()
+    fleet_data = DashboardService.operational_costs_all(db)
+    pdf = ReportService.pdf_bytes(
+        fleet_data,
+        revenue_rate=settings.estimated_freight_revenue_per_km,
+        reminder_days=settings.license_reminder_days,
+    )
+    today = date.today().isoformat()
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=operational_report.pdf"},
+        headers={"Content-Disposition": f"attachment; filename=transitops_report_{today}.pdf"},
     )
 
 
@@ -231,84 +236,6 @@ def send_license_reminders(
 
     return {"sent": sent, "reminders": len(reminders)}
 
-
-@router.get("/expenses", response_model=PaginatedResponse[ExpenseResponse])
-def list_expenses(
-    vehicle_id: int | None = None,
-    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
-    offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-) -> dict:
-    page = ExpenseService.list(db, vehicle_id=vehicle_id, limit=limit, offset=offset)
-    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
-
-
-@router.post("/expenses", response_model=ExpenseResponse)
-def create_expense(
-    payload: ExpenseCreate,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
-) -> object:
-    return ExpenseService.create(db, payload)
-
-
-@router.get("/dashboard/kpis", response_model=DashboardKpis)
-def dashboard_kpis(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> dict:
-    return DashboardService.kpis(db)
-
-
-@router.get("/vehicles/{vehicle_id}/operational-cost")
-def operational_cost(
-    vehicle_id: int,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
-) -> dict:
-    return DashboardService.operational_cost(db, vehicle_id)
-
-
-@router.get("/reports/operational-costs")
-def operational_costs_bulk(
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
-) -> dict:
-    """Fleet-wide operational costs in one response (avoids N+1 from the UI)."""
-    return {"items": DashboardService.operational_costs_all(db)}
-
-
-@router.get("/reports/operational.csv")
-def operational_csv(
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
-) -> PlainTextResponse:
-    rows = DashboardService.operational_costs_all(db)
-    lines = [
-        "vehicle_id,registration_number,status,distance_km,fuel_liters,fuel_efficiency_km_per_l,"
-        "fuel_cost,maintenance_cost,other_expenses,estimated_revenue,acquisition_cost,roi,total"
-    ]
-    for costs in rows:
-        lines.append(
-            f"{costs['vehicle_id']},{costs['registration_number']},{costs['status']},"
-            f"{costs['distance_km']},{costs['fuel_liters']},{costs['fuel_efficiency_km_per_l']},"
-            f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},"
-            f"{costs['estimated_revenue']},{costs['acquisition_cost']},{costs['roi']},"
-            f"{costs['total_operational_cost']}"
-        )
-    return PlainTextResponse("\n".join(lines) + "\n", media_type="text/csv")
-
-@router.get("/reports/operational.pdf")
-def operational_pdf(
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
-) -> Response:
-    _ = db  # keeps signature aligned with other report endpoints
-    pdf = ReportService.pdf_bytes()
-    return Response(
-        content=pdf,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=operational_report.pdf"},
-    )
-
 @router.get("/drivers/license-reminders", response_model=list[dict])
 def license_reminders(
     db: Session = Depends(get_db),
@@ -321,7 +248,7 @@ def license_reminders(
     for driver in drivers:
         days_remaining = driver.license_expiry.toordinal() - today.toordinal()
         if days_remaining <= settings.license_reminder_days:
-            user = db.query(UserModel).filter(UserModel.id == driver.user_id).first() if driver.user_id else None
+            user = db.query(User).filter(User.id == driver.user_id).first() if driver.user_id else None
             rows.append(
                 {
                     "driver_id": driver.id,
@@ -333,3 +260,4 @@ def license_reminders(
                 }
             )
     return rows
+
