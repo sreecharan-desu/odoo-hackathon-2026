@@ -10,22 +10,22 @@ help:
 	@echo "make dev-web   - run Vite locally"
 
 up:
-	docker-compose up --build -d
+	docker compose up --build -d
 
 down:
-	docker-compose down
+	docker compose down
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 dev-db:
-	docker-compose up -d postgres
+	docker compose up -d postgres
 
 dev-db-down:
-	docker-compose down
+	docker compose down
 
 dev-db-logs:
-	docker-compose logs -f postgres
+	docker compose logs -f postgres
 
 dev-api:
 	cd apps/api && uvicorn app.main:app --reload --port 8000
