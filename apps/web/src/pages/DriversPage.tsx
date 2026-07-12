@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, Spinner, Button, Pagination, StatusBadge } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
@@ -226,55 +226,140 @@ export default function DriversPage() {
                   <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>DRIVER</th>
                   <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>CONTACT</th>
                   <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>STATUS</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600, textAlign: "right" }}>MORE DETAILS</th>
+                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600, textAlign: "right" }}>DETAILS</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDrivers.map((d) => {
-                  const isSelected = selectedDriverId === d.id;
                   const isExpanded = expandedIds[d.id] || false;
+                  const expired = isExpired(d.license_expiry);
+                  const isSafetyClear = !expired && d.status !== "Suspended";
+                  let expiryLabel = d.license_expiry;
+                  try {
+                    const parts = d.license_expiry.split("-");
+                    if (parts.length === 3) expiryLabel = `${parts[1]}/${parts[0]}`;
+                  } catch {}
 
                   return (
-                    <tr
-                      key={d.id}
-                      onClick={() => setSelectedDriverId(d.id)}
-                      style={{
-                        borderBottom: "1px solid var(--color-border)",
-                        cursor: "pointer",
-                        background: isSelected ? "var(--color-surface-2)" : "transparent"
-                      }}
-                    >
-                      <td style={{ padding: "11px 8px", fontWeight: "bold", fontSize: "0.875rem" }}>{d.name}</td>
-                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{d.contact_number ?? "—"}</td>
-                      <td style={{ padding: "11px 8px" }}>
-                        <StatusBadge status={d.status} />
-                      </td>
-                      <td style={{ padding: "11px 8px", textAlign: "right" }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedIds(prev => ({ ...prev, [d.id]: !prev[d.id] }));
-                          }}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "var(--color-muted)",
-                            cursor: "pointer",
-                            padding: "4px",
-                            display: "inline-flex",
-                            alignItems: "center"
-                          }}
-                          title={isExpanded ? "Show Less" : "Show More"}
-                        >
-                          {isExpanded ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                          ) : (
+                    <React.Fragment key={d.id}>
+                      {/* Main row */}
+                      <tr
+                        onClick={() => {
+                          setSelectedDriverId(d.id);
+                          setExpandedIds(prev => ({ ...prev, [d.id]: !prev[d.id] }));
+                        }}
+                        style={{
+                          borderBottom: isExpanded ? "none" : "1px solid var(--color-border)",
+                          cursor: "pointer",
+                          background: isExpanded ? "var(--color-surface-2)" : "transparent",
+                        }}
+                      >
+                        <td style={{ padding: "11px 8px", fontWeight: "bold", fontSize: "0.875rem" }}>{d.name}</td>
+                        <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{d.contact_number ?? "—"}</td>
+                        <td style={{ padding: "11px 8px" }}>
+                          <StatusBadge status={d.status} />
+                        </td>
+                        <td style={{ padding: "11px 8px", textAlign: "right" }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDriverId(d.id);
+                              setExpandedIds(prev => ({ ...prev, [d.id]: !prev[d.id] }));
+                            }}
+                            style={{
+                              background: "transparent", border: "none",
+                              color: "var(--color-muted)", cursor: "pointer",
+                              padding: "4px", display: "inline-flex", alignItems: "center",
+                              transition: "transform 0.2s",
+                              transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                            }}
+                            title={isExpanded ? "Collapse" : "Expand"}
+                          >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* Inline expanded dropdown row */}
+                      {isExpanded && (
+                        <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                          <td colSpan={4} style={{ padding: "0" }}>
+                            <div style={{
+                              background: "var(--color-surface-2)",
+                              borderTop: "1px solid var(--color-border)",
+                              padding: "16px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "16px",
+                            }}>
+                              {/* Detail fields grid */}
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "14px" }}>
+                                <div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>License No.</span>
+                                  <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", fontFamily: "monospace" }}>{d.license_number}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Category</span>
+                                  <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{d.license_category}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>License Expiry</span>
+                                  <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: expired ? "var(--color-error)" : "inherit" }}>
+                                    {expiryLabel}{expired && <span style={{ fontSize: "0.7rem", fontWeight: "bold", color: "var(--color-error)", marginLeft: "4px" }}>⚠ EXPIRED</span>}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Completion Rate</span>
+                                  <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{getCompletionRate(d.name)}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Safety Score</span>
+                                  <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: isSafetyClear ? "var(--color-positive)" : "var(--color-error)" }}>
+                                    {d.safety_score}% {isSafetyClear ? "(Clear)" : "(Risk)"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Status toggle buttons — only for managers */}
+                              {allowManage && (
+                                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", paddingTop: "10px", borderTop: "1px solid var(--color-border)" }}>
+                                  <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--color-muted)", letterSpacing: "0.07em" }}>Set Status:</span>
+                                  <Button
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "var(--color-positive-bg)", borderColor: "var(--color-positive)", color: "var(--color-positive)" }}
+                                    onClick={() => void handleToggleStatus("Available")}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Available
+                                  </Button>
+                                  <Button
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "rgba(59,130,246,0.1)", borderColor: "#3b82f6", color: "#3b82f6" }}
+                                    onClick={() => void handleToggleStatus("On Trip")}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                                    On Trip
+                                  </Button>
+                                  <Button
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-muted)" }}
+                                    onClick={() => void handleToggleStatus("Off Duty")}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                                    Off Duty
+                                  </Button>
+                                  <Button
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "var(--color-danger-bg)", borderColor: "var(--color-danger)", color: "var(--color-danger)" }}
+                                    onClick={() => void handleToggleStatus("Suspended")}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                    Suspended
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -286,98 +371,10 @@ export default function DriversPage() {
         )}
       </Card>
 
-      {/* Expanded details container if selected/expanded */}
-      {selectedDriverId !== null && (() => {
-        const d = (drivers ?? []).find(x => x.id === selectedDriverId);
-        if (!d) return null;
-        const expired = isExpired(d.license_expiry);
-        const isSafetyClear = !expired && d.status !== "Suspended";
-        let expiryLabel = d.license_expiry;
-        try {
-          const parts = d.license_expiry.split("-");
-          if (parts.length === 3) expiryLabel = `${parts[1]}/${parts[0]}`;
-        } catch {}
-
-        return (
-          <Card style={{ marginTop: "16px", padding: "16px", background: "var(--color-surface-2)", boxSizing: "border-box" }}>
-            <h4 style={{ margin: "0 0 12px", fontSize: "0.8rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Detailed Profile: {d.name}
-            </h4>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px" }}>
-              <div>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Number</span>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", fontFamily: "monospace" }}>{d.license_number}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Category</span>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{d.license_category}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Expiry</span>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: expired ? "var(--color-error)" : "inherit" }}>
-                  {expiryLabel} {expired && <span style={{ fontSize: "0.7rem", fontWeight: "bold", color: "var(--color-error)" }}> ⚠ EXPIRED</span>}
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Trip Completion Rate</span>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{getCompletionRate(d.name)}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Safety Score</span>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: isSafetyClear ? "var(--color-positive)" : "var(--color-error)" }}>
-                  {d.safety_score}% {isSafetyClear ? " (Clear)" : " (Risk)"}
-                </div>
-              </div>
-            </div>
-          </Card>
-        );
-      })()}
-
-      {/* Toggle Status Bar */}
-      {allowManage && (
-      <div className="status-toggle-row" style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "20px", flexWrap: "wrap" }}>
-        <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", color: "var(--color-muted)", letterSpacing: "0.05em" }}>Toggle Status:</span>
-        <Button
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-positive-bg)", borderColor: "var(--color-positive)", color: "var(--color-positive)" }}
-          onClick={() => void handleToggleStatus("Available")}
-          disabled={selectedDriverId === null}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Available
-        </Button>
-        <Button
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "rgba(59,130,246,0.1)", borderColor: "#3b82f6", color: "#3b82f6" }}
-          onClick={() => void handleToggleStatus("On Trip")}
-          disabled={selectedDriverId === null}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          On Trip
-        </Button>
-        <Button
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-muted)" }}
-          onClick={() => void handleToggleStatus("Off Duty")}
-          disabled={selectedDriverId === null}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          Off Duty
-        </Button>
-        <Button
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-danger-bg)", borderColor: "var(--color-danger)", color: "var(--color-danger)" }}
-          onClick={() => void handleToggleStatus("Suspended")}
-          disabled={selectedDriverId === null}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-          Suspended
-        </Button>
-        {selectedDriverId === null && (
-          <span style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>(Select a driver from the list to change status)</span>
-        )}
-      </div>
-      )}
-
       <p className="rule-note-text">
         Rule: Expired license or Suspended status &rarr; blocked from trip assignment
       </p>
+
 
       {/* Add Driver Modal */}
       {isAdding && (
