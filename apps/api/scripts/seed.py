@@ -286,7 +286,7 @@ def seed() -> None:
             ),
         ]
 
-        driver_statuses = ["Available"] * 6 + ["On Trip"] * 2 + ["Off Duty"] * 2 + ["Suspended"] * 2
+        driver_statuses = ["Available"] * 3 + ["On Trip"] * 4 + ["Off Duty"] * 2 + ["Suspended"] * 1
         RNG.shuffle(driver_statuses)
 
         for i, first in enumerate(FIRST_NAMES[:SEED_PROFILE["driver_bulk"]], start=1):
@@ -333,7 +333,7 @@ def seed() -> None:
         maintenance: list[MaintenanceLog] = []
 
         # Active dispatched trips
-        for idx, (veh, drv) in enumerate(active_pairs):
+        for idx, (veh, drv) in enumerate(active_pairs[: SEED_PROFILE["active_dispatches"]]):
             src, dst = RNG.sample(CITIES, 2)
             cargo = min(veh.max_load_kg * 0.7, veh.max_load_kg - 10)
             trips.append(
@@ -353,7 +353,7 @@ def seed() -> None:
         # Completed trips (history) — use Available fleet + Alex heavily
         history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
-        for i in range(36):
+        for i in range(SEED_PROFILE["completed_trips"]):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -378,7 +378,7 @@ def seed() -> None:
             )
 
         # Draft trips ready to dispatch in UI
-        for i in range(8):
+        for i in range(SEED_PROFILE["draft_trips"]):
             veh = RNG.choice(available_vehicles)
             drv = RNG.choice(available_drivers)
             src, dst = RNG.sample(CITIES, 2)
@@ -397,7 +397,7 @@ def seed() -> None:
             )
 
         # Cancelled trips
-        for i in range(6):
+        for i in range(SEED_PROFILE["cancelled_trips"]):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
