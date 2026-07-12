@@ -264,22 +264,6 @@ function FleetManagerDashboard({ kpis, trips, vehicles, drivers, typeFilter, set
 
   return (
     <>
-      {/* Filters row */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "24px" }}>
-        <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", color: C.muted, textTransform: "uppercase", marginRight: "4px" }}>Filters</span>
-        {[
-          { label: "Vehicle Type", opts: typeOptions,      val: typeFilter,   set: setTypeFilter },
-          { label: "Status",       opts: ["Available","On Trip","In Shop","Retired"], val: statusFilter, set: (v: string) => { setTypeFilter("All"); setStatusFilter(v); } },
-          { label: "Region",       opts: regionOptions,    val: regionFilter, set: setRegionFilter },
-        ].map(({ label, opts, val, set }) => (
-          <select key={label} className="dashboard-filter-select" value={val} onChange={(e) => set(e.target.value)}>
-            <option value="All">{label}: All</option>
-            {(opts as string[]).map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ))}
-      </div>
-
-      {/* 7 KPI cards */}
       {kpis && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))", gap: "12px", marginBottom: "24px" }}>
           <KpiCard label="Active Vehicles"    value={kpis.active_vehicles}               accent={C.green}  />
@@ -298,7 +282,20 @@ function FleetManagerDashboard({ kpis, trips, vehicles, drivers, typeFilter, set
         <DonutChart segments={segs} total={total} />
       </Card>
 
-      {/* Recent trips */}
+      {/* Filters — above trips */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "14px" }}>
+        <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", color: C.muted, textTransform: "uppercase" }}>Filters</span>
+        {[
+          { label: "Vehicle Type", opts: typeOptions,    val: typeFilter,   set: setTypeFilter },
+          { label: "Status", opts: ["Available","On Trip","In Shop","Retired"], val: statusFilter, set: (v: string) => { setTypeFilter("All"); setStatusFilter(v); } },
+          { label: "Region", opts: regionOptions,        val: regionFilter, set: setRegionFilter },
+        ].map(({ label, opts, val, set }) => (
+          <select key={label} className="dashboard-filter-select" value={val} onChange={(e) => set(e.target.value)}>
+            <option value="All">{label}: All</option>
+            {(opts as string[]).map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        ))}
+      </div>
       <Card style={{ width: "100%", padding: "var(--space-4)", boxSizing: "border-box" }}>
         <SectionTitle>Recent Trips</SectionTitle>
         <TripsTable trips={filteredTrips} vehicles={vehicleList} drivers={driverList} />
