@@ -35,9 +35,11 @@ function Sidebar() {
     }}>
       {/* Logo area */}
       <div style={{ padding: "4px 10px 20px", fontSize: "13px", fontWeight: 700, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: "8px" }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
+        <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 22 L38 22 L48 38 L30 38 Z" fill="currentColor" />
+          <path d="M95 22 L62 22 L52 38 L70 38 Z" fill="currentColor" />
+          <path d="M38 40 L46 40 L46 78 L38 68 Z" fill="currentColor" />
+          <path d="M62 40 L54 40 L54 78 L62 68 Z" fill="currentColor" />
         </svg>
         TransitOps
       </div>
@@ -100,15 +102,16 @@ export function DashboardPreview() {
         </div>
 
         {/* Dashboard mockup */}
-        <div className="animate-fade-up" style={{
-          display: "flex",
+        <div className="animate-fade-up dashboard-mockup-layout" style={{
           height: "560px",
           border: "1px solid var(--glass-border)",
           borderRadius: "16px",
           overflow: "hidden",
           background: "var(--bg-primary)",
         }}>
-          <Sidebar />
+          <div className="dashboard-sidebar">
+            <Sidebar />
+          </div>
 
           {/* Main content */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -124,7 +127,7 @@ export function DashboardPreview() {
                 <div style={{ fontSize: "15px", fontWeight: 600 }}>Dashboard</div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>Saturday, 12 July 2025</div>
               </div>
-              <div style={{
+              <div className="hide-on-mobile" style={{
                 fontSize: "12px", color: "var(--text-muted)",
                 display: "flex", alignItems: "center", gap: "6px",
                 border: "1px solid var(--glass-border)", padding: "6px 10px",
@@ -137,10 +140,10 @@ export function DashboardPreview() {
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px", overflow: "hidden" }}>
+            <div style={{ flex: 1, padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto", overflowX: "hidden" }}>
 
               {/* KPI row */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px" }}>
+              <div className="responsive-grid-4">
                 {kpis.map((k, i) => (
                   <div key={i} style={{
                     padding: "16px",
@@ -161,7 +164,7 @@ export function DashboardPreview() {
               </div>
 
               {/* Bottom row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "12px", flex: 1, minHeight: 0 }}>
+              <div className="dashboard-bottom-row" style={{ flex: 1, minHeight: 0 }}>
 
                 {/* Active trips table */}
                 <div style={{
@@ -170,18 +173,18 @@ export function DashboardPreview() {
                   background: "var(--glass-bg)",
                   padding: "16px 20px",
                   display: "flex", flexDirection: "column",
-                  overflow: "hidden",
+                  overflowX: "auto",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
                     <span style={{ fontSize: "13px", fontWeight: 600 }}>Active Trips</span>
                     <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.05em", color: "var(--text-muted)", border: "1px solid var(--glass-border)", padding: "2px 8px", borderRadius: "4px" }}>LIVE</span>
                   </div>
-                  <table style={{ width: "100%", fontSize: "12px", textAlign: "left", borderCollapse: "collapse" }}>
+                  <table style={{ width: "100%", minWidth: "400px", fontSize: "12px", textAlign: "left", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ color: "var(--text-muted)" }}>
                         <th style={{ paddingBottom: "10px", fontWeight: 500, borderBottom: "1px solid var(--glass-border)" }}>Route</th>
                         <th style={{ paddingBottom: "10px", fontWeight: 500, borderBottom: "1px solid var(--glass-border)" }}>Bus</th>
-                        <th style={{ paddingBottom: "10px", fontWeight: 500, borderBottom: "1px solid var(--glass-border)" }}>Driver</th>
+                        <th className="hide-on-mobile" style={{ paddingBottom: "10px", fontWeight: 500, borderBottom: "1px solid var(--glass-border)" }}>Driver</th>
                         <th style={{ paddingBottom: "10px", fontWeight: 500, borderBottom: "1px solid var(--glass-border)" }}>Status</th>
                       </tr>
                     </thead>
@@ -190,7 +193,7 @@ export function DashboardPreview() {
                         <tr key={i} style={{ borderBottom: i < trips.length - 1 ? "1px solid var(--glass-border)" : "none" }}>
                           <td style={{ padding: "10px 0", color: "var(--text-main)", maxWidth: "160px" }}>{t.route}</td>
                           <td style={{ padding: "10px 0", color: "var(--text-muted)", fontFamily: "monospace", fontSize: "11px" }}>{t.bus}</td>
-                          <td style={{ padding: "10px 0", color: "var(--text-muted)" }}>{t.driver}</td>
+                          <td className="hide-on-mobile" style={{ padding: "10px 0", color: "var(--text-muted)" }}>{t.driver}</td>
                           <td style={{ padding: "10px 0" }}>
                             <span style={{
                               fontSize: "11px", fontWeight: 600,
@@ -207,7 +210,7 @@ export function DashboardPreview() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
                   {/* Performance chart */}
-                  <div style={{
+                  <div className="hide-on-mobile" style={{
                     flex: 1,
                     border: "1px solid var(--glass-border)",
                     borderRadius: "10px",
