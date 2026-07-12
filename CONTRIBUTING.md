@@ -1,6 +1,6 @@
 # Contributing
 
-We use feature branches and pull requests. All team members push from their own GitHub accounts.
+Pull requests from feature branches. Each contributor uses their own GitHub account.
 
 ## Workflow
 
@@ -14,7 +14,7 @@ git commit -m "feat(scope): description"
 git push -u origin HEAD
 ```
 
-Open a pull request targeting `main`. The team lead reviews and merges.
+Open a pull request against `main`. A maintainer reviews and merges.
 
 ## Commit messages
 
@@ -22,12 +22,12 @@ Open a pull request targeting `main`. The team lead reviews and merges.
 feat|fix|refactor(scope): short imperative description
 ```
 
-Examples: `feat(api): add user registration`, `fix(web): show email validation error`
+Examples: `feat(api): add vehicle dispatch endpoint`, `fix(web): show validation error on login`
 
 ## Guidelines
 
-- Pull latest `main` before starting new work
-- Do not commit `.env` or secrets
-- Do not add Cursor/AI attribution to commits (`Made-with: Cursor`, `Co-authored-by: Cursor`, or `--trailer` flags)
+- Pull latest `main` before starting work
+- Do not commit `.env`, secrets, or credentials
+- Do not add tool or AI co-author trailers to commits
 - Validate input on both API and web layers
-- Keep changes focused; see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for module ownership
+- Keep changes focused; see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for module boundaries

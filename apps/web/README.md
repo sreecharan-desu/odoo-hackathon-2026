@@ -1,6 +1,6 @@
 # Web (`apps/web`)
 
-Production-style React + Vite layout.
+React + Vite application for TransitOps.
 
 ## Run
 
@@ -14,22 +14,22 @@ npm run dev
 ```
 src/
   components/
-    ui/           # Button, Card, Spinner — Mohan
-    layout/       # Header, AppLayout — Bhanu
-    forms/        # validated form fields — Anand
-  pages/          # route-level screens — Bhanu
-  hooks/          # useAsync, data hooks — Bhanu
+    ui/           # shared primitives (Button, Card, Badge, …)
+    layout/       # application shell and navigation
+    forms/        # validated form fields
+  pages/          # route-level screens
+  hooks/          # auth and data hooks
   lib/
-    api/          # client, endpoints — Bhanu
-    validators.ts # Anand
-  types/          # TypeScript interfaces — Bhanu
-  constants/      # routes, config — Mohan
-  styles/         # theme tokens — Mohan
+    api/          # HTTP client and endpoints
+    validators.ts # client-side validation
+  types/          # shared TypeScript contracts
+  constants/      # routes and status maps
+  styles/         # design tokens
 ```
 
-## Layer rules
+## Conventions
 
-1. **Pages** — compose components, no raw fetch (use `lib/api`)
-2. **Components** — presentational; props in, events out
-3. **Hooks** — reusable async/state logic
-4. **Types** — shared API response shapes
+1. **Pages** compose components; use `lib/api` for HTTP
+2. **Components** stay presentational where possible
+3. **Hooks** hold reusable async and session logic
+4. **Types** mirror API response shapes
