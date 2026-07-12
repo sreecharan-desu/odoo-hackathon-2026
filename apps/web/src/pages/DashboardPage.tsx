@@ -7,378 +7,467 @@ import { apiGet, apiGetItems, endpoints } from "../lib/api";
 import type { DashboardKpis, Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const workspace = roleWorkspace(user);
-  const [typeFilter, setTypeFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [regionFilter, setRegionFilter] = useState("All");
+/* ─── Semantic chart colors (stay across themes) ─── */
+const CHART = {
+  green:  "#22c55e",
+  amber:  "#f59e0b",
+  red:    "#ef4444",
+  blue:   "#3b82f6",
+};
 
-  const { data: kpis, error: kpiError, loading: kpiLoading } = useAsync<DashboardKpis>(
-    () => apiGet(endpoints.kpis),
-    [],
+const fmtDate = (s?: string | null) =>
+  s ? new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "—";
+
+/* ─── Status badge ─────────────────────────────────── */
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  Completed:  { background: "var(--color-positive-bg)",  color: "var(--color-positive)",  border: "1px solid var(--color-positive)" },
+  Dispatched: { background: "rgba(59,130,246,0.10)",     color: "#3b82f6",                border: "1px dashed #3b82f6" },
+  Cancelled:  { background: "var(--color-danger-bg)",    color: "var(--color-danger)",     border: "1px solid var(--color-danger)",  textDecoration: "line-through" },
+  Draft:      { background: "var(--color-surface-2)",    color: "var(--color-muted)",      border: "1px dotted var(--color-border)" },
+  Active:     { background: "var(--color-positive-bg)",  color: "var(--color-positive)",  border: "1px solid var(--color-positive)" },
+  Inactive:   { background: "var(--color-danger-bg)",    color: "var(--color-danger)",     border: "1px solid var(--color-danger)"  },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const s = STATUS_STYLE[status] ?? STATUS_STYLE.Draft;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "5px",
+      padding: "3px 10px", borderRadius: "20px",
+      fontSize: "0.72rem", fontWeight: 700,
+      ...s,
+    }}>
+      {status}
+    </span>
   );
+}
 
-  const { data: trips, error: tripsError, loading: tripsLoading } = useAsync<Trip[]>(
-    () => apiGetItems<Trip>(endpoints.trips, { limit: 50 }),
-    [],
+/* ─── KPI card ─────────────────────────────────────── */
+function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div style={{
+      background: "var(--color-surface)",
+      border: "1px solid var(--color-border)",
+      borderRadius: "12px",
+      padding: "20px 18px",
+      display: "flex", flexDirection: "column", gap: "6px",
+      minWidth: 0,
+      boxShadow: "var(--shadow-soft)",
+    }}>
+      <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>
+        {label}
+      </span>
+      <span style={{ fontSize: "2rem", fontWeight: 800, color: "var(--color-text)", lineHeight: 1 }}>
+        {value}
+      </span>
+      {sub && <span style={{ fontSize: "0.74rem", color: "var(--color-muted-2)" }}>{sub}</span>}
+    </div>
   );
+}
 
-  const { data: vehicles, error: vehiclesError, loading: vehiclesLoading } = useAsync<Vehicle[]>(
-    () => apiGetItems<Vehicle>(endpoints.vehicles),
-    [],
-  );
-
-  const { data: drivers, error: driversError, loading: driversLoading } = useAsync<Driver[]>(
-    () => apiGetItems<Driver>(endpoints.drivers),
-    [],
-  );
-
-  const loading = kpiLoading || tripsLoading || vehiclesLoading || driversLoading;
-  const error = kpiError || tripsError || vehiclesError || driversError;
-
-  const regionOptions = useMemo(() => {
-    const regions = Array.from(
-      new Set((vehicles ?? []).map((v) => v.region).filter((r): r is string => Boolean(r))),
-    ).sort();
-    return regions;
-  }, [vehicles]);
-
-  const typeOptions = useMemo(() => {
-    return Array.from(new Set((vehicles ?? []).map((v) => v.vehicle_type).filter(Boolean))).sort();
-  }, [vehicles]);
-
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-4)" }}>
-        <Spinner />
+/* ─── Donut chart ───────────────────────────────────── */
+interface DonutSeg { label: string; count: number; color: string }
+function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }) {
+  const r = 68, circ = 2 * Math.PI * r;
+  let acc = 0;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-around", gap: "36px", padding: "8px 0" }}>
+      <div style={{ position: "relative", width: "200px", height: "200px", flexShrink: 0 }}>
+        <svg viewBox="0 0 200 200" width="100%" height="100%">
+          <circle cx="100" cy="100" r={r} fill="transparent" stroke="var(--color-surface-2)" strokeWidth="22" />
+          {segments.map((seg) => {
+            const pct = total > 0 ? seg.count / total : 0;
+            const offset = -acc;
+            acc += pct * circ;
+            if (seg.count === 0) return null;
+            return (
+              <circle key={seg.label} cx="100" cy="100" r={r} fill="transparent"
+                stroke={seg.color} strokeWidth="22"
+                strokeDasharray={`${pct * circ} ${circ}`}
+                strokeDashoffset={offset}
+                transform="rotate(-90 100 100)"
+                style={{ transition: "stroke-dasharray 0.6s ease" }} />
+            );
+          })}
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: "1.9rem", fontWeight: 800, color: "var(--color-text)" }}>{total}</span>
+          <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--color-muted)", marginTop: "2px" }}>VEHICLES</span>
+        </div>
       </div>
-    );
-  }
+      <div style={{ flex: 1, minWidth: "200px", maxWidth: "320px" }}>
+        {segments.map((seg) => {
+          const pct = total > 0 ? ((seg.count / total) * 100).toFixed(0) : "0";
+          return (
+            <div key={seg.label} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 0", borderBottom: "1px solid var(--color-border)" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "3px", background: seg.color, flexShrink: 0 }} />
+              <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text)", flex: 1 }}>{seg.label}</span>
+              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--color-text)" }}>{seg.count}</span>
+              <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", minWidth: "34px", textAlign: "right" }}>{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-  if (error) {
-    return <p className="error" style={{ margin: "var(--space-4)" }}>{error}</p>;
-  }
+/* ─── Section title ─────────────────────────────────── */
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: "20px", paddingBottom: "12px", borderBottom: "1px solid var(--color-border)" }}>
+      <h3 style={{ margin: 0, fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>
+        {children}
+      </h3>
+    </div>
+  );
+}
 
-  const vehicleList = vehicles ?? [];
-  const tripList = trips ?? [];
-  const driverList = drivers ?? [];
+/* ─── Table helpers ──────────────────────────────────── */
+function Th({ children }: { children: React.ReactNode }) {
+  return <th style={{ padding: "10px 10px 10px 0", color: "var(--color-muted)", fontWeight: 600, fontSize: "0.68rem", letterSpacing: "0.09em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{children}</th>;
+}
+function Td({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <td style={{ padding: "12px 10px 12px 0", fontSize: "0.875rem", color: "var(--color-text)", borderBottom: "1px solid var(--color-border)", ...style }}>{children}</td>;
+}
+
+/* ─── Trips table ─────────────────────────────────────── */
+function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Vehicle[]; drivers: Driver[] }) {
+  if (!trips.length) return <p style={{ color: "var(--color-muted)", textAlign: "center", padding: "32px 0", fontSize: "0.875rem" }}>No trips found.</p>;
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+            <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th><Th>Route</Th><Th>Status</Th><Th>Date</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {trips.slice(0, 12).map((trip) => {
+            const v = vehicles.find((x) => x.id === trip.vehicle_id);
+            const d = drivers.find((x) => x.id === trip.driver_id);
+            return (
+              <tr key={trip.id}>
+                <Td><span style={{ fontWeight: 700, fontFamily: "monospace" }}>TR{String(trip.id).padStart(3, "0")}</span></Td>
+                <Td>{v?.registration_number ?? `#${trip.vehicle_id}`}</Td>
+                <Td>{d?.name ?? `#${trip.driver_id}`}</Td>
+                <Td style={{ color: "var(--color-muted)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {trip.source} → {trip.destination}
+                </Td>
+                <Td><StatusBadge status={trip.status} /></Td>
+                <Td style={{ color: "var(--color-muted)", whiteSpace: "nowrap" }}>{fmtDate(trip.created_at)}</Td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ═══════ ROLE VIEWS ═══════════════════════════════════ */
+
+function FleetManagerDashboard({ kpis, trips, vehicles, drivers, typeFilter, setTypeFilter, statusFilter, setStatusFilter, regionFilter, setRegionFilter, regionOptions, typeOptions }: any) {
+  const vehicleList: Vehicle[] = vehicles ?? [];
+  const tripList: Trip[]       = trips ?? [];
+  const driverList: Driver[]   = drivers ?? [];
 
   const counts = {
     Available: vehicleList.filter((v) => v.status === "Available").length,
-    OnTrip: vehicleList.filter((v) => v.status === "On Trip").length,
-    InShop: vehicleList.filter((v) => v.status === "In Shop" || v.status === "Maintenance").length,
-    Retired: vehicleList.filter((v) => v.status === "Retired").length,
+    OnTrip:    vehicleList.filter((v) => v.status === "On Trip").length,
+    InShop:    vehicleList.filter((v) => v.status === "In Shop" || v.status === "Maintenance").length,
+    Retired:   vehicleList.filter((v) => v.status === "Retired").length,
   };
-  const totalVehicles = vehicleList.length || 1;
+  const total = vehicleList.length || 1;
 
   const filteredTrips = tripList.filter((trip) => {
     const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
     if (!v) return true;
-    const matchesType = typeFilter === "All" || v.vehicle_type === typeFilter;
-    const matchesStatus = statusFilter === "All" || v.status === statusFilter;
-    const matchesRegion = regionFilter === "All" || v.region === regionFilter;
-    return matchesType && matchesStatus && matchesRegion;
+    return (typeFilter === "All" || v.vehicle_type === typeFilter)
+        && (statusFilter === "All" || v.status === statusFilter)
+        && (regionFilter === "All" || v.region === regionFilter);
   });
 
-  // SVG circular segments calculation parameters
-  // Circle radius = 70. Circumference = 2 * PI * r = 439.82
-  const r = 70;
-  const circumference = 2 * Math.PI * r;
-  
-  const segments = [
-    { label: "Available", count: counts.Available, color: "#ffffff" },
-    { label: "On Trip", count: counts.OnTrip, color: "#cccccc" },
-    { label: "In Shop", count: counts.InShop, color: "#777777" },
-    { label: "Retired", count: counts.Retired, color: "#333333" },
+  const segs: DonutSeg[] = [
+    { label: "Available", count: counts.Available, color: CHART.green },
+    { label: "On Trip",   count: counts.OnTrip,    color: CHART.blue  },
+    { label: "In Shop",   count: counts.InShop,    color: CHART.amber },
+    { label: "Retired",   count: counts.Retired,   color: CHART.red   },
   ];
-
-  let accumulatedCircumference = 0;
 
   return (
     <>
-      <div className="page-header">
-        <h2>{workspace.dashboardTitle}</h2>
-        <p className="text-muted">{workspace.dashboardSub}</p>
+      {/* Filters */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "24px" }}>
+        <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>Filters</span>
+        {[
+          { label: "Vehicle Type", opts: typeOptions,    val: typeFilter,   set: setTypeFilter },
+          { label: "Status", opts: ["Available","On Trip","In Shop","Retired"], val: statusFilter, set: (v: string) => { setTypeFilter("All"); setStatusFilter(v); } },
+          { label: "Region", opts: regionOptions,        val: regionFilter, set: setRegionFilter },
+        ].map(({ label, opts, val, set }) => (
+          <select key={label} className="dashboard-filter-select" value={val} onChange={(e) => set(e.target.value)}>
+            <option value="All">{label}: All</option>
+            {(opts as string[]).map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        ))}
       </div>
 
-      {/* Responsive Filters */}
-      <div className="dashboard-filters" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-        <span className="dashboard-filters-label">Filters</span>
-        <select
-          className="dashboard-filter-select"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="All">Vehicle Type: All</option>
-          {typeOptions.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <select
-          className="dashboard-filter-select"
-          value={statusFilter}
-          onChange={(e) => { setTypeFilter("All"); setStatusFilter(e.target.value); }}
-        >
-          <option value="All">Status: All</option>
-          <option value="Available">Available</option>
-          <option value="On Trip">On Trip</option>
-          <option value="In Shop">In Shop</option>
-          <option value="Retired">Retired</option>
-        </select>
-        <select
-          className="dashboard-filter-select"
-          value={regionFilter}
-          onChange={(e) => setRegionFilter(e.target.value)}
-        >
-          <option value="All">Region: All</option>
-          {regionOptions.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* KPI 7 Data Cards Grid */}
       {kpis && (
-        <div 
-          className="page-grid" 
-          style={{ 
-            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", 
-            marginBottom: "var(--space-4)",
-            gap: "var(--space-2)"
-          }}
-        >
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>ACTIVE VEHICLES</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.active_vehicles}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>AVAILABLE VEHICLES</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.available_vehicles}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>VEHICLES IN MAINT.</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.vehicles_in_shop}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>ACTIVE TRIPS</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.active_trips}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>PENDING TRIPS</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.pending_trips}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>DRIVERS ON DUTY</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.drivers_on_duty}</p>
-          </div>
-          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>FLEET UTILIZATION</p>
-            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.fleet_utilization_pct.toFixed(0)}%</p>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+          <KpiCard label="Active Vehicles"   value={kpis.active_vehicles} />
+          <KpiCard label="Available"         value={kpis.available_vehicles} />
+          <KpiCard label="In Maintenance"    value={kpis.vehicles_in_shop} />
+          <KpiCard label="Active Trips"      value={kpis.active_trips} />
+          <KpiCard label="Pending Trips"     value={kpis.pending_trips} />
+          <KpiCard label="Drivers on Duty"   value={kpis.drivers_on_duty} />
+          <KpiCard label="Fleet Utilization" value={`${kpis.fleet_utilization_pct?.toFixed(0) ?? 0}%`} />
         </div>
       )}
 
-      {/* Full-width Stack Panel */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", width: "100%" }}>
-        
-        {/* Vehicle Stats Pie/Donut Chart Container */}
-        <Card style={{ width: "100%", padding: "var(--space-4)" }}>
-          <h3 style={{ margin: "0 0 var(--space-4)", fontSize: "1.1rem", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "8px" }}>
-            VEHICLE STATUS
-          </h3>
+      <Card style={{ width: "100%", padding: "var(--space-4)", marginBottom: "20px", boxSizing: "border-box" }}>
+        <SectionTitle>Vehicle Status Breakdown</SectionTitle>
+        <DonutChart segments={segs} total={total} />
+      </Card>
 
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-around",
-            gap: "var(--space-4)",
-            padding: "var(--space-2) 0"
-          }}>
-            {/* SVG Donut Chart */}
-            <div style={{ position: "relative", width: "220px", height: "220px" }}>
-              <svg viewBox="0 0 200 200" width="100%" height="100%">
-                {/* Base background circle */}
-                <circle 
-                  cx="100" 
-                  cy="100" 
-                  r={r} 
-                  fill="transparent" 
-                  stroke="rgba(255, 255, 255, 0.02)" 
-                  strokeWidth="20" 
-                />
-                
-                {segments.map((seg) => {
-                  const pct = totalVehicles > 0 ? seg.count / totalVehicles : 0;
-                  const strokeDasharray = `${pct * circumference} ${circumference}`;
-                  const strokeDashoffset = -accumulatedCircumference;
-                  accumulatedCircumference += pct * circumference;
-                  
-                  if (seg.count === 0) return null;
-                  
-                  return (
-                    <circle
-                      key={seg.label}
-                      cx="100"
-                      cy="100"
-                      r={r}
-                      fill="transparent"
-                      stroke={seg.color}
-                      strokeWidth="20"
-                      strokeDasharray={strokeDasharray}
-                      strokeDashoffset={strokeDashoffset}
-                      transform="rotate(-90 100 100)"
-                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                    />
-                  );
-                })}
-              </svg>
-              {/* Central text badge */}
-              <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                <span style={{ fontSize: "1.75rem", fontWeight: "800", color: "#ffffff" }}>{totalVehicles}</span>
-                <span style={{ fontSize: "0.6875rem", fontWeight: "700", color: "rgba(255, 255, 255, 0.4)", letterSpacing: "0.08em", marginTop: "2px" }}>
-                  TOTAL ASSETS
-                </span>
-              </div>
-            </div>
+      <Card style={{ width: "100%", padding: "var(--space-4)", boxSizing: "border-box" }}>
+        <SectionTitle>Recent Trips</SectionTitle>
+        <TripsTable trips={filteredTrips} vehicles={vehicleList} drivers={driverList} />
+      </Card>
+    </>
+  );
+}
 
-            {/* Monochrome Legend Table */}
-            <div style={{ flex: 1, minWidth: "280px", maxWidth: "450px" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <tbody>
-                  {segments.map((seg) => {
-                    const pct = totalVehicles > 0 ? ((seg.count / totalVehicles) * 100).toFixed(0) : "0";
-                    return (
-                      <tr key={seg.label} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                        <td style={{ padding: "10px 0", display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{
-                            display: "inline-block",
-                            width: "10px",
-                            height: "10px",
-                            borderRadius: "50%",
-                            background: seg.color,
-                            border: "1px solid rgba(255, 255, 255, 0.1)"
-                          }} />
-                          <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff" }}>{seg.label}</span>
-                        </td>
-                        <td style={{ padding: "10px 16px", textAlign: "right", fontSize: "0.875rem", fontWeight: "bold", color: "#ffffff" }}>
-                          {seg.count}
-                        </td>
-                        <td style={{ padding: "10px 0", textAlign: "right", fontSize: "0.875rem", color: "rgba(255, 255, 255, 0.4)" }}>
-                          {pct}%
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </Card>
+function DriverDashboard({ trips, vehicles, drivers }: any) {
+  const tripList: Trip[] = trips ?? [];
+  const active    = tripList.filter((t) => t.status === "Dispatched").length;
+  const completed = tripList.filter((t) => t.status === "Completed").length;
+  const pending   = tripList.filter((t) => t.status === "Draft").length;
 
-        {/* Recent Trips Table Container */}
-        <Card style={{ width: "100%", padding: "var(--space-4)" }}>
-          <h3 style={{ margin: "0 0 var(--space-3)", fontSize: "1.1rem" }}>RECENT TRIPS</h3>
-          {filteredTrips.length === 0 ? (
-            <p className="page-empty">No recent trips match the filter criteria.</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table className="ops-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>TRIP</th>
-                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>VEHICLE</th>
-                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>DRIVER</th>
-                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>STATUS</th>
-                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>ETA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTrips.slice(0, 10).map((trip) => {
-                    const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
-                    const d = driverList.find((drv) => drv.id === trip.driver_id);
-
-                    let eta = "—";
-                    if (trip.status === "Dispatched") {
-                      eta = "45 min";
-                    } else if (trip.status === "Draft") {
-                      eta = "Awaiting vehicle";
-                    }
-
-                    // Strict black & white badge styling
-                    const getBadgeStyle = (status: string) => {
-                      switch (status) {
-                        case "Completed":
-                          return {
-                            border: "1px solid #ffffff",
-                            background: "rgba(255, 255, 255, 0.06)",
-                            color: "#ffffff"
-                          };
-                        case "Dispatched":
-                          return {
-                            border: "1px dashed rgba(255, 255, 255, 0.4)",
-                            background: "rgba(255, 255, 255, 0.03)",
-                            color: "rgba(255, 255, 255, 0.85)"
-                          };
-                        case "Cancelled":
-                          return {
-                            border: "1px solid rgba(255, 255, 255, 0.15)",
-                            background: "transparent",
-                            color: "rgba(255, 255, 255, 0.4)",
-                            textDecoration: "line-through"
-                          };
-                        default: // Draft / Pending
-                          return {
-                            border: "1px dotted rgba(255, 255, 255, 0.3)",
-                            background: "transparent",
-                            color: "rgba(255, 255, 255, 0.6)"
-                          };
-                      }
-                    };
-
-                    return (
-                      <tr key={trip.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                        <td style={{ padding: "12px 0", fontWeight: "bold" }}>TR{String(trip.id).padStart(3, "0")}</td>
-                        <td style={{ padding: "12px 0" }}>{v ? v.registration_number : `Vehicle #${trip.vehicle_id}`}</td>
-                        <td style={{ padding: "12px 0" }}>{d ? d.name : `Driver #${trip.driver_id}`}</td>
-                        <td style={{ padding: "12px 0" }}>
-                          <span style={{
-                            padding: "3px 10px",
-                            borderRadius: "4px",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            display: "inline-block",
-                            textAlign: "center",
-                            ...getBadgeStyle(trip.status)
-                          }}>
-                            {trip.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 0", color: "var(--color-muted)", fontSize: "0.875rem" }}>{eta}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+        <KpiCard label="Active Trips"   value={active}          sub="Currently dispatched" />
+        <KpiCard label="Completed"      value={completed}       sub="All time" />
+        <KpiCard label="Pending"        value={pending}         sub="Awaiting dispatch" />
+        <KpiCard label="Total Assigned" value={tripList.length} sub="Across all time" />
       </div>
+      <Card style={{ width: "100%", padding: "var(--space-4)", boxSizing: "border-box" }}>
+        <SectionTitle>My Recent Trips</SectionTitle>
+        <TripsTable trips={tripList} vehicles={vehicles ?? []} drivers={drivers ?? []} />
+      </Card>
+    </>
+  );
+}
+
+function SafetyDashboard({ drivers, trips }: any) {
+  const driverList: Driver[] = drivers ?? [];
+  const tripList: Trip[]     = trips ?? [];
+  const now = new Date();
+
+  const expired      = driverList.filter((d) => d.license_expiry && new Date(d.license_expiry) < now).length;
+  const expiringSoon = driverList.filter((d) => {
+    if (!d.license_expiry) return false;
+    const diff = (new Date(d.license_expiry).getTime() - now.getTime()) / 86400000;
+    return diff >= 0 && diff <= 90;
+  }).length;
+  const active = driverList.filter((d) => d.status === "Active").length;
+  const onDuty = tripList.filter((t) => t.status === "Dispatched").length;
+
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+        <KpiCard label="Total Drivers"      value={driverList.length} />
+        <KpiCard label="Active"             value={active}      sub="Available for duty" />
+        <KpiCard label="On Duty"            value={onDuty}      sub="Dispatched now" />
+        <KpiCard label="Expired Licenses"   value={expired}     sub="Needs renewal" />
+        <KpiCard label="Expiring (90 days)" value={expiringSoon} sub="Action required" />
+      </div>
+
+      <Card style={{ width: "100%", padding: "var(--space-4)", boxSizing: "border-box" }}>
+        <SectionTitle>Driver License Compliance</SectionTitle>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                <Th>Driver</Th><Th>License No.</Th><Th>Category</Th><Th>Expiry</Th><Th>Status</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {driverList.slice(0, 15).map((d) => {
+                const isExpired = d.license_expiry && new Date(d.license_expiry) < now;
+                return (
+                  <tr key={d.id}>
+                    <Td><span style={{ fontWeight: 600 }}>{d.name}</span></Td>
+                    <Td style={{ fontFamily: "monospace", fontSize: "0.82rem", color: "var(--color-muted)" }}>{d.license_number ?? "—"}</Td>
+                    <Td style={{ color: "var(--color-muted)" }}>{d.license_category ?? "—"}</Td>
+                    <Td style={{ color: isExpired ? "var(--color-danger)" : "var(--color-positive)", fontWeight: 600, fontSize: "0.82rem" }}>
+                      {fmtDate(d.license_expiry)}{isExpired ? " ⚠" : ""}
+                    </Td>
+                    <Td><StatusBadge status={d.status ?? "Active"} /></Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
+  );
+}
+
+function FinanceDashboard({ kpis, trips, vehicles, drivers }: any) {
+  const tripList: Trip[]       = trips ?? [];
+  const vehicleList: Vehicle[] = vehicles ?? [];
+
+  const totalFuelConsumed = tripList.reduce((a, t) => a + (t.fuel_consumed ?? 0), 0);
+  const totalDistance     = tripList.reduce((a, t) => a + (t.planned_distance ?? 0), 0);
+  const completedTrips    = tripList.filter((t) => t.status === "Completed").length;
+
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+        <KpiCard label="Fleet Utilization" value={`${kpis?.fleet_utilization_pct?.toFixed(0) ?? 0}%`} sub="Active / Total fleet" />
+        <KpiCard label="Active Vehicles"   value={kpis?.active_vehicles ?? "—"} sub="In operation" />
+        <KpiCard label="Fuel Consumed"     value={totalFuelConsumed > 0 ? `${totalFuelConsumed.toFixed(0)}L` : "—"} sub="All trips" />
+        <KpiCard label="Total Distance"    value={totalDistance > 0 ? `${totalDistance.toFixed(0)} km` : "—"} sub="Planned" />
+        <KpiCard label="Completed Trips"   value={completedTrips} sub="Successfully finished" />
+      </div>
+
+      <Card style={{ width: "100%", padding: "var(--space-4)", marginBottom: "20px", boxSizing: "border-box" }}>
+        <SectionTitle>Vehicle Type Utilization</SectionTitle>
+        {(() => {
+          const byType: Record<string, { count: number; active: number }> = {};
+          vehicleList.forEach((v) => {
+            const t = v.vehicle_type ?? "Unknown";
+            if (!byType[t]) byType[t] = { count: 0, active: 0 };
+            byType[t].count++;
+            if (v.status === "On Trip") byType[t].active++;
+          });
+          const entries = Object.entries(byType);
+          if (!entries.length) return <p style={{ color: "var(--color-muted)" }}>No data.</p>;
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {entries.map(([type, { count, active }]) => {
+                const pct = count > 0 ? (active / count) * 100 : 0;
+                const barColor = pct > 70 ? CHART.green : pct > 30 ? CHART.amber : CHART.red;
+                return (
+                  <div key={type}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px" }}>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--color-text)" }}>{type}</span>
+                      <span style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>{active}/{count} — <span style={{ color: barColor, fontWeight: 700 }}>{pct.toFixed(0)}%</span></span>
+                    </div>
+                    <div style={{ height: "6px", background: "var(--color-surface-2)", borderRadius: "99px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: "99px", transition: "width 0.7s ease" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </Card>
+
+      <Card style={{ width: "100%", padding: "var(--space-4)", boxSizing: "border-box" }}>
+        <SectionTitle>Trip Ledger</SectionTitle>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th><Th>Distance</Th><Th>Fuel (L)</Th><Th>Route</Th><Th>Status</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {tripList.slice(0, 12).map((trip) => {
+                const v = vehicleList.find((x) => x.id === trip.vehicle_id);
+                const d = (drivers ?? []).find((x: Driver) => x.id === trip.driver_id);
+                return (
+                  <tr key={trip.id}>
+                    <Td><span style={{ fontWeight: 700, fontFamily: "monospace" }}>TR{String(trip.id).padStart(3,"0")}</span></Td>
+                    <Td>{v?.registration_number ?? `#${trip.vehicle_id}`}</Td>
+                    <Td>{d?.name ?? `#${trip.driver_id}`}</Td>
+                    <Td style={{ color: "var(--color-muted)" }}>{trip.planned_distance ? `${trip.planned_distance} km` : "—"}</Td>
+                    <Td style={{ color: "var(--color-muted)" }}>{trip.fuel_consumed ? `${trip.fuel_consumed.toFixed(1)}` : "—"}</Td>
+                    <Td style={{ color: "var(--color-muted)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{trip.source} → {trip.destination}</Td>
+                    <Td><StatusBadge status={trip.status} /></Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
+  );
+}
+
+/* ═══════ MAIN PAGE ════════════════════════════════════ */
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const workspace = roleWorkspace(user);
+  const [typeFilter,   setTypeFilter]   = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [regionFilter, setRegionFilter] = useState("All");
+
+  const { data: kpis,     loading: kpiL     } = useAsync<DashboardKpis>(() => apiGet(endpoints.kpis), []);
+  const { data: trips,    loading: tripsL   } = useAsync<Trip[]>(() => apiGetItems<Trip>(endpoints.trips, { limit: 100 }), []);
+  const { data: vehicles, loading: vehiclesL} = useAsync<Vehicle[]>(() => apiGetItems<Vehicle>(endpoints.vehicles), []);
+  const { data: drivers,  loading: driversL } = useAsync<Driver[]>(() => apiGetItems<Driver>(endpoints.drivers), []);
+
+  const loading = kpiL || tripsL || vehiclesL || driversL;
+
+  const regionOptions = useMemo(() =>
+    Array.from(new Set((vehicles ?? []).map((v) => v.region).filter((r): r is string => Boolean(r)))).sort()
+  , [vehicles]);
+
+  const typeOptions = useMemo(() =>
+    Array.from(new Set((vehicles ?? []).map((v) => v.vehicle_type).filter(Boolean))).sort()
+  , [vehicles]);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "80px", flexDirection: "column", gap: "16px" }}>
+        <Spinner />
+        <span style={{ fontSize: "0.82rem", color: "var(--color-muted)" }}>Loading dashboard…</span>
+      </div>
+    );
+  }
+
+  const role = user?.role ?? "fleet_manager";
+
+  const ROLE_LABEL: Record<string, string> = {
+    fleet_manager: "Fleet Manager", driver: "Driver",
+    safety_officer: "Safety Officer", financial_analyst: "Financial Analyst",
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "28px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", letterSpacing: "-0.02em" }}>
+            {workspace.dashboardTitle}
+          </h2>
+          <p style={{ margin: "5px 0 0", fontSize: "0.875rem", color: "var(--color-muted)" }}>
+            {workspace.dashboardSub}
+          </p>
+        </div>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: "7px",
+          padding: "5px 14px", borderRadius: "99px",
+          background: "var(--color-surface-2)",
+          border: "1px solid var(--color-border)",
+          fontSize: "0.72rem", fontWeight: 700,
+          letterSpacing: "0.08em", color: "var(--color-muted)",
+          textTransform: "uppercase",
+        }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--color-faint)" }} />
+          {ROLE_LABEL[role] ?? role}
+        </span>
+      </div>
+
+      {role === "fleet_manager"    && <FleetManagerDashboard kpis={kpis} trips={trips} vehicles={vehicles} drivers={drivers} typeFilter={typeFilter} setTypeFilter={setTypeFilter} statusFilter={statusFilter} setStatusFilter={setStatusFilter} regionFilter={regionFilter} setRegionFilter={setRegionFilter} regionOptions={regionOptions} typeOptions={typeOptions} />}
+      {role === "driver"           && <DriverDashboard trips={trips} vehicles={vehicles} drivers={drivers} user={user} />}
+      {role === "safety_officer"   && <SafetyDashboard drivers={drivers} trips={trips} />}
+      {role === "financial_analyst"&& <FinanceDashboard kpis={kpis} trips={trips} vehicles={vehicles} drivers={drivers} />}
     </>
   );
 }
