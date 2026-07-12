@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { API_BASE_URL, formatInr } from "../constants";
 import { Card, Spinner, Button } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
@@ -28,6 +29,94 @@ function fmtRoi(roi: number | null): string {
   return `${(roi * 100).toFixed(1)}%`;
 }
 
+interface ColumnChartProps {
+  data: { label: string; value: number }[];
+  ySuffix?: string;
+  isPercentage?: boolean;
+}
+
+function ColumnChart({ data, ySuffix = "", isPercentage = false }: ColumnChartProps) {
+  const width = 800;
+  const height = 240;
+  const paddingX = 40;
+  const paddingY = 30;
+
+  const maxVal = Math.max(...data.map(d => Math.abs(d.value)), 1);
+  const minVal = Math.min(...data.map(d => d.value), 0);
+
+  const range = maxVal - minVal;
+  const chartHeight = height - 2 * paddingY;
+  const yZero = height - paddingY - ((0 - minVal) / range) * chartHeight;
+
+  return (
+    <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
+      <div style={{ minWidth: "600px", position: "relative" }}>
+        <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
+          {/* Zero baseline */}
+          <line
+            x1={paddingX}
+            y1={yZero}
+            x2={width - paddingX}
+            y2={yZero}
+            stroke="var(--color-border)"
+            strokeWidth="2"
+          />
+
+          {data.map((d, i) => {
+            const colWidth = (width - 2 * paddingX) / Math.max(data.length, 1);
+            const x = paddingX + i * colWidth + colWidth * 0.15;
+            const barW = colWidth * 0.7;
+
+            const pct = d.value / range;
+            const barH = Math.abs(pct * chartHeight);
+            const y = d.value >= 0 ? yZero - barH : yZero;
+
+            const isPositive = d.value >= 0;
+            const barColor = isPositive ? "var(--color-positive, #22c55e)" : "var(--color-danger, #ef4444)";
+
+            return (
+              <g key={i}>
+                {/* Column block */}
+                <rect
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={Math.max(barH, 2)}
+                  fill={barColor}
+                  rx="4"
+                  style={{ transition: "all 0.3s" }}
+                />
+                {/* Value label */}
+                <text
+                  x={x + barW / 2}
+                  y={isPositive ? y - 6 : y + barH + 12}
+                  fill="var(--color-text)"
+                  fontSize="10"
+                  fontWeight="700"
+                  textAnchor="middle"
+                >
+                  {isPercentage ? `${d.value.toFixed(1)}%` : `${d.value.toFixed(1)}${ySuffix}`}
+                </text>
+                {/* Vehicle label */}
+                <text
+                  x={x + barW / 2}
+                  y={isPositive ? yZero + 15 : yZero - 6}
+                  fill="var(--color-muted)"
+                  fontSize="9"
+                  fontWeight="600"
+                  textAnchor="middle"
+                >
+                  {d.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const chrome = pageChrome(user, "analytics");
@@ -37,6 +126,22 @@ export default function AnalyticsPage() {
     () => apiGetItems<VehicleCostRow>(endpoints.operationalCosts),
     [],
   );
+
+  const [activeTab, setActiveTab] = useState<"roi" | "efficiency">("roi");
+
+  const roiData = useMemo(() => {
+    return (fleetCosts || []).map(v => ({
+      label: v.registration_number,
+      value: v.roi !== null ? v.roi * 100 : 0,
+    }));
+  }, [fleetCosts]);
+
+  const efficiencyData = useMemo(() => {
+    return (fleetCosts || []).map(v => ({
+      label: v.registration_number,
+      value: v.fuel_efficiency_km_per_l || 0,
+    }));
+  }, [fleetCosts]);
 
   const downloadCsv = async () => {
     try {
@@ -137,54 +242,56 @@ export default function AnalyticsPage() {
           </div>
 
           <Card>
-            <h3 style={{ margin: "0 0 var(--space-3)" }}>
+            <h3 style={{ margin: "0 0 12px" }}>
               {isFinance ? "Cost Distribution by Vehicle" : "Operating Cost Distribution"}
             </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "var(--space-2)" }}>
+            {/* Legend */}
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px", fontSize: "0.75rem", color: "var(--color-muted)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#3b82f6" }} />
+                <span>Fuel Cost</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#f59e0b" }} />
+                <span>Maintenance</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#a855f7" }} />
+                <span>Other Expenses</span>
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "var(--space-2)" }}>
               {fleetCosts.map((v) => {
-                const pct = (v.total_operational_cost / maxCost) * 100;
+                const fuelPct = (v.fuel_cost / maxCost) * 100;
+                const maintPct = (v.maintenance_cost / maxCost) * 100;
+                const otherPct = (v.other_expenses / maxCost) * 100;
+
                 return (
-                  <div
-                    key={v.vehicle_id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "120px 1fr 100px",
-                      alignItems: "center",
-                      gap: "var(--space-2)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: "bold",
-                        fontSize: "0.875rem",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {v.registration_number}
-                    </span>
-                    <div
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        borderRadius: "4px",
-                        height: "20px",
-                        overflow: "hidden",
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: "var(--color-primary)",
-                          width: `${Math.max(pct, 2)}%`,
-                          height: "100%",
-                          borderRadius: "4px",
-                        }}
-                      />
+                  <div key={v.vehicle_id} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", fontWeight: 700 }}>
+                      <span>{v.registration_number} <span style={{ fontWeight: 400, color: "var(--color-muted)" }}>({v.name})</span></span>
+                      <span>{formatInr(v.total_operational_cost, 2)}</span>
                     </div>
-                    <span style={{ textAlign: "right", fontSize: "0.875rem", fontWeight: "bold" }}>
-                      {formatInr(v.total_operational_cost, 2)}
-                    </span>
+                    <div style={{
+                      background: "var(--color-surface-2)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "99px",
+                      height: "12px",
+                      display: "flex",
+                      overflow: "hidden",
+                      width: "100%",
+                    }}>
+                      {v.fuel_cost > 0 && (
+                        <div style={{ width: `${fuelPct}%`, background: "#3b82f6", height: "100%" }} title={`Fuel: ${formatInr(v.fuel_cost, 2)}`} />
+                      )}
+                      {v.maintenance_cost > 0 && (
+                        <div style={{ width: `${maintPct}%`, background: "#f59e0b", height: "100%" }} title={`Maintenance: ${formatInr(v.maintenance_cost, 2)}`} />
+                      )}
+                      {v.other_expenses > 0 && (
+                        <div style={{ width: `${otherPct}%`, background: "#a855f7", height: "100%" }} title={`Other Expenses: ${formatInr(v.other_expenses, 2)}`} />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -192,14 +299,56 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <h3 style={{ margin: "0 0 var(--space-3)" }}>Efficiency, Cost & ROI</h3>
-            <p className="text-muted" style={{ marginTop: 0, marginBottom: "var(--space-3)", fontSize: "0.85rem" }}>
+            <h3 style={{ margin: "0 0 4px" }}>Efficiency, Cost & ROI</h3>
+            <p className="text-muted" style={{ marginTop: 0, marginBottom: "16px", fontSize: "0.85rem" }}>
               ROI = (Estimated revenue − Maintenance − Fuel) ÷ Acquisition cost. Revenue ≈ completed trip km × ₹40.
             </p>
+
+            {/* Visual Tabs switcher */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
+              <button
+                onClick={() => setActiveTab("roi")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  background: activeTab === "roi" ? "var(--color-primary, #3b82f6)" : "transparent",
+                  color: activeTab === "roi" ? "var(--btn-primary-text)" : "var(--color-text)",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                }}
+              >
+                ROI Performance (%)
+              </button>
+              <button
+                onClick={() => setActiveTab("efficiency")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  background: activeTab === "efficiency" ? "var(--color-primary, #3b82f6)" : "transparent",
+                  color: activeTab === "efficiency" ? "var(--btn-primary-text)" : "var(--color-text)",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                }}
+              >
+                Fuel Efficiency (km/L)
+              </button>
+            </div>
+
+            {/* Display column chart */}
+            {activeTab === "roi" ? (
+              <ColumnChart data={roiData} isPercentage={true} />
+            ) : (
+              <ColumnChart data={efficiencyData} ySuffix=" km/L" />
+            )}
+
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
                     <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle</th>
                     <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Distance</th>
                     <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Fuel Eff.</th>
@@ -211,7 +360,7 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {fleetCosts.map((v) => (
-                    <tr key={v.vehicle_id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                    <tr key={v.vehicle_id} style={{ borderBottom: "1px solid var(--color-border)" }}>
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
                         {v.registration_number}{" "}
                         <span style={{ fontWeight: "normal", color: "var(--color-muted)", fontSize: "0.85rem" }}>

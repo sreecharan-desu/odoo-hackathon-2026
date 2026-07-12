@@ -14,9 +14,9 @@ const C = {
   red:    "#ef4444",
   blue:   "#3b82f6",
   purple: "#a855f7",
-  muted:  "rgba(255,255,255,0.38)",
-  border: "rgba(255,255,255,0.07)",
-  card:   "rgba(255,255,255,0.03)",
+  muted:  "var(--color-muted)",
+  border: "var(--color-border)",
+  card:   "var(--color-surface-2)",
 };
 
 const fmtDate = (s?: string | null) =>
@@ -25,11 +25,11 @@ const fmtDate = (s?: string | null) =>
 /* ─── status badge ─── */
 const STATUS_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
   Completed:  { bg: "rgba(34,197,94,0.12)",  text: "#22c55e", dot: "#22c55e" },
-  Dispatched: { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", dot: "#3b82f6" },
-  Cancelled:  { bg: "rgba(239,68,68,0.10)",  text: "#f87171", dot: "#ef4444" },
-  Draft:      { bg: "rgba(255,255,255,0.05)", text: "rgba(255,255,255,0.5)", dot: "rgba(255,255,255,0.3)" },
+  Dispatched: { bg: "rgba(59,130,246,0.12)", text: "#3b82f6", dot: "#3b82f6" },
+  Cancelled:  { bg: "rgba(239,68,68,0.10)",  text: "#ef4444", dot: "#ef4444" },
+  Draft:      { bg: "var(--color-surface-2)", text: "var(--color-muted)", dot: "var(--color-muted-2)" },
   Active:     { bg: "rgba(34,197,94,0.12)",  text: "#22c55e", dot: "#22c55e" },
-  Inactive:   { bg: "rgba(239,68,68,0.10)",  text: "#f87171", dot: "#ef4444" },
+  Inactive:   { bg: "rgba(239,68,68,0.10)",  text: "#ef4444", dot: "#ef4444" },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -73,7 +73,7 @@ function KpiCard({ label, value, sub, accent }: KpiProps) {
       }}>
         {label}
       </span>
-      <span style={{ fontSize: "2.1rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>
+      <span style={{ fontSize: "2.1rem", fontWeight: 800, color: "var(--color-text)", lineHeight: 1 }}>
         {value}
       </span>
       {sub && <span style={{ fontSize: "0.74rem", color: C.muted }}>{sub}</span>}
@@ -97,7 +97,7 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
       <div style={{ position: "relative", width: "220px", height: "220px", flexShrink: 0 }}>
         <svg viewBox="0 0 200 200" width="100%" height="100%">
           <circle cx="100" cy="100" r={r} fill="transparent"
-            stroke="rgba(255,255,255,0.05)" strokeWidth="24" />
+            stroke="var(--color-border)" strokeWidth="24" />
           {segments.map((seg) => {
             const pct = total > 0 ? seg.count / total : 0;
             const dash = `${pct * circ} ${circ}`;
@@ -124,7 +124,7 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
         }}>
-          <span style={{ fontSize: "2rem", fontWeight: 800, color: "#fff" }}>{total}</span>
+          <span style={{ fontSize: "2rem", fontWeight: 800, color: "var(--color-text)" }}>{total}</span>
           <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", color: C.muted, marginTop: "2px" }}>
             VEHICLES
           </span>
@@ -145,10 +145,10 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
                 width: "10px", height: "10px", borderRadius: "3px",
                 background: seg.color, flexShrink: 0,
               }} />
-              <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#e5e5e5", flex: 1 }}>
+              <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text)", flex: 1 }}>
                 {seg.label}
               </span>
-              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>{seg.count}</span>
+              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--color-text)" }}>{seg.count}</span>
               <span style={{
                 fontSize: "0.75rem", color: C.muted, minWidth: "36px", textAlign: "right",
               }}>{pct}%</span>
@@ -169,7 +169,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       paddingBottom: "12px",
       borderBottom: `1px solid ${C.border}`,
     }}>
-      <h3 style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.1em", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
+      <h3 style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>
         {children}
       </h3>
     </div>
@@ -202,7 +202,7 @@ function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Veh
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
         <thead>
-          <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
             <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th>
             <Th>Route</Th><Th>Status</Th><Th>Date</Th>
           </tr>
@@ -213,9 +213,9 @@ function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Veh
             const d = drivers.find((x) => x.id === trip.driver_id);
             return (
               <tr key={trip.id} style={{ borderBottom: `1px solid ${C.border}` }}>
-                <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "#fff" }}>TR{String(trip.id).padStart(3, "0")}</span></Td>
-                <Td><span style={{ color: "#d4d4d4" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</span></Td>
-                <Td><span style={{ color: "#d4d4d4" }}>{d?.name ?? `#${trip.driver_id}`}</span></Td>
+                <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--color-text)" }}>TR{String(trip.id).padStart(3, "0")}</span></Td>
+                <Td><span style={{ color: "var(--color-text)" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</span></Td>
+                <Td><span style={{ color: "var(--color-text)" }}>{d?.name ?? `#${trip.driver_id}`}</span></Td>
                 <Td style={{ color: C.muted, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {trip.source} → {trip.destination}
                 </Td>
@@ -355,7 +355,7 @@ function SafetyDashboard({ drivers, trips }: any) {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
                 <Th>Driver</Th><Th>License No.</Th><Th>Category</Th><Th>Expiry</Th><Th>Status</Th>
               </tr>
             </thead>
@@ -365,9 +365,9 @@ function SafetyDashboard({ drivers, trips }: any) {
                 const expiryColor = isExpired ? C.red : C.green;
                 return (
                   <tr key={d.id} style={{ borderBottom: `1px solid ${C.border}` }}>
-                    <Td><span style={{ fontWeight: 600, color: "#fff" }}>{d.name}</span></Td>
-                    <Td><span style={{ fontFamily: "monospace", fontSize: "0.82rem", color: "#d4d4d4" }}>{d.license_number ?? "—"}</span></Td>
-                    <Td style={{ color: "#d4d4d4" }}>{d.license_category ?? "—"}</Td>
+                    <Td><span style={{ fontWeight: 600, color: "var(--color-text)" }}>{d.name}</span></Td>
+                    <Td><span style={{ fontFamily: "monospace", fontSize: "0.82rem", color: "var(--color-text)" }}>{d.license_number ?? "—"}</span></Td>
+                    <Td style={{ color: "var(--color-text)" }}>{d.license_category ?? "—"}</Td>
                     <Td>
                       <span style={{ color: expiryColor, fontWeight: 600, fontSize: "0.82rem" }}>
                         {fmtDate(d.license_expiry)}{isExpired ? " ⚠" : ""}
@@ -424,10 +424,10 @@ function FinanceDashboard({ kpis, trips, vehicles, drivers }: any) {
                 return (
                   <div key={type}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px" }}>
-                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#e5e5e5" }}>{type}</span>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--color-text)" }}>{type}</span>
                       <span style={{ fontSize: "0.8rem", color: C.muted }}>{active}/{count} active — <span style={{ color: barColor, fontWeight: 700 }}>{pct.toFixed(0)}%</span></span>
                     </div>
-                    <div style={{ height: "6px", background: "rgba(255,255,255,0.07)", borderRadius: "99px", overflow: "hidden" }}>
+                    <div style={{ height: "6px", background: "var(--color-border)", borderRadius: "99px", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: "99px", transition: "width 0.7s ease" }} />
                     </div>
                   </div>
@@ -444,7 +444,7 @@ function FinanceDashboard({ kpis, trips, vehicles, drivers }: any) {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
                 <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th>
                 <Th>Distance</Th><Th>Fuel (L)</Th><Th>Route</Th><Th>Status</Th>
               </tr>
@@ -455,9 +455,9 @@ function FinanceDashboard({ kpis, trips, vehicles, drivers }: any) {
                 const d = (drivers ?? []).find((x: Driver) => x.id === trip.driver_id);
                 return (
                   <tr key={trip.id} style={{ borderBottom: `1px solid ${C.border}` }}>
-                    <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "#fff" }}>TR{String(trip.id).padStart(3,"0")}</span></Td>
-                    <Td style={{ color: "#d4d4d4" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</Td>
-                    <Td style={{ color: "#d4d4d4" }}>{d?.name ?? `#${trip.driver_id}`}</Td>
+                    <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--color-text)" }}>TR{String(trip.id).padStart(3,"0")}</span></Td>
+                    <Td style={{ color: "var(--color-text)" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</Td>
+                    <Td style={{ color: "var(--color-text)" }}>{d?.name ?? `#${trip.driver_id}`}</Td>
                     <Td style={{ color: C.muted }}>{trip.planned_distance ? `${trip.planned_distance} km` : "—"}</Td>
                     <Td style={{ color: C.muted }}>{trip.fuel_consumed ? `${trip.fuel_consumed.toFixed(1)}` : "—"}</Td>
                     <Td style={{ color: C.muted, maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{trip.source} → {trip.destination}</Td>
@@ -522,7 +522,7 @@ export default function DashboardPage() {
       {/* Page header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "28px" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", letterSpacing: "-0.02em" }}>
             {workspace.dashboardTitle}
           </h2>
           <p style={{ margin: "5px 0 0", fontSize: "0.875rem", color: C.muted }}>
