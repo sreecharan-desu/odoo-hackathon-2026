@@ -11,6 +11,7 @@ import DriversPage from "./pages/DriversPage";
 import FleetPage from "./pages/FleetPage";
 import FuelExpensesPage from "./pages/FuelExpensesPage";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import MaintenancePage from "./pages/MaintenancePage";
 import TripsPage from "./pages/TripsPage";
 
@@ -20,7 +21,7 @@ function Guarded({ children }: { children: ReactNode }) {
 
 function DefaultRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user ? getHomeRoute(user) : ROUTES.login} replace />;
+  return <Navigate to={user ? getHomeRoute(user) : ROUTES.home} replace />;
 }
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path={ROUTES.home} element={<HomePage />} />
           <Route path={ROUTES.login} element={<LoginPage />} />
           <Route
             element={
