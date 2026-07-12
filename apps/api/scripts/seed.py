@@ -180,16 +180,16 @@ def seed() -> None:
         ]
         # Status mix for bulk: mostly Available, some On Trip / In Shop / Retired
         status_cycle = (
-            ["Available"] * 28
-            + ["On Trip"] * 8
-            + ["In Shop"] * 6
-            + ["Retired"] * 4
+            ["Available"] * 14
+            + ["On Trip"] * 5
+            + ["In Shop"] * 3
+            + ["Retired"] * 2
         )
         RNG.shuffle(status_cycle)
 
         n = 0
         for prefix, vtype, lo, hi, cost_lo, cost_hi in specs:
-            for i in range(1, 13):  # 5 types × 12 = 60 + 3 demo = 63 vehicles
+            for i in range(1, 7):  # 5 types × 6 = 30 + 3 demo = 33 vehicles
                 n += 1
                 reg = f"{prefix}-{100 + i}"
                 if any(v.registration_number == reg for v in vehicles):
