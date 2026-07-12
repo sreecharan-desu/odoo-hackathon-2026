@@ -97,7 +97,7 @@
   color: var(--color-muted);
   font-size: 0.875rem;
   font-weight: 500;
-  transition: background 0.12s, color 0.12s;
+  transition: color 0.12s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -106,10 +106,6 @@
 
 .shell-nav-link svg {
   flex-shrink: 0;
-}
-
-.shell-nav-link:hover {
-  color: var(--color-text);
 }
 
 .shell-nav-link--active {
@@ -313,15 +309,26 @@
 
 /* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Hide sidebar by default on mobile */
+  /* Hide sidebar by default on mobile — slides in as full overlay */
   .shell-sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
     transform: translateX(-100%);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s;
-    width: 240px !important; /* always full width on mobile */
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 260px !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+  }
+
+  /* Always show full sidebar brand title on mobile — never collapsed */
+  .shell-sidebar .shell-brand-title {
+    display: block !important;
+  }
+
+  /* Hide the collapse/expand chevron buttons entirely on mobile */
+  .shell-sidebar .sidebar-collapse-btn {
+    display: none !important;
   }
 
   /* Show when mobile open */
@@ -340,7 +347,29 @@
   }
 
   .shell-main {
-    padding: var(--space-3);
+    padding: 12px;
+  }
+
+  /* Mobile trip cards */
+  .trips-table-desktop {
+    display: none !important;
+  }
+
+  .trips-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Mobile fleet card grid */
+  .fleet-table-desktop {
+    display: none !important;
+  }
+
+  .fleet-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 
@@ -359,6 +388,15 @@
   /* Sidebar footer (logout) hidden on desktop — logout is in header */
   .sidebar-footer {
     display: none;
+  }
+
+  /* Hide mobile-only views on desktop */
+  .trips-cards-mobile {
+    display: none !important;
+  }
+
+  .fleet-cards-mobile {
+    display: none !important;
   }
 }
 

@@ -275,51 +275,112 @@ export default function FleetPage() {
           <p className="page-empty">No vehicles match the filter criteria.</p>
         )}
         {vehicles && filteredVehicles.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  <th style={{ padding: "10px 8px" }}></th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>REG. NO.</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>NAME/MODEL</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>TYPE</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>REGION</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>CAPACITY</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>ODOMETER</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>ACQ. COST</th>
-                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredVehicles.map((v) => (
-                  <tr key={v.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                    <td style={{ padding: "11px 8px" }}>
-                      <Button variant="ghost" style={{ padding: "2px 8px" }} onClick={() => setSelectedVehicleId(v.id)}>
-                        Docs
-                      </Button>
-                    </td>
-                    <td style={{ padding: "11px 8px", fontWeight: "bold", fontSize: "0.875rem" }}>{v.registration_number}</td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.name}</td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.vehicle_type}</td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.region ?? "—"}</td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>
-                      {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
-                    </td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.odometer.toLocaleString()}</td>
-                    <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{formatInr(v.acquisition_cost)}</td>
-                    <td style={{ padding: "11px 8px" }}>
-                      <StatusBadge status={v.status} />
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="fleet-table-desktop" style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                    <th style={{ padding: "10px 8px" }}></th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>REG. NO.</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>NAME/MODEL</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>TYPE</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>REGION</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>CAPACITY</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>ODOMETER</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>ACQ. COST</th>
+                    <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>STATUS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredVehicles.map((v) => (
+                    <tr key={v.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
+                      <td style={{ padding: "11px 8px" }}>
+                        <Button variant="ghost" style={{ padding: "2px 8px" }} onClick={() => setSelectedVehicleId(v.id)}>
+                          Docs
+                        </Button>
+                      </td>
+                      <td style={{ padding: "11px 8px", fontWeight: "bold", fontSize: "0.875rem" }}>{v.registration_number}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.name}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.vehicle_type}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.region ?? "—"}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>
+                        {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
+                      </td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{v.odometer.toLocaleString()}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{formatInr(v.acquisition_cost)}</td>
+                      <td style={{ padding: "11px 8px" }}>
+                        <StatusBadge status={v.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="fleet-cards-mobile">
+              {filteredVehicles.map((v) => (
+                <div key={v.id} style={{
+                  background: "var(--color-surface-2)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "12px",
+                  padding: "14px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}>
+                  {/* Header: reg number + status */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 800, fontFamily: "monospace", fontSize: "0.95rem", color: "var(--color-text)", letterSpacing: "-0.01em" }}>
+                      {v.registration_number}
+                    </span>
+                    <StatusBadge status={v.status} />
+                  </div>
+                  {/* Name + type */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-text)" }}>{v.name}</span>
+                    <span style={{
+                      fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase",
+                      background: "var(--color-border)", color: "var(--color-muted)",
+                      padding: "2px 7px", borderRadius: "6px", letterSpacing: "0.06em",
+                    }}>{v.vehicle_type}</span>
+                  </div>
+                  {/* Stats grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Region</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{v.region ?? "—"}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Capacity</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>
+                        {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Odometer</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{v.odometer.toLocaleString()} km</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Acq. Cost</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text)" }}>{formatInr(v.acquisition_cost)}</span>
+                    </div>
+                  </div>
+                  {/* Docs button */}
+                  <Button variant="ghost" style={{ padding: "6px 12px", fontSize: "0.8rem", alignSelf: "flex-start", marginTop: "2px" }} onClick={() => setSelectedVehicleId(v.id)}>
+                    📄 View Documents
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
         {vehicles && (
           <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
+
 
       {selectedVehicleId !== null && (
         <Card style={{ marginTop: "var(--space-4)" }}>
