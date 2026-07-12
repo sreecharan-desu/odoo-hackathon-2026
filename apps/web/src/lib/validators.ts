@@ -1,3 +1,5 @@
+/** Shared form validators — smoke-test touch by Anand */
+
 export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
