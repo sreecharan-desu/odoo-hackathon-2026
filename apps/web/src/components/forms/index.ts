@@ -5,6 +5,7 @@ import "./forms.css";
 export { default as DateField } from "./DateField";
 export { default as FieldShell } from "./FieldShell";
 export { default as NumberField } from "./NumberField";
+export { default as PasswordField } from "./PasswordField";
 export { default as SelectField } from "./SelectField";
 export type { SelectOption } from "./SelectField";
 export { default as TextField } from "./TextField";
