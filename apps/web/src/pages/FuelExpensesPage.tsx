@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Skeleton } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
@@ -296,19 +296,27 @@ export default function FuelExpensesPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "16px" }}>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Total Spend</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.totalSpend)}</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+                  {loadingGraph ? <Skeleton width="60%" height={24} /> : formatInr(stats.totalSpend)}
+                </div>
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Fuel Refills</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.refillCount}</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+                  {loadingGraph ? <Skeleton width="40%" height={24} /> : stats.refillCount}
+                </div>
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Avg Fuel Price</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.avgFuelPrice)}</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+                  {loadingGraph ? <Skeleton width="50%" height={24} /> : formatInr(stats.avgFuelPrice)}
+                </div>
               </div>
               <div>
                 <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Other Expenses</span>
-                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{formatInr(stats.totalExpenseCost)}</div>
+                <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>
+                  {loadingGraph ? <Skeleton width="60%" height={24} /> : formatInr(stats.totalExpenseCost)}
+                </div>
               </div>
             </div>
           </Card>
@@ -348,7 +356,7 @@ export default function FuelExpensesPage() {
 
             {/* SVG Spend Graph */}
             {loadingGraph ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}><Spinner /></div>
+              <Skeleton height={height} width="100%" />
             ) : graphError ? (
               <p className="error" style={{ textAlign: "center", padding: "20px" }}>{graphError}</p>
             ) : chartData.length > 0 ? (
@@ -457,7 +465,26 @@ export default function FuelExpensesPage() {
             <p className="text-muted" style={{ margin: "0 0 16px", fontSize: "0.82rem" }}>Chronological record of fuel refills and operational expenses</p>
             
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
-              {recentLogs.length === 0 ? (
+              {loadingGraph ? (
+                [1, 2, 3, 4].map(i => (
+                  <div key={i} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px",
+                    background: "var(--color-surface-2)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "8px",
+                    gap: "12px"
+                  }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+                      <Skeleton width="40%" height={14} />
+                      <Skeleton width="70%" height={12} />
+                    </div>
+                    <Skeleton width="20%" height={18} />
+                  </div>
+                ))
+              ) : recentLogs.length === 0 ? (
                 <div style={{ padding: "40px 0", textAlign: "center", color: "var(--color-muted)", fontSize: "0.875rem", border: "1px dashed var(--color-border)", borderRadius: "8px" }}>
                   No logged transactions found.
                 </div>
