@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { Navigate, useLocation, Link } from "react-router-dom";
 import { Spinner } from "../components/ui";
 import * as validators from "../lib/validators";
@@ -47,6 +47,7 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   if (loading) {
@@ -64,6 +65,7 @@ export default function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setToast(null);
 
     const emailErr = validators.email(email);
     const passErr = validators.password(password);
@@ -81,7 +83,7 @@ export default function LoginPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
       if (message.toLowerCase().includes("credentials") || message.toLowerCase().includes("unauthorized") || message.toLowerCase().includes("password")) {
-        setError("Invalid email or password.");
+        setToast("Invalid email or password.");
       } else {
         setError(message);
       }
@@ -252,6 +254,111 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
+  );
+}
+
+const toastStyles = `
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+`;
+
+interface ToastProps {
+  message: string;
+  onClose: () => void;
+}
+
+function Toast({ message, onClose }: ToastProps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <>
+      <style>{toastStyles}</style>
+      <div
+        style={{
+          position: "fixed",
+          top: "24px",
+          right: "24px",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "16px 20px",
+          background: "var(--color-danger-bg)",
+          border: "1px solid var(--color-danger)",
+          borderRadius: "12px",
+          boxShadow: "var(--shadow-modal), 0 4px 12px rgba(190, 18, 60, 0.15)",
+          color: "var(--color-danger)",
+          fontSize: "14px",
+          fontWeight: 500,
+          maxWidth: "380px",
+          animation: "toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ flexShrink: 0 }}
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <div style={{ flex: 1, lineHeight: "1.4" }}>{message}</div>
+        <button
+          onClick={onClose}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "var(--color-danger)",
+            opacity: 0.6,
+            cursor: "pointer",
+            padding: "2px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "opacity 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </>
   );
 }
