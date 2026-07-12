@@ -1,5 +1,5 @@
 import { API_BASE_URL, formatInr } from "../constants";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Button, Skeleton } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import { apiGetItems, endpoints } from "../lib/api";
@@ -102,7 +102,39 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {loading && <Spinner />}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1 }}>
+          <div className="page-grid">
+            <Card><Skeleton height={32} width="60%" /><Skeleton height={20} width="40%" style={{ marginTop: 8 }} /></Card>
+            <Card><Skeleton height={32} width="60%" /><Skeleton height={20} width="40%" style={{ marginTop: 8 }} /></Card>
+          </div>
+          <div className="analytics-split-layout">
+            <div className="analytics-pane-left">
+              <Card>
+                <Skeleton height={24} width="50%" style={{ marginBottom: 16 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <Skeleton height={16} width="80%" />
+                      <Skeleton height={12} width="100%" />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+            <div className="analytics-pane-right">
+              <Card>
+                <Skeleton height={24} width="40%" style={{ marginBottom: 16 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} height={36} width="100%" />
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
 
       {fleetCosts && fleetCosts.length === 0 && (
