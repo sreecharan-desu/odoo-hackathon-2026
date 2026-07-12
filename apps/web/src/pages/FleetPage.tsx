@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, Spinner, Button, Pagination, StatusBadge } from "../components/ui";
+import { Card, Button, Pagination, StatusBadge, Skeleton } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
@@ -266,7 +266,32 @@ export default function FleetPage() {
       )}
 
       <Card>
-        {loading && <Spinner />}
+        {loading && (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                  <th style={{ padding: "12px 8px" }}><Skeleton width="40%" height={14} /></th>
+                  <th style={{ padding: "12px 8px" }}><Skeleton width="30%" height={14} /></th>
+                  <th style={{ padding: "12px 8px" }}><Skeleton width="30%" height={14} /></th>
+                  <th style={{ padding: "12px 8px" }}><Skeleton width="40%" height={14} /></th>
+                  <th style={{ padding: "12px 8px" }}><Skeleton width="20%" height={14} /></th>
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4].map(i => (
+                  <tr key={i} style={{ borderBottom: "1px solid var(--color-border)" }}>
+                    <td style={{ padding: "16px 8px" }}><Skeleton width="70%" height={16} /></td>
+                    <td style={{ padding: "16px 8px" }}><Skeleton width="50%" height={14} /></td>
+                    <td style={{ padding: "16px 8px" }}><Skeleton width="60%" height={14} /></td>
+                    <td style={{ padding: "16px 8px" }}><Skeleton width="40%" height={14} /></td>
+                    <td style={{ padding: "16px 8px" }}><Skeleton width="30%" height={16} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {apiMissing && (
           <p className="page-empty">Fleet API not available yet. List will appear here.</p>
         )}
