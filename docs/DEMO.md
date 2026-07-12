@@ -4,10 +4,10 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Fleet Manager | fleet@transitops.local | Password123! |
-| Driver | driver@transitops.local | Password123! |
-| Safety Officer | safety@transitops.local | Password123! |
-| Financial Analyst | finance@transitops.local | Password123! |
+| Fleet Manager | fleet@example.com | Password123! |
+| Driver | driver@example.com | Password123! |
+| Safety Officer | safety@example.com | Password123! |
+| Financial Analyst | finance@example.com | Password123! |
 
 ## 90-second flow (PDF Steps 1–9)
 

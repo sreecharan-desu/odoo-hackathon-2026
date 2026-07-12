@@ -53,21 +53,21 @@ We are building a simplified **Odoo Fleet–style** app: own PostgreSQL + FastAP
 | Method | Path | Owner | Status |
 |--------|------|-------|--------|
 | GET | /api/health | SreeCharan | done |
-| POST | /api/auth/login | SreeCharan | todo |
-| POST | /api/auth/register | SreeCharan | todo |
-| GET/POST | /api/vehicles | SreeCharan | todo |
-| GET/PATCH | /api/vehicles/{id} | SreeCharan | todo |
-| GET/POST | /api/drivers | SreeCharan | todo |
-| GET/PATCH | /api/drivers/{id} | SreeCharan | todo |
-| GET/POST | /api/trips | SreeCharan | todo |
-| POST | /api/trips/{id}/dispatch | SreeCharan | todo |
-| POST | /api/trips/{id}/complete | SreeCharan | todo |
-| POST | /api/trips/{id}/cancel | SreeCharan | todo |
-| GET/POST | /api/maintenance | SreeCharan | todo |
-| POST | /api/maintenance/{id}/close | SreeCharan | todo |
-| GET/POST | /api/fuel-logs | SreeCharan | todo |
-| GET | /api/dashboard/kpis | SreeCharan | todo |
-| GET | /api/reports/operational.csv | SreeCharan | todo |
+| POST | /api/auth/login | SreeCharan | done |
+| POST | /api/auth/register | SreeCharan | done |
+| GET/POST | /api/vehicles | SreeCharan | done |
+| GET/PATCH | /api/vehicles/{id} | SreeCharan | done |
+| GET/POST | /api/drivers | SreeCharan | done |
+| GET/PATCH | /api/drivers/{id} | SreeCharan | done |
+| GET/POST | /api/trips | SreeCharan | done |
+| POST | /api/trips/{id}/dispatch | SreeCharan | done |
+| POST | /api/trips/{id}/complete | SreeCharan | done |
+| POST | /api/trips/{id}/cancel | SreeCharan | done |
+| GET/POST | /api/maintenance | SreeCharan | done |
+| POST | /api/maintenance/{id}/close | SreeCharan | done |
+| GET/POST | /api/fuel-logs | SreeCharan | done |
+| GET | /api/dashboard/kpis | SreeCharan | done |
+| GET | /api/reports/operational.csv | SreeCharan | done |
 
 ## Monorepo ownership
 
