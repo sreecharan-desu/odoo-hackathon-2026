@@ -33,7 +33,7 @@ def dispatch_pool(db: Session = Depends(get_db), _: User = Depends(get_current_u
 def create_vehicle(
     payload: VehicleCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles("fleet_manager", "financial_analyst")),
+    _: User = Depends(require_roles("fleet_manager")),
 ) -> object:
     return VehicleService.create(db, payload)
 

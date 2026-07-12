@@ -1,22 +1,26 @@
 import { API_BASE_URL, formatInr } from "../constants";
 import { Card, Spinner, Button } from "../components/ui";
+import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
-import { apiGet, apiGetItems, endpoints } from "../lib/api";
-import type { Vehicle } from "../types";
+import { apiGetItems, endpoints } from "../lib/api";
+import { hasRole, pageChrome } from "../lib/rbac";
 
-type VehicleMetrics = Vehicle & {
-  costs: {
-    fuel_cost: number;
-    fuel_liters: number;
-    distance_km: number;
-    fuel_efficiency_km_per_l: number | null;
-    maintenance_cost: number;
-    other_expenses: number;
-    estimated_revenue: number;
-    total_operational_cost: number;
-    acquisition_cost: number;
-    roi: number | null;
-  };
+type VehicleCostRow = {
+  vehicle_id: number;
+  registration_number: string;
+  name: string;
+  status: string;
+  vehicle_type?: string;
+  fuel_cost: number;
+  fuel_liters: number;
+  distance_km: number;
+  fuel_efficiency_km_per_l: number | null;
+  maintenance_cost: number;
+  other_expenses: number;
+  estimated_revenue: number;
+  total_operational_cost: number;
+  acquisition_cost: number;
+  roi: number | null;
 };
 
 function fmtRoi(roi: number | null): string {
@@ -25,15 +29,14 @@ function fmtRoi(roi: number | null): string {
 }
 
 export default function AnalyticsPage() {
-  const { data: fleetCosts, error, loading } = useAsync<VehicleMetrics[]>(async () => {
-    const vehicles = await apiGetItems<Vehicle>(endpoints.vehicles);
-    return Promise.all(
-      vehicles.map(async (v) => {
-        const costs = await apiGet<VehicleMetrics["costs"]>(`/api/vehicles/${v.id}/operational-cost`);
-        return { ...v, costs };
-      }),
-    );
-  }, []);
+  const { user } = useAuth();
+  const chrome = pageChrome(user, "analytics");
+  const isFinance = hasRole(user, "financial_analyst");
+
+  const { data: fleetCosts, error, loading } = useAsync<VehicleCostRow[]>(
+    () => apiGetItems<VehicleCostRow>(endpoints.operationalCosts),
+    [],
+  );
 
   const downloadCsv = async () => {
     try {
@@ -55,10 +58,10 @@ export default function AnalyticsPage() {
     }
   };
 
-  const maxCost = fleetCosts ? Math.max(...fleetCosts.map((f) => f.costs.total_operational_cost), 100) : 100;
+  const maxCost = fleetCosts ? Math.max(...fleetCosts.map((f) => f.total_operational_cost), 100) : 100;
   const efficiencyValues =
     fleetCosts
-      ?.map((v) => v.costs.fuel_efficiency_km_per_l)
+      ?.map((v) => v.fuel_efficiency_km_per_l)
       .filter((v): v is number => v !== null && v > 0) ?? [];
   const avgEfficiency = efficiencyValues.length
     ? efficiencyValues.reduce((sum, v) => sum + v, 0) / efficiencyValues.length
@@ -68,10 +71,12 @@ export default function AnalyticsPage() {
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Analytics & Reports</h2>
-          <p className="text-muted">Fuel efficiency, operational cost, and vehicle ROI</p>
+          <h2>{chrome.title}</h2>
+          <p className="text-muted">{chrome.sub}</p>
         </div>
-        <Button onClick={() => void downloadCsv()}>Export CSV</Button>
+        <Button onClick={() => void downloadCsv()}>
+          {isFinance ? "Export Cost Report" : "Export CSV"}
+        </Button>
       </div>
 
       {loading && <Spinner />}
@@ -108,13 +113,15 @@ export default function AnalyticsPage() {
           </div>
 
           <Card>
-            <h3 style={{ margin: "0 0 var(--space-3)" }}>Operating Cost Distribution</h3>
+            <h3 style={{ margin: "0 0 var(--space-3)" }}>
+              {isFinance ? "Cost Distribution by Vehicle" : "Operating Cost Distribution"}
+            </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "var(--space-2)" }}>
               {fleetCosts.map((v) => {
-                const pct = (v.costs.total_operational_cost / maxCost) * 100;
+                const pct = (v.total_operational_cost / maxCost) * 100;
                 return (
                   <div
-                    key={v.id}
+                    key={v.vehicle_id}
                     style={{
                       display: "grid",
                       gridTemplateColumns: "120px 1fr 100px",
@@ -152,7 +159,7 @@ export default function AnalyticsPage() {
                       />
                     </div>
                     <span style={{ textAlign: "right", fontSize: "0.875rem", fontWeight: "bold" }}>
-                      {formatInr(v.costs.total_operational_cost, 2)}
+                      {formatInr(v.total_operational_cost, 2)}
                     </span>
                   </div>
                 );
@@ -180,37 +187,37 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {fleetCosts.map((v) => (
-                    <tr key={v.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                    <tr key={v.vehicle_id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
                         {v.registration_number}{" "}
                         <span style={{ fontWeight: "normal", color: "var(--color-muted)", fontSize: "0.85rem" }}>
                           ({v.name})
                         </span>
                       </td>
-                      <td style={{ padding: "var(--space-2)" }}>{v.costs.distance_km.toFixed(0)} km</td>
+                      <td style={{ padding: "var(--space-2)" }}>{v.distance_km.toFixed(0)} km</td>
                       <td style={{ padding: "var(--space-2)" }}>
-                        {v.costs.fuel_efficiency_km_per_l != null
-                          ? `${v.costs.fuel_efficiency_km_per_l.toFixed(1)} km/L`
+                        {v.fuel_efficiency_km_per_l != null
+                          ? `${v.fuel_efficiency_km_per_l.toFixed(1)} km/L`
                           : "—"}
                       </td>
-                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.costs.fuel_cost, 2)}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.costs.maintenance_cost, 2)}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.fuel_cost, 2)}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(v.maintenance_cost, 2)}</td>
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>
-                        {formatInr(v.costs.total_operational_cost, 2)}
+                        {formatInr(v.total_operational_cost, 2)}
                       </td>
                       <td
                         style={{
                           padding: "var(--space-2)",
                           fontWeight: "bold",
                           color:
-                            v.costs.roi == null
+                            v.roi == null
                               ? "var(--color-muted)"
-                              : v.costs.roi >= 0
+                              : v.roi >= 0
                                 ? "var(--color-success, #28a745)"
                                 : "var(--color-error)",
                         }}
                       >
-                        {fmtRoi(v.costs.roi)}
+                        {fmtRoi(v.roi)}
                       </td>
                     </tr>
                   ))}
