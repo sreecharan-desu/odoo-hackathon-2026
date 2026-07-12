@@ -205,7 +205,7 @@ def seed() -> None:
         vehicles: list[Vehicle] = [
             Vehicle(
                 registration_number="MH04AB1234",
-                name="Van-05",
+                name="Van 05",
                 vehicle_type="Van",
                 max_load_kg=500,
                 odometer=12000,
@@ -215,7 +215,7 @@ def seed() -> None:
             ),
             Vehicle(
                 registration_number="DL01XY9876",
-                name="Truck-12",
+                name="Truck 12",
                 vehicle_type="Truck",
                 max_load_kg=2000,
                 odometer=45000,
@@ -225,7 +225,7 @@ def seed() -> None:
             ),
             Vehicle(
                 registration_number="GJ05ZZ5555",
-                name="Van-99",
+                name="Van 99",
                 vehicle_type="Van",
                 max_load_kg=300,
                 odometer=80000,
