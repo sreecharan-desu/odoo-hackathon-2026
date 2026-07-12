@@ -97,6 +97,57 @@ FIRST_NAMES = (
     "Carlos",
 )
 
+LAST_NAMES = (
+    "Patel",
+    "Sharma",
+    "Khan",
+    "Reddy",
+    "Nair",
+    "Das",
+    "Iyer",
+    "Singh",
+    "Gupta",
+    "Joshi",
+)
+
+SEED_PROFILE = {
+    "users": 6,
+    "vehicle_templates": 6,
+    "vehicles_per_template": 4,
+    "active_dispatches": 4,
+    "completed_trips": 24,
+    "draft_trips": 6,
+    "cancelled_trips": 5,
+    "fuel_topups": 14,
+    "maintenance_history": 12,
+    "maintenance_open": 3,
+    "expenses": 28,
+}
+
+
+def _pick(*values: str) -> str:
+    return RNG.choice(values)
+
+
+def _person_name(first: str) -> str:
+    return f"{first} {_pick(*LAST_NAMES)}"
+
+
+def _phone_number() -> str:
+    return f"+91-9{RNG.randint(100000000, 999999999)}"
+
+
+def _license_number(prefix: str, index: int) -> str:
+    return f"DL-{prefix}-{100 + index:03d}"
+
+
+def _recent_days(min_days: int, max_days: int) -> int:
+    return RNG.randint(min_days, max_days)
+
+
+def _rand_amount(low: int, high: int) -> float:
+    return round(RNG.uniform(low, high), 2)
+
 
 def _utc_days_ago(days: int, hour: int = 10) -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=days, hours=hour % 5)
