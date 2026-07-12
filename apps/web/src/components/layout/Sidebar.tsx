@@ -56,16 +56,18 @@ export default function Sidebar({ collapsed, onToggle, onClose, mobileOpen }: Si
       >
         {/* Brand */}
         <div className="shell-brand">
-          {!collapsed && (
-            <h1 className="shell-brand-title">TransitOps</h1>
+          {!collapsed ? (
+            <>
+              <h1 className="shell-brand-title">TransitOps</h1>
+              <button className="sidebar-collapse-btn" onClick={onToggle} title="Collapse">
+                <ChevronLeft />
+              </button>
+            </>
+          ) : (
+            <button className="sidebar-collapse-btn" onClick={onToggle} title="Expand" style={{ margin: "0 auto" }}>
+              <ChevronRight />
+            </button>
           )}
-          {collapsed && (
-            <span style={{ fontSize: "1.1rem", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--color-text)" }}>T</span>
-          )}
-          {/* Collapse toggle */}
-          <button className="sidebar-collapse-btn" onClick={onToggle} title={collapsed ? "Expand" : "Collapse"}>
-            {collapsed ? <ChevronRight /> : <ChevronLeft />}
-          </button>
         </div>
 
         {/* Nav */}

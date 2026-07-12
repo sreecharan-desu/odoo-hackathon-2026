@@ -22,6 +22,21 @@
   width: 56px;
 }
 
+.shell-sidebar--collapsed .shell-brand {
+  padding: 0;
+  justify-content: center;
+}
+
+.shell-sidebar--collapsed .shell-nav-link {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+.shell-sidebar--collapsed .sidebar-logout-btn {
+  justify-content: center;
+  padding: 9px 0;
+}
+
 /* ─── Brand ─────────────────────────────────────────────── */
 .shell-brand {
   display: flex;
@@ -29,7 +44,8 @@
   justify-content: space-between;
   padding: 18px 16px 16px;
   border-bottom: 1px solid var(--color-border);
-  min-height: 60px;
+  min-height: 64px;
+  box-sizing: border-box;
   gap: 8px;
 }
 
@@ -67,7 +83,7 @@
 .shell-nav {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
   padding: 12px 8px;
   flex: 1;
 }
@@ -155,7 +171,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  height: 56px;
+  height: 64px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   position: sticky;
