@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.setAttribute("href", url);
-      a.setAttribute("download", `operational_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+      a.setAttribute("download", `transitops_report_${new Date().toISOString().slice(0, 10)}.pdf`);
       a.click();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to download PDF");
