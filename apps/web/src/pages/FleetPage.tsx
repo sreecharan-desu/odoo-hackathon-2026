@@ -5,7 +5,7 @@ import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
-import { canManageFleet } from "../lib/rbac";
+import { canManageFleet, pageChrome } from "../lib/rbac";
 import { formatInr } from "../constants";
 import type { Vehicle } from "../types";
 import "../components/layout/shell.css";
@@ -15,6 +15,7 @@ const PAGE_SIZE = 50;
 export default function FleetPage() {
   const { user } = useAuth();
   const allowAdd = canManageFleet(user);
+  const chrome = pageChrome(user, "fleet");
   const [offset, setOffset] = useState(0);
 
   const { data: vehicles, total, error, loading, apiMissing, refetch } = useApiList<Vehicle>(
@@ -108,8 +109,8 @@ export default function FleetPage() {
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Vehicle Registry</h2>
-          <p className="text-muted">Manage fleet assets, load parameters, and assignment statuses</p>
+          <h2>{chrome.title}</h2>
+          <p className="text-muted">{chrome.sub}</p>
         </div>
         {allowAdd && (
           <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Vehicle</Button>
