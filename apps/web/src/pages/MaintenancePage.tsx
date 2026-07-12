@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost, apiGet } from "../lib/api";
+import { endpoints, apiPost, apiGetItems } from "../lib/api";
 import type { MaintenanceLog, Vehicle } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function MaintenancePage() {
-  const { data: logs, error, loading, apiMissing, refetch: refetchLogs } = useApiList<MaintenanceLog[]>(endpoints.maintenance);
+  const [offset, setOffset] = useState(0);
+  const { data: logs, total, error, loading, apiMissing, refetch: refetchLogs } = useApiList<MaintenanceLog>(
+    endpoints.maintenance,
+    { limit: PAGE_SIZE, offset },
+  );
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
@@ -29,7 +35,7 @@ export default function MaintenancePage() {
   useEffect(() => {
     if (isAdding) {
       setLoadingVehicles(true);
-      void apiGet<Vehicle[]>(endpoints.vehicles)
+      void apiGetItems<Vehicle>(endpoints.vehicles)
         .then((res) => setVehicles(res))
         .catch((err) => console.error(err))
         .finally(() => setLoadingVehicles(false));
@@ -154,6 +160,9 @@ export default function MaintenancePage() {
               </tbody>
             </table>
           </div>
+        )}
+        {logs && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
 

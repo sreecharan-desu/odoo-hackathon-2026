@@ -2,13 +2,23 @@ from __future__ import annotations
 """Pydantic schemas — TransitOps."""
 
 from datetime import date, datetime
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel, EmailStr, Field
+
+T = TypeVar("T")
 
 
 class HealthResponse(BaseModel):
     status: str
     service: str
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    limit: int
+    offset: int
 
 
 class MessageResponse(BaseModel):
