@@ -4,3 +4,4 @@ export { default as Spinner } from "./Spinner";
 export { default as KpiCard } from "./KpiCard";
 export { default as StatusBadge } from "./StatusBadge";
 export { default as EmptyState } from "./EmptyState";
+export { default as Pagination } from "./Pagination";

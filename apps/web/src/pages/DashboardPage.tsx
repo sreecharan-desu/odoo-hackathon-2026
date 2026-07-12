@@ -1,6 +1,6 @@
 import { Card, Spinner } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
-import { apiGet, endpoints } from "../lib/api";
+import { apiGet, apiGetItems, endpoints } from "../lib/api";
 import type { DashboardKpis, Trip } from "../types";
 
 export default function DashboardPage() {
@@ -10,7 +10,7 @@ export default function DashboardPage() {
   );
 
   const { data: trips, error: tripsError, loading: tripsLoading } = useAsync<Trip[]>(
-    () => apiGet(endpoints.trips),
+    () => apiGetItems<Trip>(endpoints.trips, { limit: 10 }),
     [],
   );
 

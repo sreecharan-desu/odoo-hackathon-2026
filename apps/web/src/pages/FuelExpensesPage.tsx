@@ -1,14 +1,24 @@
 import { useState, useEffect } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost, apiGet } from "../lib/api";
+import { endpoints, apiPost, apiGetItems } from "../lib/api";
 import type { FuelLog, Expense, Vehicle } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function FuelExpensesPage() {
-  const { data: fuelLogs, error: fuelError, loading: fuelLoading, refetch: refetchFuel } = useApiList<FuelLog[]>(endpoints.fuelLogs);
-  const { data: expenses, error: expenseError, loading: expenseLoading, refetch: refetchExpenses } = useApiList<Expense[]>(endpoints.expenses);
+  const [fuelOffset, setFuelOffset] = useState(0);
+  const [expenseOffset, setExpenseOffset] = useState(0);
+  const { data: fuelLogs, total: fuelTotal, error: fuelError, loading: fuelLoading, refetch: refetchFuel } = useApiList<FuelLog>(
+    endpoints.fuelLogs,
+    { limit: PAGE_SIZE, offset: fuelOffset },
+  );
+  const { data: expenses, total: expenseTotal, error: expenseError, loading: expenseLoading, refetch: refetchExpenses } = useApiList<Expense>(
+    endpoints.expenses,
+    { limit: PAGE_SIZE, offset: expenseOffset },
+  );
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
@@ -42,7 +52,7 @@ export default function FuelExpensesPage() {
   useEffect(() => {
     if (isFuelModal || isExpenseModal) {
       setLoadingVehicles(true);
-      void apiGet<Vehicle[]>(endpoints.vehicles)
+      void apiGetItems<Vehicle>(endpoints.vehicles)
         .then((res) => setVehicles(res))
         .catch((err) => console.error(err))
         .finally(() => setLoadingVehicles(false));
@@ -179,6 +189,9 @@ export default function FuelExpensesPage() {
               </table>
             </div>
           )}
+          {fuelLogs && (
+            <Pagination total={fuelTotal} limit={PAGE_SIZE} offset={fuelOffset} onChange={setFuelOffset} />
+          )}
         </Card>
 
         {/* Expenses Section */}
@@ -227,6 +240,9 @@ export default function FuelExpensesPage() {
                 </tbody>
               </table>
             </div>
+          )}
+          {expenses && (
+            <Pagination total={expenseTotal} limit={PAGE_SIZE} offset={expenseOffset} onChange={setExpenseOffset} />
           )}
         </Card>
       </div>
