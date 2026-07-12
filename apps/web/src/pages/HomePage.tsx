@@ -1,3 +1,4 @@
+// Smoke-test: Bhanu setup verified — no feature work until problem statement (12 Jul).
 import { Card, Spinner } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { apiGet, endpoints } from "../lib/api";
