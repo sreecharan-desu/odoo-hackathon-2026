@@ -199,36 +199,88 @@ function Td({ children, style }: { children: React.ReactNode; style?: React.CSSP
 function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Vehicle[]; drivers: Driver[] }) {
   if (trips.length === 0) return <p style={{ color: C.muted, textAlign: "center", padding: "32px 0", fontSize: "0.875rem" }}>No trips found.</p>;
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-            <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th>
-            <Th>Route</Th><Th>Status</Th><Th>Date</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {trips.slice(0, 7).map((trip) => {
-            const v = vehicles.find((x) => x.id === trip.vehicle_id);
-            const d = drivers.find((x) => x.id === trip.driver_id);
-            return (
-              <tr key={trip.id} style={{ borderBottom: `1px solid ${C.border}` }}>
-                <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--color-text)" }}>TR{String(trip.id).padStart(3, "0")}</span></Td>
-                <Td><span style={{ color: "var(--color-text)" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</span></Td>
-                <Td><span style={{ color: "var(--color-text)" }}>{d?.name ?? `#${trip.driver_id}`}</span></Td>
-                <Td style={{ color: C.muted, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {trip.source} → {trip.destination}
-                </Td>
-                <Td><StatusBadge status={trip.status} /></Td>
-                <Td style={{ color: C.muted, whiteSpace: "nowrap" }}>{fmtDate(trip.created_at)}</Td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Desktop table */}
+      <div className="trips-table-desktop" style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+              <Th>Trip</Th><Th>Vehicle</Th><Th>Driver</Th>
+              <Th>Route</Th><Th>Status</Th><Th>Date</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {trips.slice(0, 7).map((trip) => {
+              const v = vehicles.find((x) => x.id === trip.vehicle_id);
+              const d = drivers.find((x) => x.id === trip.driver_id);
+              return (
+                <tr key={trip.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <Td><span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--color-text)" }}>TR{String(trip.id).padStart(3, "0")}</span></Td>
+                  <Td><span style={{ color: "var(--color-text)" }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</span></Td>
+                  <Td><span style={{ color: "var(--color-text)" }}>{d?.name ?? `#${trip.driver_id}`}</span></Td>
+                  <Td style={{ color: C.muted, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {trip.source} → {trip.destination}
+                  </Td>
+                  <Td><StatusBadge status={trip.status} /></Td>
+                  <Td style={{ color: C.muted, whiteSpace: "nowrap" }}>{fmtDate(trip.created_at)}</Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="trips-cards-mobile">
+        {trips.slice(0, 7).map((trip) => {
+          const v = vehicles.find((x) => x.id === trip.vehicle_id);
+          const d = drivers.find((x) => x.id === trip.driver_id);
+          return (
+            <div key={trip.id} style={{
+              background: "var(--color-surface-2)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "12px",
+              padding: "14px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}>
+              {/* Header row: trip ID + status badge */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontWeight: 800, fontFamily: "monospace", fontSize: "1rem", color: "var(--color-text)", letterSpacing: "-0.02em" }}>
+                  TR{String(trip.id).padStart(3, "0")}
+                </span>
+                <StatusBadge status={trip.status} />
+              </div>
+              {/* Route */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: C.muted }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <span style={{ color: "var(--color-text)", fontWeight: 600 }}>{trip.source}</span>
+                <span>→</span>
+                <span style={{ color: "var(--color-text)", fontWeight: 600 }}>{trip.destination}</span>
+              </div>
+              {/* Meta row: vehicle + driver */}
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  <span style={{ fontSize: "0.78rem", color: C.muted }}>{v?.registration_number ?? `#${trip.vehicle_id}`}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  <span style={{ fontSize: "0.78rem", color: C.muted }}>{d?.name ?? `#${trip.driver_id}`}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px", marginLeft: "auto" }}>
+                  <span style={{ fontSize: "0.75rem", color: C.muted }}>{fmtDate(trip.created_at)}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
+
 
 /* ═══════════════════════════════════════
    ROLE VIEWS
