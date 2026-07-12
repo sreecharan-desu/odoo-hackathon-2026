@@ -62,7 +62,7 @@ export default function AppShell() {
   const { user, logout } = useAuth();
   const { isDark, toggle } = useTheme();
   const displayUser = user || { name: "Operator", role: "fleet_manager" };
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
