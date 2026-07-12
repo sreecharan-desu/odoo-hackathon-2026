@@ -6,6 +6,7 @@ import { useApiList } from "../hooks/useApiList";
 import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
 import { canLogFuel, canManageExpenses } from "../lib/rbac";
+import { formatInr } from "../constants";
 import type { FuelLog, Expense, Vehicle } from "../types";
 
 const PAGE_SIZE = 25;
@@ -183,7 +184,7 @@ export default function FuelExpensesPage() {
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{log.id}</td>
                       <td style={{ padding: "var(--space-2)" }}>Vehicle #{log.vehicle_id}</td>
                       <td style={{ padding: "var(--space-2)" }}>{log.liters} L</td>
-                      <td style={{ padding: "var(--space-2)" }}>${log.cost.toLocaleString()}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(log.cost)}</td>
                       <td style={{ padding: "var(--space-2)" }}>{log.trip_id ? `#${log.trip_id}` : "—"}</td>
                       <td style={{ padding: "var(--space-2)", fontSize: "0.85rem", color: "var(--color-muted)" }}>
                         {log.logged_at ? new Date(log.logged_at).toLocaleString() : "—"}
@@ -235,7 +236,7 @@ export default function FuelExpensesPage() {
                           color: "var(--color-text)"
                         }}>{exp.category}</span>
                       </td>
-                      <td style={{ padding: "var(--space-2)" }}>${exp.amount.toLocaleString()}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{formatInr(exp.amount)}</td>
                       <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{exp.note ?? "—"}</td>
                       <td style={{ padding: "var(--space-2)", fontSize: "0.85rem", color: "var(--color-muted)" }}>
                         {exp.logged_at ? new Date(exp.logged_at).toLocaleString() : "—"}
@@ -306,7 +307,7 @@ export default function FuelExpensesPage() {
                     />
                     <NumberField
                       id="fuelCostVal"
-                      label="Total Cost ($) *"
+                      label="Total Cost (₹) *"
                       required
                       min={0}
                       step="0.01"
@@ -401,7 +402,7 @@ export default function FuelExpensesPage() {
                     />
                     <NumberField
                       id="expAmount"
-                      label="Amount ($) *"
+                      label="Amount (₹) *"
                       required
                       min={0.01}
                       step="0.01"

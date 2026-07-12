@@ -6,6 +6,7 @@ import { useApiList } from "../hooks/useApiList";
 import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
 import { canManageMaintenance } from "../lib/rbac";
+import { formatInr } from "../constants";
 import type { MaintenanceLog, Vehicle } from "../types";
 
 const PAGE_SIZE = 25;
@@ -136,7 +137,7 @@ export default function MaintenancePage() {
                     <td style={{ padding: "var(--space-2)" }}>Vehicle #{log.vehicle_id}</td>
                     <td style={{ padding: "var(--space-2)" }}>{log.title}</td>
                     <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{log.description ?? "—"}</td>
-                    <td style={{ padding: "var(--space-2)" }}>${log.estimated_cost.toLocaleString()}</td>
+                    <td style={{ padding: "var(--space-2)" }}>{formatInr(log.estimated_cost)}</td>
                     <td style={{ padding: "var(--space-2)", fontSize: "0.85rem" }}>{log.opened_at ? new Date(log.opened_at).toLocaleString() : "—"}</td>
                     <td style={{ padding: "var(--space-2)", fontSize: "0.85rem" }}>{log.closed_at ? new Date(log.closed_at).toLocaleString() : "—"}</td>
                     <td style={{ padding: "var(--space-2)" }}>
@@ -233,7 +234,7 @@ export default function MaintenancePage() {
                   </div>
                   <NumberField
                     id="maintCost"
-                    label="Estimated Cost ($) *"
+                    label="Estimated Cost (₹) *"
                     required
                     min={0}
                     value={estimatedCost}

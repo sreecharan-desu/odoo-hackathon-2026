@@ -65,6 +65,8 @@ If port `8000` is busy:
 
 Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 
+Costs and ROI are displayed in **₹ (INR)**.
+
 ---
 
 ## Stack
