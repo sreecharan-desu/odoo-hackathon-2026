@@ -1,14 +1,19 @@
-# PostgreSQL for local development
+# Local Docker (Postgres only by default historically — full stack is from repo root)
+
+From the **repository root**:
 
 ```bash
-# From repo root
-docker compose up -d
-docker compose ps
-docker compose logs postgres
-docker compose down        # stop
-docker compose down -v     # stop + delete data
+docker compose up --build
+# or
+docker-compose up --build
 ```
 
-Uses `.env` for `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`.
+- App: http://localhost:8080  
+- API docs: http://localhost:8080/docs  
 
-Data persists in the `postgres_data` Docker volume.
+```bash
+docker compose down        # stop
+docker compose down -v     # stop + delete DB volume (full reseed next start)
+docker compose ps
+docker compose logs -f api
+```
