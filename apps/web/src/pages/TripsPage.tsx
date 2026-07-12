@@ -2,26 +2,34 @@ import { useState, useEffect } from "react";
 import { Card, Spinner, Button } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
+import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiGet } from "../lib/api";
 import type { Trip, Vehicle, Driver } from "../types";
+import "../components/layout/shell.css";
 
 export default function TripsPage() {
-  const { data: trips, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip[]>(endpoints.trips);
+  const { user } = useAuth();
   
-  // All assets loaded for list lookup and select dropdowns
+  // Scoped Access check (Trips is restricted to Dispatcher)
+  const isAllowed = user?.role === "dispatcher" || user?.id === 0;
+
+  const { data: trips, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip[]>(
+    isAllowed ? endpoints.trips : ""
+  );
+  
+  // All assets loaded for dropdowns and lookup
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
-  // Modals & form state
-  const [isAdding, setIsAdding] = useState(false);
-  const [source, setSource] = useState("");
-  const [destination, setDestination] = useState("");
+  // Form state
+  const [source, setSource] = useState("Gandhinagar Depot");
+  const [destination, setDestination] = useState("Ahmedabad Hub");
   const [vehicleId, setVehicleId] = useState("");
   const [driverId, setDriverId] = useState("");
-  const [cargoWeight, setCargoWeight] = useState("");
-  const [plannedDist, setPlannedDist] = useState("");
+  const [cargoWeight, setCargoWeight] = useState("450");
+  const [plannedDist, setPlannedDist] = useState("38");
 
   // Input validation states
   const [sourceError, setSourceError] = useState<string | null>(null);
@@ -43,7 +51,6 @@ export default function TripsPage() {
   const [fuelConsumed, setFuelConsumed] = useState("");
   const [fuelCost, setFuelCost] = useState("");
 
-  // Complete validation states
   const [finalOdoError, setFinalOdoError] = useState<string | null>(null);
   const [fuelConsumedError, setFuelConsumedError] = useState<string | null>(null);
   const [fuelCostError, setFuelCostError] = useState<string | null>(null);
@@ -68,8 +75,31 @@ export default function TripsPage() {
   };
 
   useEffect(() => {
-    void fetchAssets();
-  }, [trips, isAdding]);
+    if (isAllowed) {
+      void fetchAssets();
+    }
+  }, [isAllowed, trips]);
+
+  if (!isAllowed) {
+    return (
+      <div className="access-scoped-wrapper">
+        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
+          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
+          <p className="text-muted">This page is restricted to Dispatchers.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Find currently selected vehicle and driver metadata
+  const selectedVehicle = allVehicles.find(v => v.id === parseInt(vehicleId));
+  const selectedDriver = allDrivers.find(d => d.id === parseInt(driverId));
+
+  // Determine if selected cargo weight exceeds vehicle capacity
+  const capacityLimit = selectedVehicle ? selectedVehicle.max_load_kg : 0;
+  const cargoWeightVal = parseFloat(cargoWeight) || 0;
+  const isOverweight = selectedVehicle && cargoWeightVal > capacityLimit;
+  const exceededWeight = isOverweight ? cargoWeightVal - capacityLimit : 0;
 
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,18 +116,12 @@ export default function TripsPage() {
     let capacityErr: string | null = null;
     let licenseErr: string | null = null;
 
-    if (!vehErr && vehicleId) {
-      const selectedVehicle = allVehicles.find(v => v.id === parseInt(vehicleId));
-      if (selectedVehicle) {
-        capacityErr = validators.cargoWithinMaxLoad(parseFloat(cargoWeight), selectedVehicle.max_load_kg);
-      }
+    if (!vehErr && selectedVehicle) {
+      capacityErr = validators.cargoWithinMaxLoad(cargoWeightVal, selectedVehicle.max_load_kg);
     }
 
-    if (!drvErr && driverId) {
-      const selectedDriver = allDrivers.find(d => d.id === parseInt(driverId));
-      if (selectedDriver) {
-        licenseErr = validators.licenseNotExpired(selectedDriver.license_expiry, new Date(), selectedDriver.name);
-      }
+    if (!drvErr && selectedDriver) {
+      licenseErr = validators.licenseNotExpired(selectedDriver.license_expiry, new Date(), selectedDriver.name);
     }
 
     setSourceError(srcErr);
@@ -118,10 +142,9 @@ export default function TripsPage() {
         destination,
         vehicle_id: parseInt(vehicleId),
         driver_id: parseInt(driverId),
-        cargo_weight: parseFloat(cargoWeight),
+        cargo_weight: cargoWeightVal,
         planned_distance: plannedDist ? parseFloat(plannedDist) : 0
       });
-      setIsAdding(false);
       // Reset form
       setSource("");
       setDestination("");
@@ -178,7 +201,6 @@ export default function TripsPage() {
 
     setCompleting(true);
     try {
-      // Find current vehicle odometer to run odometerNotBelowCurrent
       const trip = trips?.find(t => t.id === completingTripId);
       if (trip) {
         const vehicle = await apiGet<Vehicle>(`/api/vehicles/${trip.vehicle_id}`);
@@ -209,181 +231,85 @@ export default function TripsPage() {
 
   return (
     <>
-      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h2>Trip Dispatcher</h2>
-          <p className="text-muted">Schedule routes, dispatch vehicles, and track cargo transit stages</p>
-        </div>
-        <Button onClick={() => setIsAdding(true)}>Schedule Trip</Button>
+      <div className="page-header">
+        <h2>Trip Dispatcher</h2>
+        <p className="text-muted">Manage scheduled routes, asset dispatches, and active trip logs</p>
       </div>
 
-      <Card>
-        {tripsLoading && <Spinner />}
-        {tripsError && <p className="error">{tripsError}</p>}
-        {trips && trips.length === 0 && (
-          <p className="page-empty">No trips scheduled yet.</p>
-        )}
-        {trips && trips.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ID</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Route</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Vehicle ID</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Driver ID</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Cargo Weight</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Distance</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Stepper Status</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trips.map((t) => {
-                  const vehicle = allVehicles.find(v => v.id === t.vehicle_id);
-                  const driver = allDrivers.find(d => d.id === t.driver_id);
-                  const isVehicleAvailable = vehicle ? vehicle.status === "Available" : true;
-                  const isDriverAvailable = driver ? driver.status === "Available" : true;
-                  const canDispatch = isVehicleAvailable && isDriverAvailable;
+      <div className="split-pane-layout">
+        {/* Left Side: Create Trip Form + Stepper */}
+        <div className="split-pane-side" style={{ flex: 1.2 }}>
+          <Card style={{ padding: "var(--space-4)" }}>
+            <h3 style={{ margin: "0 0 var(--space-2)" }}>TRIP LIFECYCLE</h3>
+            
+            {/* Stepper progress */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              position: "relative",
+              padding: "var(--space-2) 0 var(--space-4)",
+              margin: "0 0 var(--space-3)"
+            }}>
+              <div style={{ position: "absolute", top: "18px", left: "10px", right: "10px", height: "2px", background: "rgba(255,255,255,0.08)", zIndex: 1 }} />
+              
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
+                <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#28a745", border: "2px solid #28a745" }} />
+                <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#28a745" }}>Draft</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
+                <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#007bff", border: "2px solid #007bff" }} />
+                <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#007bff" }}>Dispatched</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
+                <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#333", border: "2px solid rgba(255,255,255,0.2)" }} />
+                <span style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>Completed</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
+                <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#333", border: "2px solid rgba(255,255,255,0.2)" }} />
+                <span style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>Cancelled</span>
+              </div>
+            </div>
 
-                  return (
-                    <tr key={t.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                      <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{t.id}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{t.source} → {t.destination}</td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        Vehicle #{t.vehicle_id}
-                        {vehicle && vehicle.status !== "Available" && (
-                          <span style={{ fontSize: "0.75rem", color: "var(--color-error)", display: "block" }}>({vehicle.status})</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        Driver #{t.driver_id}
-                        {driver && driver.status !== "Available" && (
-                          <span style={{ fontSize: "0.75rem", color: "var(--color-error)", display: "block" }}>({driver.status})</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "var(--space-2)" }}>{t.cargo_weight} kg</td>
-                      <td style={{ padding: "var(--space-2)" }}>{t.planned_distance} km</td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{
-                            padding: "2px 8px",
-                            borderRadius: "12px",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            background: t.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
-                                        t.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
-                                        t.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
-                                        "rgba(255, 193, 7, 0.15)",
-                            color: t.status === "Completed" ? "#28a745" :
-                                   t.status === "Dispatched" ? "#007bff" :
-                                   t.status === "Cancelled" ? "#dc3545" :
-                                   "#ffc107"
-                          }}>
-                            {t.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        {t.status === "Draft" && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <Button 
-                              style={{ padding: "4px 8px", fontSize: "0.85rem" }} 
-                              onClick={() => void handleDispatch(t.id)}
-                              disabled={!canDispatch}
-                            >
-                              Dispatch
-                            </Button>
-                            {!canDispatch && (
-                              <span style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>
-                                Assets busy/shop
-                              </span>
-                            )}
-                            {dispatchError[t.id] && (
-                              <p className="error" style={{ fontSize: "0.75rem", margin: "4px 0 0", maxWidth: "150px" }}>
-                                {dispatchError[t.id]}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {t.status === "Dispatched" && (
-                          <div style={{ display: "flex", gap: "var(--space-1)" }}>
-                            <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
-                            <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
-                          </div>
-                        )}
-                        {t.status === "Completed" && (
-                          <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>Closed</span>
-                        )}
-                        {t.status === "Cancelled" && (
-                          <span style={{ fontSize: "0.85rem", color: "var(--color-error)" }}>Cancelled</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+            <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.06)", margin: "0 0 var(--space-4)" }} />
 
-      {/* Add Trip Modal */}
-      {isAdding && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: "var(--space-4)"
-        }}>
-          <Card style={{ width: "100%", maxWidth: "500px" }}>
-            <h3 style={{ margin: "0 0 var(--space-3)" }}>Schedule New Trip</h3>
+            <h3 style={{ margin: "0 0 var(--space-3)" }}>CREATE TRIP</h3>
             {loadingAssets ? (
               <Spinner />
             ) : (
               <form onSubmit={(e) => void handleCreateTrip(e)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <TextField
-                      id="source"
-                      label="Source Route *"
-                      required
-                      placeholder="e.g. Warehouse A"
-                      value={source}
-                      error={sourceError}
-                      onChange={(e) => {
-                        setSource(e.target.value);
-                        if (sourceError) setSourceError(null);
-                      }}
-                    />
-                    <TextField
-                      id="destination"
-                      label="Destination Route *"
-                      required
-                      placeholder="e.g. Client Site B"
-                      value={destination}
-                      error={destinationError}
-                      onChange={(e) => {
-                        setDestination(e.target.value);
-                        if (destinationError) setDestinationError(null);
-                      }}
-                    />
-                  </div>
-
+                  <TextField
+                    id="source"
+                    label="SOURCE"
+                    required
+                    placeholder="Gandhinagar Depot"
+                    value={source}
+                    error={sourceError}
+                    onChange={(e) => {
+                      setSource(e.target.value);
+                      if (sourceError) setSourceError(null);
+                    }}
+                  />
+                  <TextField
+                    id="destination"
+                    label="DESTINATION"
+                    required
+                    placeholder="Ahmedabad Hub"
+                    value={destination}
+                    error={destinationError}
+                    onChange={(e) => {
+                      setDestination(e.target.value);
+                      if (destinationError) setDestinationError(null);
+                    }}
+                  />
                   <SelectField
                     id="vehicle"
-                    label="Select Vehicle *"
+                    label="VEHICLE (AVAILABLE ONLY)"
                     required
                     options={allVehicles.map(v => ({
                       value: String(v.id),
-                      label: `${v.registration_number} - ${v.name} (Max: ${v.max_load_kg} kg) [${v.status}]`
+                      label: `${v.registration_number} - ${v.max_load_kg} kg capacity`
                     }))}
                     placeholder="-- Select Vehicle --"
                     value={vehicleId}
@@ -393,14 +319,13 @@ export default function TripsPage() {
                       if (vehicleIdError) setVehicleIdError(null);
                     }}
                   />
-
                   <SelectField
                     id="driver"
-                    label="Select Driver *"
+                    label="DRIVER (AVAILABLE ONLY)"
                     required
                     options={allDrivers.map(d => ({
                       value: String(d.id),
-                      label: `${d.name} (Safety: ${d.safety_score}) [${d.status}]`
+                      label: `${d.name}`
                     }))}
                     placeholder="-- Select Driver --"
                     value={driverId}
@@ -410,45 +335,182 @@ export default function TripsPage() {
                       if (driverIdError) setDriverIdError(null);
                     }}
                   />
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <NumberField
-                      id="cargo"
-                      label="Cargo Weight (kg) *"
-                      required
-                      min={1}
-                      value={cargoWeight}
-                      error={cargoWeightError}
-                      onChange={(e) => {
-                        setCargoWeight(e.target.value);
-                        if (cargoWeightError) setCargoWeightError(null);
-                      }}
-                    />
-                    <NumberField
-                      id="distance"
-                      label="Planned Distance (km)"
-                      min={1}
-                      value={plannedDist}
-                      error={plannedDistError}
-                      onChange={(e) => {
-                        setPlannedDist(e.target.value);
-                        if (plannedDistError) setPlannedDistError(null);
-                      }}
-                    />
-                  </div>
+                  <NumberField
+                    id="cargo"
+                    label="CARGO WEIGHT (KG)"
+                    required
+                    min={1}
+                    value={cargoWeight}
+                    error={cargoWeightError}
+                    onChange={(e) => {
+                      setCargoWeight(e.target.value);
+                      if (cargoWeightError) setCargoWeightError(null);
+                    }}
+                  />
+                  <NumberField
+                    id="distance"
+                    label="PLANNED DISTANCE (KM)"
+                    min={1}
+                    value={plannedDist}
+                    error={plannedDistError}
+                    onChange={(e) => {
+                      setPlannedDist(e.target.value);
+                      if (plannedDistError) setPlannedDistError(null);
+                    }}
+                  />
                 </div>
+
+                {/* Overweight Warnings Alertbox */}
+                {isOverweight && (
+                  <div className="warning-error-box">
+                    <p className="warning-error-title">Vehicle Capacity: {capacityLimit} kg</p>
+                    <p className="warning-error-desc">Cargo Weight: {cargoWeightVal} kg</p>
+                    <p className="warning-error-detail">
+                      <span>&#10006;</span> Capacity exceeded by {exceededWeight} kg - dispatch blocked
+                    </p>
+                  </div>
+                )}
+
                 {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
-                  <Button type="button" variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
-                  <Button type="submit" disabled={submitting}>{submitting ? "Creating..." : "Create Draft"}</Button>
+                
+                <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+                  <Button 
+                    type="submit" 
+                    disabled={submitting || isOverweight}
+                    style={{
+                      flex: 1,
+                      background: isOverweight ? "var(--color-bg)" : "#f0a500",
+                      borderColor: isOverweight ? "rgba(255,255,255,0.08)" : "#f0a500",
+                      color: isOverweight ? "var(--color-muted)" : "#000",
+                      fontWeight: 700
+                    }}
+                  >
+                    {isOverweight ? "Dispatch (disabled)" : submitting ? "Creating..." : "Create Draft"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => {
+                      setSource("");
+                      setDestination("");
+                      setVehicleId("");
+                      setDriverId("");
+                      setCargoWeight("");
+                      setPlannedDist("");
+                      setFormError(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </form>
             )}
           </Card>
         </div>
-      )}
 
-      {/* Complete Trip Modal */}
+        {/* Right Side: LIVE BOARD trip cards */}
+        <div className="split-pane-main">
+          <Card style={{ padding: "var(--space-4)" }}>
+            <h3 style={{ margin: "0 0 var(--space-4)" }}>LIVE BOARD</h3>
+            {tripsLoading && <Spinner />}
+            {tripsError && <p className="error">{tripsError}</p>}
+            {trips && trips.length === 0 && (
+              <p className="page-empty">No active trips scheduled yet.</p>
+            )}
+            
+            {trips && trips.length > 0 && (
+              <div className="live-board-container">
+                {trips.map((t) => {
+                  const vehicle = allVehicles.find(v => v.id === t.vehicle_id);
+                  const driver = allDrivers.find(d => d.id === t.driver_id);
+                  const isVehicleAvailable = vehicle ? vehicle.status === "Available" : true;
+                  const isDriverAvailable = driver ? driver.status === "Available" : true;
+                  const canDispatch = isVehicleAvailable && isDriverAvailable;
+
+                  // Format ETA text to match mockup card descriptions
+                  let etaLabel = "—";
+                  if (t.status === "Dispatched") {
+                    etaLabel = "45 min";
+                  } else if (t.status === "Draft") {
+                    etaLabel = "Awaiting driver";
+                  } else if (t.status === "Cancelled") {
+                    etaLabel = "Vehicle went to shop";
+                  }
+
+                  const tripCode = `TR${String(t.id).padStart(3, "0")}`;
+
+                  return (
+                    <div key={t.id} className="trip-live-card">
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "70%" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                          <strong style={{ fontSize: "1.05rem" }}>{tripCode}</strong>
+                          <span style={{
+                            padding: "2px 8px",
+                            borderRadius: "12px",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            background: t.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
+                                        t.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
+                                        t.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
+                                        "rgba(108, 117, 125, 0.15)",
+                            color: t.status === "Completed" ? "#28a745" :
+                                   t.status === "Dispatched" ? "#007bff" :
+                                   t.status === "Cancelled" ? "#dc3545" :
+                                   "#6c757d"
+                          }}>
+                            {t.status}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--color-text)" }}>
+                          {t.source} &rarr; {t.destination}
+                        </p>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", width: "30%", textAlign: "right" }}>
+                        <span style={{ fontSize: "0.875rem", color: "var(--color-muted)", fontWeight: "500" }}>
+                          {vehicle ? vehicle.registration_number : `V#${t.vehicle_id}`} / {driver ? driver.name : "Unassigned"}
+                        </span>
+                        <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>{etaLabel}</span>
+
+                        <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+                          {t.status === "Draft" && (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+                              <Button 
+                                style={{ padding: "2px 6px", fontSize: "0.8rem" }} 
+                                onClick={() => void handleDispatch(t.id)}
+                                disabled={!canDispatch}
+                              >
+                                Dispatch
+                              </Button>
+                              {dispatchError[t.id] && (
+                                <p className="error" style={{ fontSize: "0.7rem", margin: "2px 0 0", maxWidth: "120px" }}>
+                                  {dispatchError[t.id]}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {t.status === "Dispatched" && (
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <Button style={{ background: "#28a745", padding: "2px 6px", fontSize: "0.8rem", color: "#fff" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
+                              <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "2px 6px", fontSize: "0.8rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <p style={{ marginTop: "var(--space-4)", fontSize: "0.8125rem", color: "var(--color-muted)", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "var(--space-2)" }}>
+              On Complete: odometer &rarr; fuel log &rarr; expenses &rarr; Vehicle &amp; Driver Available
+            </p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Complete Trip Modal popup */}
       {completingTripId !== null && (
         <div style={{
           position: "fixed",
