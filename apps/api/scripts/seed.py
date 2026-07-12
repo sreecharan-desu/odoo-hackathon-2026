@@ -123,7 +123,7 @@ def seed() -> None:
             User(email="safety@example.com", name="Safety Officer", password_hash=password, role="safety_officer"),
             User(email="finance@example.com", name="Finance Analyst", password_hash=password, role="financial_analyst"),
         ]
-        for i in range(1, 9):
+        for i in range(1, 4):
             users.append(
                 User(
                     email=f"ops{i}@example.com",
