@@ -7,6 +7,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://app:app_secret@localhost:5433/hackathon"
     secret_key: str = "change-me"
+    estimated_freight_revenue_per_km: float = 40.0
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
     cors_origins: list[str] = [

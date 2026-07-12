@@ -487,23 +487,23 @@ export default function TripsPage() {
                               )}
                             </div>
                           )}
-                          {t.status === "Dispatched" && allowSchedule && (
+                          {(t.status === "Draft" || t.status === "Dispatched") && allowSchedule && (
                             <div style={{ display: "flex", gap: "4px" }}>
-                              <Button
-                                style={{ padding: "3px 10px", fontSize: "0.78rem", background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
-                                onClick={() => setCompletingTripId(t.id)}
-                              >
-                                Complete
-                              </Button>
-                              {allowDispatch && (
+                              {t.status === "Dispatched" && (
                                 <Button
-                                  variant="ghost"
-                                  style={{ padding: "3px 10px", fontSize: "0.78rem", border: "1px solid var(--color-danger, #ef4444)", color: "var(--color-danger, #ef4444)" }}
-                                  onClick={() => void handleCancel(t.id)}
+                                  style={{ padding: "3px 10px", fontSize: "0.78rem", background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
+                                  onClick={() => setCompletingTripId(t.id)}
                                 >
-                                  Cancel
+                                  Complete
                                 </Button>
                               )}
+                              <Button
+                                variant="ghost"
+                                style={{ padding: "3px 10px", fontSize: "0.78rem", border: "1px solid var(--color-danger, #ef4444)", color: "var(--color-danger, #ef4444)" }}
+                                onClick={() => void handleCancel(t.id)}
+                              >
+                                Cancel
+                              </Button>
                             </div>
                           )}
                         </div>
