@@ -306,7 +306,7 @@ def seed() -> None:
         # Completed trips (history) — use Available fleet + Alex heavily
         history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
-        for i in range(120):
+        for i in range(36):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -331,7 +331,7 @@ def seed() -> None:
             )
 
         # Draft trips ready to dispatch in UI
-        for i in range(18):
+        for i in range(8):
             veh = RNG.choice(available_vehicles)
             drv = RNG.choice(available_drivers)
             src, dst = RNG.sample(CITIES, 2)
@@ -350,7 +350,7 @@ def seed() -> None:
             )
 
         # Cancelled trips
-        for i in range(15):
+        for i in range(6):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
