@@ -146,6 +146,14 @@ def _license_number(prefix: str, index: int) -> str:
     return f"DL-{prefix}-{100 + index:03d}"
 
 
+def _registration_number() -> str:
+    state = RNG.choice(STATE_CODES)
+    rto = RNG.randint(1, 99)
+    chars = "".join(RNG.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=RNG.randint(1, 2)))
+    num = RNG.randint(1000, 9999)
+    return f"{state}{rto:02d}{chars}{num}"
+
+
 def _recent_days(min_days: int, max_days: int) -> int:
     return RNG.randint(min_days, max_days)
 
