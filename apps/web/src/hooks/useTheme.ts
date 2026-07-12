@@ -22,7 +22,8 @@ function readStoredPreference(): ThemePreference {
   } catch {
     /* ignore */
   }
-  return "system";
+  // Product default: dark B&W chrome (light is opt-in via toggle)
+  return "dark";
 }
 
 function resolveTheme(pref: ThemePreference): ResolvedTheme {

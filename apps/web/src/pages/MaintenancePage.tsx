@@ -288,12 +288,12 @@ export default function MaintenancePage() {
                         letterSpacing: "0.03em",
                         textTransform: "uppercase",
                         background: isOpen ? "rgba(255, 193, 7, 0.12)" : "rgba(34, 197, 94, 0.12)",
-                        color: isOpen ? "#ffc107" : "#22c55e",
+                        color: isOpen ? "var(--status-in-shop)" : "var(--status-available)",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "4px"
                       }}>
-                        {isOpen && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#ffc107" }} />}
+                        {isOpen && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--status-in-shop)" }} />}
                         {isOpen ? "In Shop" : "Completed"}
                       </span>
                     </div>
@@ -343,7 +343,7 @@ export default function MaintenancePage() {
                       {isOpen && allowManage && (
                         <Button
                           style={{
-                            background: "var(--color-success, #22c55e)",
+                            background: "var(--color-success)",
                             color: "#000",
                             border: "none",
                             padding: "5px 12px",

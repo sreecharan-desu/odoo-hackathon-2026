@@ -346,7 +346,7 @@ export default function DriversPage() {
                                     Available
                                   </Button>
                                   <Button
-                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "rgba(59,130,246,0.1)", borderColor: "#3b82f6", color: "#3b82f6" }}
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "5px 10px", fontSize: "0.78rem", background: "var(--status-on-trip-bg)", borderColor: "var(--status-on-trip)", color: "var(--status-on-trip)" }}
                                     onClick={() => void handleToggleStatus("On Trip")}
                                   >
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>

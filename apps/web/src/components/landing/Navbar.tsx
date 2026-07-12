@@ -3,23 +3,17 @@ import { useEffect, useState } from "react";
 import { ROUTES } from "../../types";
 import { useTheme } from "../../hooks/useTheme";
 
-// The custom TransitOps "T" icon from the brand image
 function TransitOpsIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Left wing */}
       <path d="M5 22 L38 22 L48 38 L30 38 Z" fill="var(--accent-cyan)" />
-      {/* Right wing */}
       <path d="M95 22 L62 22 L52 38 L70 38 Z" fill="var(--accent-cyan)" />
-      {/* Left stem */}
       <path d="M38 40 L46 40 L46 78 L38 68 Z" fill="var(--accent-cyan)" />
-      {/* Right stem */}
       <path d="M62 40 L54 40 L54 78 L62 68 Z" fill="var(--accent-cyan)" />
     </svg>
   );
 }
 
-// Moon icon
 function MoonIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,7 +22,6 @@ function MoonIcon() {
   );
 }
 
-// Sun icon
 function SunIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,7 +43,7 @@ export function Navbar() {
   const { isDark, toggle } = useTheme();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -68,33 +61,34 @@ export function Navbar() {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 40px",
-        transition: "all 0.3s ease",
+        transition: "background 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease",
         background: scrolled
           ? isDark
-            ? "rgba(6, 17, 26, 0.85)"
-            : "rgba(255, 255, 255, 0.85)"
-          : "transparent",
-        backdropFilter: scrolled ? "blur(16px)" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(16px)" : "none",
-        borderBottom: scrolled ? "1px solid var(--glass-border, rgba(255,255,255,0.08))" : "1px solid transparent",
+            ? "rgba(0, 0, 0, 0.88)"
+            : "rgba(255, 255, 255, 0.92)"
+          : isDark
+            ? "rgba(0, 0, 0, 0.35)"
+            : "rgba(255, 255, 255, 0.72)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderBottom: scrolled
+          ? "1px solid var(--glass-border)"
+          : "1px solid transparent",
       }}
     >
-      {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <TransitOpsIcon size={36} />
-        <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "var(--text-main, var(--color-text))" }}>
-          Transit<span style={{ color: "var(--accent-cyan, #00d4a1)" }}>Ops</span>
+        <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "var(--text-main)" }}>
+          Transit<span style={{ color: "var(--accent-cyan)" }}>Ops</span>
         </span>
       </div>
 
-
-
-      {/* Right Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {/* Theme Toggle */}
         <button
+          type="button"
           onClick={toggle}
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           style={{
             display: "flex",
             alignItems: "center",
@@ -102,21 +96,11 @@ export function Navbar() {
             width: "38px",
             height: "38px",
             borderRadius: "8px",
-            border: "1px solid var(--glass-border, rgba(255,255,255,0.12))",
-            background: "transparent",
-            color: "var(--text-muted)",
+            border: "1px solid var(--glass-border)",
+            background: "var(--glass-bg)",
+            color: "var(--text-main)",
             cursor: "pointer",
             transition: "all 0.2s",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "rgba(0,212,161,0.1)";
-            e.currentTarget.style.color = "var(--accent-cyan, #00d4a1)";
-            e.currentTarget.style.borderColor = "var(--accent-cyan, #00d4a1)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "var(--text-muted)";
-            e.currentTarget.style.borderColor = "var(--glass-border, rgba(255,255,255,0.12))";
           }}
         >
           {isDark ? <SunIcon /> : <MoonIcon />}

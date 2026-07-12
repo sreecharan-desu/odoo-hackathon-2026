@@ -7,13 +7,13 @@ import { apiGet, apiGetItems, endpoints } from "../lib/api";
 import type { DashboardKpis, Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
-/* ─── design tokens ─── */
+/* ─── design tokens (theme-aware — B&W in dark) ─── */
 const C = {
-  green:  "#22c55e",
-  amber:  "#f59e0b",
-  red:    "#ef4444",
-  blue:   "#3b82f6",
-  purple: "#a855f7",
+  green:  "var(--status-available)",
+  amber:  "var(--status-in-shop)",
+  red:    "var(--status-retired)",
+  blue:   "var(--status-on-trip)",
+  purple: "var(--chart-other)",
   muted:  "var(--color-muted)",
   border: "var(--color-border)",
   card:   "var(--color-surface-2)",
@@ -24,12 +24,12 @@ const fmtDate = (s?: string | null) =>
 
 /* ─── status badge ─── */
 const STATUS_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
-  Completed:  { bg: "rgba(34,197,94,0.12)",  text: "#22c55e", dot: "#22c55e" },
-  Dispatched: { bg: "rgba(59,130,246,0.12)", text: "#3b82f6", dot: "#3b82f6" },
-  Cancelled:  { bg: "rgba(239,68,68,0.10)",  text: "#ef4444", dot: "#ef4444" },
+  Completed:  { bg: "var(--status-available-bg)", text: "var(--status-available)", dot: "var(--status-available)" },
+  Dispatched: { bg: "var(--status-on-trip-bg)", text: "var(--status-on-trip)", dot: "var(--status-on-trip)" },
+  Cancelled:  { bg: "var(--status-retired-bg)", text: "var(--status-retired)", dot: "var(--status-retired)" },
   Draft:      { bg: "var(--color-surface-2)", text: "var(--color-muted)", dot: "var(--color-muted-2)" },
-  Active:     { bg: "rgba(34,197,94,0.12)",  text: "#22c55e", dot: "#22c55e" },
-  Inactive:   { bg: "rgba(239,68,68,0.10)",  text: "#ef4444", dot: "#ef4444" },
+  Active:     { bg: "var(--status-available-bg)", text: "var(--status-available)", dot: "var(--status-available)" },
+  Inactive:   { bg: "var(--status-retired-bg)", text: "var(--status-retired)", dot: "var(--status-retired)" },
 };
 
 function StatusBadge({ status }: { status: string }) {
