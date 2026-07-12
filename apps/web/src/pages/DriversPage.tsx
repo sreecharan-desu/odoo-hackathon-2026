@@ -1,21 +1,24 @@
 import { useState } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiPatch } from "../lib/api";
+import { canManageDrivers } from "../lib/rbac";
 import type { Driver } from "../types";
 import "../components/layout/shell.css";
 
+const PAGE_SIZE = 50;
+
 export default function DriversPage() {
   const { user } = useAuth();
+  const allowManage = canManageDrivers(user);
+  const [offset, setOffset] = useState(0);
 
-  // Scoped Access check (Drivers registry is restricted to Safety Officer)
-  const isAllowed = user?.role === "safety_officer" || user?.id === 0;
-
-  const { data: drivers, error, loading, apiMissing, refetch } = useApiList<Driver[]>(
-    isAllowed ? endpoints.drivers : ""
+  const { data: drivers, total, error, loading, apiMissing, refetch } = useApiList<Driver>(
+    endpoints.drivers,
+    { limit: PAGE_SIZE, offset },
   );
 
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
@@ -37,17 +40,6 @@ export default function DriversPage() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  if (!isAllowed) {
-    return (
-      <div className="access-scoped-wrapper">
-        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
-          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
-          <p className="text-muted">This page is restricted to Safety Officers.</p>
-        </Card>
-      </div>
-    );
-  }
 
   const handleAddDriver = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +122,9 @@ export default function DriversPage() {
           <h2>Drivers & Safety</h2>
           <p className="text-muted">Manage driver registry, license expiration dates, and safety performance indices</p>
         </div>
-        <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
+        {allowManage && (
+          <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
+        )}
       </div>
 
       <Card>
@@ -232,9 +226,13 @@ export default function DriversPage() {
             </table>
           </div>
         )}
+        {drivers && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+        )}
       </Card>
 
       {/* Toggle Status Bar */}
+      {allowManage && (
       <div className="status-toggle-row">
         <span className="status-toggle-label">Toggle Status</span>
         <Button
@@ -269,6 +267,7 @@ export default function DriversPage() {
           <span style={{ fontSize: "0.8125rem", color: "var(--color-muted)" }}>(Select a driver from the list to change status)</span>
         )}
       </div>
+      )}
 
       <p className="rule-note-text">
         Rule: Expired license or Suspended status &rarr; blocked from trip assignment

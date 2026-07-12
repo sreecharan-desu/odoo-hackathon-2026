@@ -1,22 +1,27 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db, require_roles
 from app.models.user import User
-from app.schemas import DriverCreate, DriverResponse, DriverUpdate
+from app.schemas import DriverCreate, DriverResponse, DriverUpdate, PaginatedResponse
 from app.services.driver_service import DriverService
+from app.utils.pagination import DEFAULT_LIMIT, MAX_LIMIT
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
 
 
-@router.get("", response_model=list[DriverResponse])
+@router.get("", response_model=PaginatedResponse[DriverResponse])
 def list_drivers(
     status: str | None = None,
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> list:
-    return DriverService.list(db, status=status)
+) -> dict:
+    page = DriverService.list(db, status=status, limit=limit, offset=offset)
+    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
 
 
 @router.post("", response_model=DriverResponse)

@@ -1,178 +1,106 @@
-# TransitOps — Odoo Hackathon 2026
+# TransitOps
 
-**TransitOps** is a smart transport operations platform: vehicles, drivers, trips, maintenance, fuel/expenses, and live KPIs. Built for the **Odoo Hackathon 2026** virtual round — own PostgreSQL + FastAPI backend, React UI, no BaaS, no AI bolted on.
+**Smart Transport Operations Platform**
 
-Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) · Tasks: [docs/TEAM_TASKS.md](./docs/TEAM_TASKS.md) · Demo: [docs/DEMO.md](./docs/DEMO.md)
+Fleet operations in one place — vehicles, drivers, dispatch, maintenance, fuel/expenses, and live KPIs — with hard business rules enforced in the API.
+
+PostgreSQL · FastAPI · React · Docker Compose
 
 ---
 
 ## Features
 
-| Area | What works |
-|------|------------|
-| Auth | JWT login, role-aware session, protected routes |
-| Dashboard | Live KPIs from Postgres (`/api/dashboard/kpis`) |
-| Fleet | Register / list vehicles with status badges |
-| Drivers | Register / list drivers with license checks |
-| Trips | Create → dispatch → complete / cancel with business rules |
-| Maintenance | Open / close jobs (vehicle goes In Shop / Available) |
-| Fuel & expenses | Log fuel and costs against vehicles |
-| Analytics | Operational view + CSV report endpoint |
-| Validation | Pydantic + service rules + frontend validators |
+1. **Secure login + RBAC** — Fleet Manager, Driver, Safety Officer, Financial Analyst  
+2. **Dashboard** — Fleet KPIs plus filters by vehicle type, status, and region  
+3. **Vehicle registry** — Unique plates, load capacity, odometer, status lifecycle  
+4. **Driver management** — Licenses, expiry checks, safety scores  
+5. **Trip dispatch** — Draft → Dispatched → Completed / Cancelled; create form uses dispatch pool + Available drivers  
+6. **Maintenance** — Open a job → vehicle goes **In Shop** (hidden from dispatch)  
+7. **Fuel & expenses** — Cost logging and per-vehicle operational totals  
+8. **Analytics** — Fuel efficiency (km/L), vehicle ROI, cost views + CSV export  
 
-Hard rules enforced in the API: no double-booking, cargo ≤ max load, expired/suspended licenses blocked, In Shop / Retired vehicles excluded from dispatch.
+### Rules the API enforces
 
----
-
-## Tech stack
-
-| Layer | Choice |
-|-------|--------|
-| API | FastAPI + Pydantic |
-| ORM | SQLAlchemy |
-| DB | PostgreSQL 16 (Docker) |
-| Web | React 19 + TypeScript + Vite |
-| Auth | Password hashing + JWT + RBAC |
+No double-booking · cargo ≤ max load · expired/suspended licenses blocked · In Shop / Retired excluded from dispatch · status transitions on dispatch, complete, cancel, and maintenance
 
 ---
 
-## Project structure
+## Run locally (one command)
 
-```
-apps/
-  api/app/
-    controllers/    # HTTP handlers
-    services/       # business rules
-    models/         # SQLAlchemy entities
-    schemas/        # request/response DTOs
-    core/           # config, security, deps
-  web/src/
-    pages/          # Login, Dashboard, Fleet, Drivers, Trips, …
-    components/     # layout, ui, forms
-    hooks/          # auth + data hooks
-    lib/api/        # HTTP client + endpoints
-    styles/         # theme tokens
-docker/             # Postgres compose
-docs/               # architecture, demo, tasks
-scripts/            # setup helpers
-```
-
-Guides: [apps/api](./apps/api/README.md) · [apps/web](./apps/web/README.md)
-
----
-
-## Getting started
-
-### Prerequisites
-
-- Docker Desktop
-- Python 3.11+
-- Node.js 20 LTS
-
-### 1. Clone
+**Requirement:** Docker Desktop (or Docker Engine + Compose)
 
 ```bash
 git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
 cd odoo-hackathon-2026
 cp .env.example .env
+docker-compose up --build
 ```
 
-### 2. Database
+| | |
+|--|--|
+| **App** | http://localhost:8080 |
+| **API docs** | http://localhost:8000/docs |
+| **Login** | `fleet@example.com` / `Password123!` |
+
+That starts Postgres, the API (migrations + seed if empty), and the web UI.
 
 ```bash
-docker compose up -d
+docker-compose down          # stop
+make up                      # same as docker-compose up --build -d
 ```
 
-Postgres is on host port **5433** by default (see `.env.example`) so it does not clash with other local instances.
-
-Or first-time everything:
-
-```bash
-bash scripts/setup.sh
-```
-
-### 3. API *(terminal 1)*
-
-```bash
-cd apps/api
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python scripts/seed.py
-uvicorn app.main:app --reload --port 8000
-```
-
-### 4. Web *(terminal 2)*
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-### 5. Open
-
-| Service | URL |
-|---------|-----|
-| Web app | http://localhost:5173 |
-| API health | http://localhost:8000/api/health |
-| API docs | http://localhost:8000/docs |
-
-Makefile: `make dev-db` · `make dev-api` · `make dev-web`
+If port `8000` is busy:  
+`BACKEND_PORT=8001 VITE_API_URL=http://localhost:8001 docker-compose up --build`
 
 ---
 
-## Demo login
-
-After `python scripts/seed.py`:
+## Demo accounts
 
 | Role | Email | Password |
 |------|-------|----------|
-| Fleet Manager | `fleet@example.com` | `Password123!` |
-| Driver | `driver@example.com` | `Password123!` |
-| Safety Officer | `safety@example.com` | `Password123!` |
-| Financial Analyst | `finance@example.com` | `Password123!` |
+| Fleet Manager | fleet@example.com | Password123! |
+| Driver | driver@example.com | Password123! |
+| Safety Officer | safety@example.com | Password123! |
+| Financial Analyst | finance@example.com | Password123! |
 
-90-second flow: [docs/DEMO.md](./docs/DEMO.md)
+Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 
 ---
 
-## How we meet Odoo evaluation criteria
+## Stack
 
-| Criterion | What we built |
-|-----------|----------------|
-| Database design | Normalized Postgres tables (users, vehicles, drivers, trips, maintenance, fuel, expenses) with FK/unique constraints |
-| Own backend APIs | Custom FastAPI — no Firebase / Supabase / MongoDB Atlas |
-| Dynamic data | Seed + live CRUD; UI reads from the API, not static JSON |
-| Input validation | Pydantic schemas + service-layer rules; frontend validators |
-| Collaborative Git | Four contributors; feature branches and PRs from each member |
-| Clean UI | Theme tokens, KPI cards, status badges, app shell + pages |
-| Modularity | Layered API + owned frontend folders |
-| Security | Password hashing, JWT, role-based access |
-| Logic / attention to detail | Capacity, license expiry, and status transitions enforced in services |
-| No trendy fluff | No AI / blockchain — product logic only |
+| Layer | Choice |
+|-------|--------|
+| Database | PostgreSQL 16 |
+| API | FastAPI + SQLAlchemy + Alembic |
+| Web | React 19 + TypeScript + Vite |
+| Auth | JWT + password hashing + RBAC |
+| Deploy locally | Docker Compose |
+
+Own backend and database — no Firebase / Supabase / Atlas.
+
+---
+
+## Project layout
+
+```
+apps/api   # FastAPI (controllers → services → models)
+apps/web   # React SPA
+docker/    # Compose definitions
+docs/      # Architecture, demo, stack
+```
+
+More detail: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) · [docs/STACK.md](./docs/STACK.md)
 
 ---
 
 ## Team
 
-| Name | Role |
-|------|------|
-| **SreeCharan Desu** | Backend, database, integration |
-| **Bhanu Prakash Alahari** | Frontend pages, layout, API wiring |
-| **Anand Velpuri** | Validation, seed data, demo |
-| **Naga Mohan Madicharla** | Theme, styles, shared UI components |
+| | |
+|--|--|
+| SreeCharan Desu | Backend, database, integration |
+| Bhanu Prakash Alahari | Web application |
+| Anand Velpuri | Forms, validation, seed |
+| Naga Mohan Madicharla | Design system & UI |
 
-PRs and reviews before merge to `main` — see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
----
-
-## Documentation
-
-- [Architecture](./docs/ARCHITECTURE.md) — data model and API contract
-- [Team tasks](./docs/TEAM_TASKS.md) — ownership and screens
-- [Demo script](./docs/DEMO.md) — 90-second flow + credentials
-- [Stack decisions](./docs/STACK.md) — when and why we add technology
-
----
-
-Built for the **Odoo Hackathon 2026** virtual round.
+[CONTRIBUTING.md](./CONTRIBUTING.md)

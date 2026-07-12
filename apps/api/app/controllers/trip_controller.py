@@ -1,22 +1,27 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db, require_roles
 from app.models.user import User
-from app.schemas import TripComplete, TripCreate, TripResponse
+from app.schemas import PaginatedResponse, TripComplete, TripCreate, TripResponse
 from app.services.trip_service import TripService
+from app.utils.pagination import DEFAULT_LIMIT, MAX_LIMIT
 
 router = APIRouter(prefix="/trips", tags=["trips"])
 
 
-@router.get("", response_model=list[TripResponse])
+@router.get("", response_model=PaginatedResponse[TripResponse])
 def list_trips(
     status: str | None = None,
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> list:
-    return TripService.list(db, status=status)
+) -> dict:
+    page = TripService.list(db, status=status, limit=limit, offset=offset)
+    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
 
 
 @router.post("", response_model=TripResponse)

@@ -1,66 +1,48 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Card, Spinner } from "../components/ui";
-import { useAuth } from "../hooks/useAuth";
-import { apiGet, endpoints } from "../lib/api";
+import { useAsync } from "../hooks/useAsync";
+import { apiGet, apiGetItems, endpoints } from "../lib/api";
 import type { DashboardKpis, Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  
-  // Scoped Access check (Dashboard is scoped to Dispatcher / Fleet Manager / Admin)
-  const isAllowed = user?.role === "dispatcher" || user?.role === "fleet_manager" || user?.id === 0;
-
-  const [kpis, setKpis] = useState<DashboardKpis | null>(null);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Filters state
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [regionFilter, setRegionFilter] = useState("All");
 
-  useEffect(() => {
-    if (!isAllowed) {
-      setLoading(false);
-      return;
-    }
+  const { data: kpis, error: kpiError, loading: kpiLoading } = useAsync<DashboardKpis>(
+    () => apiGet(endpoints.kpis),
+    [],
+  );
 
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      apiGet<DashboardKpis>(endpoints.kpis),
-      apiGet<Trip[]>(endpoints.trips),
-      apiGet<Vehicle[]>(endpoints.vehicles),
-      apiGet<Driver[]>(endpoints.drivers)
-    ])
-      .then(([kpiData, tripData, vehicleData, driverData]) => {
-        setKpis(kpiData);
-        setTrips(tripData);
-        setVehicles(vehicleData);
-        setDrivers(driverData);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load dashboard data");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [isAllowed]);
+  const { data: trips, error: tripsError, loading: tripsLoading } = useAsync<Trip[]>(
+    () => apiGetItems<Trip>(endpoints.trips, { limit: 50 }),
+    [],
+  );
 
-  if (!isAllowed) {
-    return (
-      <div className="access-scoped-wrapper">
-        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
-          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
-          <p className="text-muted">This page is scoped for Dispatcher and Fleet Manager roles.</p>
-        </Card>
-      </div>
-    );
-  }
+  const { data: vehicles, error: vehiclesError, loading: vehiclesLoading } = useAsync<Vehicle[]>(
+    () => apiGetItems<Vehicle>(endpoints.vehicles),
+    [],
+  );
+
+  const { data: drivers, error: driversError, loading: driversLoading } = useAsync<Driver[]>(
+    () => apiGetItems<Driver>(endpoints.drivers),
+    [],
+  );
+
+  const loading = kpiLoading || tripsLoading || vehiclesLoading || driversLoading;
+  const error = kpiError || tripsError || vehiclesError || driversError;
+
+  const regionOptions = useMemo(() => {
+    const regions = Array.from(
+      new Set((vehicles ?? []).map((v) => v.region).filter((r): r is string => Boolean(r))),
+    ).sort();
+    return regions;
+  }, [vehicles]);
+
+  const typeOptions = useMemo(() => {
+    return Array.from(new Set((vehicles ?? []).map((v) => v.vehicle_type).filter(Boolean))).sort();
+  }, [vehicles]);
 
   if (loading) {
     return (
@@ -74,24 +56,24 @@ export default function DashboardPage() {
     return <p className="error" style={{ margin: "var(--space-4)" }}>{error}</p>;
   }
 
-  // Calculate dynamic vehicle status counts for the chart
-  const counts = {
-    Available: vehicles.filter(v => v.status === "Available").length,
-    OnTrip: vehicles.filter(v => v.status === "On Trip").length,
-    InShop: vehicles.filter(v => v.status === "In Shop").length,
-    Retired: vehicles.filter(v => v.status === "Retired").length,
-  };
-  const totalVehicles = vehicles.length || 1;
+  const vehicleList = vehicles ?? [];
+  const tripList = trips ?? [];
+  const driverList = drivers ?? [];
 
-  // Filter trips based on filters
-  const filteredTrips = trips.filter(trip => {
-    const v = vehicles.find(veh => veh.id === trip.vehicle_id);
+  const counts = {
+    Available: vehicleList.filter((v) => v.status === "Available").length,
+    OnTrip: vehicleList.filter((v) => v.status === "On Trip").length,
+    InShop: vehicleList.filter((v) => v.status === "In Shop").length,
+    Retired: vehicleList.filter((v) => v.status === "Retired").length,
+  };
+  const totalVehicles = vehicleList.length || 1;
+
+  const filteredTrips = tripList.filter((trip) => {
+    const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
     if (!v) return true;
-    
     const matchesType = typeFilter === "All" || v.vehicle_type === typeFilter;
     const matchesStatus = statusFilter === "All" || v.status === statusFilter;
     const matchesRegion = regionFilter === "All" || v.region === regionFilter;
-    
     return matchesType && matchesStatus && matchesRegion;
   });
 
@@ -102,7 +84,6 @@ export default function DashboardPage() {
         <p className="text-muted">Real-time fleet performance & operations monitoring</p>
       </div>
 
-      {/* Top Filters */}
       <div className="dashboard-filters">
         <span className="dashboard-filters-label">Filters</span>
         <select
@@ -111,10 +92,11 @@ export default function DashboardPage() {
           onChange={(e) => setTypeFilter(e.target.value)}
         >
           <option value="All">Vehicle Type: All</option>
-          <option value="Van">Van</option>
-          <option value="Truck">Truck</option>
-          <option value="Sedan">Sedan</option>
-          <option value="SUV">SUV</option>
+          {typeOptions.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
         <select
           className="dashboard-filter-select"
@@ -133,14 +115,14 @@ export default function DashboardPage() {
           onChange={(e) => setRegionFilter(e.target.value)}
         >
           <option value="All">Region: All</option>
-          <option value="West">West</option>
-          <option value="East">East</option>
-          <option value="North">North</option>
-          <option value="South">South</option>
+          {regionOptions.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
         </select>
       </div>
 
-      {/* 7 KPI Cards */}
       {kpis && (
         <div className="page-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginBottom: "var(--space-4)" }}>
           <div className="stat-card" style={{ borderLeft: "4px solid #3b82f6" }}>
@@ -174,7 +156,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Split Pane: Trips Table on Left, Vehicle Status Bars on Right */}
       <div className="split-pane-layout">
         <div className="split-pane-main">
           <Card>
@@ -195,10 +176,9 @@ export default function DashboardPage() {
                   </thead>
                   <tbody>
                     {filteredTrips.slice(0, 10).map((trip) => {
-                      const v = vehicles.find(veh => veh.id === trip.vehicle_id);
-                      const d = drivers.find(drv => drv.id === trip.driver_id);
-                      
-                      // Format ETA
+                      const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
+                      const d = driverList.find((drv) => drv.id === trip.driver_id);
+
                       let eta = "—";
                       if (trip.status === "Dispatched") {
                         eta = "45 min";
@@ -243,7 +223,7 @@ export default function DashboardPage() {
         <div className="split-pane-side">
           <Card>
             <h3 style={{ margin: "0 0 var(--space-4)" }}>VEHICLE STATUS</h3>
-            
+
             <div className="progress-chart-row">
               <span className="progress-chart-label">Available</span>
               <div className="progress-chart-bar-container">

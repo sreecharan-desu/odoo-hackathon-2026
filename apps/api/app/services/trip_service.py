@@ -9,15 +9,22 @@ from app.models.vehicle import Vehicle
 from app.schemas import TripComplete, TripCreate
 from app.services.driver_service import DriverService
 from app.services.vehicle_service import VehicleService
+from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
 
 
 class TripService:
     @staticmethod
-    def list(db: Session, status: str | None = None) -> list[Trip]:
+    def list(
+        db: Session,
+        status: str | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[Trip]:
         q = db.query(Trip).order_by(Trip.id.desc())
         if status:
             q = q.filter(Trip.status == status)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def get(db: Session, trip_id: int) -> Trip:

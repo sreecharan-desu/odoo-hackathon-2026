@@ -13,7 +13,7 @@ type LocationState = {
 
 const DEMO_ACCOUNTS = [
   { role: "Fleet Manager", roleValue: "fleet_manager", email: "fleet@example.com", password: "Password123!" },
-  { role: "Dispatcher", roleValue: "dispatcher", email: "dispatcher@example.com", password: "Password123!" },
+  { role: "Driver", roleValue: "driver", email: "driver@example.com", password: "Password123!" },
   { role: "Safety Officer", roleValue: "safety_officer", email: "safety@example.com", password: "Password123!" },
   { role: "Financial Analyst", roleValue: "financial_analyst", email: "finance@example.com", password: "Password123!" },
 ];
@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState("dispatcher");
+  const [selectedRole, setSelectedRole] = useState("fleet_manager");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +60,7 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      await login({ email, password, roleOverride: selectedRole });
+      await login({ email, password });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
       // Render locked or credential errors cleanly
@@ -180,8 +180,8 @@ export default function LoginPage() {
               label="ROLE (RBAC)"
               required
               options={[
-                { value: "dispatcher", label: "Dispatcher" },
                 { value: "fleet_manager", label: "Fleet Manager" },
+                { value: "driver", label: "Driver" },
                 { value: "safety_officer", label: "Safety Officer" },
                 { value: "financial_analyst", label: "Financial Analyst" },
               ]}

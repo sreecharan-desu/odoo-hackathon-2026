@@ -73,25 +73,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (credentials: LoginCredentials & { roleOverride?: string }) => {
     try {
       const response = await apiPost<LoginResponse>(endpoints.login, credentials);
+      // Always trust the API role — never spoof client-side for RBAC demos
       const user = { ...response.user };
-      if (credentials.roleOverride) {
-        user.role = credentials.roleOverride;
-      }
       const auth = { user, token: response.access_token };
       writeStoredAuth(auth);
       setUser(user);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 404 || err.status === 405 || err.status === 401)) {
         const emailLower = credentials.email.toLowerCase();
-        let role = credentials.roleOverride || "driver";
-        if (!credentials.roleOverride) {
-          if (emailLower.includes("fleet") || emailLower.includes("manager")) {
-            role = "fleet_manager";
-          } else if (emailLower.includes("safety")) {
-            role = "safety_officer";
-          } else if (emailLower.includes("finance") || emailLower.includes("analyst")) {
-            role = "financial_analyst";
-          }
+        let role = "driver";
+        if (emailLower.includes("fleet") || emailLower.includes("manager")) {
+          role = "fleet_manager";
+        } else if (emailLower.includes("safety")) {
+          role = "safety_officer";
+        } else if (emailLower.includes("finance") || emailLower.includes("analyst")) {
+          role = "financial_analyst";
+        } else if (emailLower.includes("driver")) {
+          role = "driver";
         }
         const demoUser: AuthUser = {
           id: 0,
