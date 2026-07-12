@@ -385,7 +385,7 @@ def seed() -> None:
                     logged_at=t.created_at + timedelta(hours=RNG.randint(2, 10)),
                 )
             )
-        for i in range(80):
+        for i in range(20):
             veh = RNG.choice(vehicles)
             liters = RNG.uniform(15, 90)
             fuel_logs.append(
@@ -410,7 +410,7 @@ def seed() -> None:
                     opened_at=_utc_days_ago(RNG.randint(0, 10)),
                 )
             )
-        for i in range(70):
+        for i in range(20):
             veh = RNG.choice(vehicles)
             opened = _utc_days_ago(RNG.randint(10, 120))
             maintenance.append(
@@ -426,7 +426,7 @@ def seed() -> None:
             )
 
         # Expenses
-        for i in range(150):
+        for i in range(40):
             veh = RNG.choice(vehicles)
             cat = RNG.choice(EXPENSE_CATS)
             expenses.append(
@@ -444,7 +444,7 @@ def seed() -> None:
         db.add_all(expenses)
         db.commit()
 
-        print("✓ Seed complete — large fleet dataset ready.")
+        print("✓ Seed complete — compact fleet dataset ready.")
         print(f"  Login: fleet@example.com / {DEMO_PASSWORD}")
         print(f"  Users:        {db.query(User).count()}")
         print(f"  Vehicles:     {db.query(Vehicle).count()}")
