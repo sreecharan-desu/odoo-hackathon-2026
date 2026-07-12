@@ -11,7 +11,7 @@ Created by `apps/api/scripts/seed.py`:
 | Safety Officer | safety@example.com | Password123! |
 | Financial Analyst | finance@example.com | Password123! |
 
-Money amounts in the UI are **INR (₹)**. ROI uses estimated revenue of ₹40 per completed trip km.
+Money amounts in the UI are **INR (₹)**. ROI uses estimated revenue of ₹40 per completed trip km. All seeded database values (acquisition costs, maintenance costs, fuel costs, and expenses) are numeric values representing Indian Rupees (INR).
 
 ## Seeded data
 
