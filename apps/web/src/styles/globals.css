@@ -1,34 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-:root {
-  /* Colors */
-  --bg-primary: #06111A;
-  --bg-secondary: #0B1622;
-  --accent-cyan: #16E6D8;
-  --accent-cyan-hover: #12c9bd;
-  
-  /* Text */
-  --text-main: #FFFFFF;
-  --text-muted: #A5B4C3;
-  
-  /* Glass Surfaces */
-  --glass-bg: rgba(17, 24, 39, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.15);
-  
-  /* Layout */
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 8px;
-  --nav-height: 80px;
-}
-
 body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-main);
+  /* background and color are set by theme.css via --color-bg / --color-text */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
