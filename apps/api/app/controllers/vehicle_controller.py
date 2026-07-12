@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_db, require_roles
 from app.models.user import User
-from app.schemas import PaginatedResponse, VehicleCreate, VehicleResponse, VehicleUpdate
+from app.schemas import PaginatedResponse, VehicleCreate, VehicleDocumentResponse, VehicleResponse, VehicleUpdate
+from app.models.vehicle_document import VehicleDocument
 from app.services.vehicle_service import VehicleService
 from app.utils.pagination import DEFAULT_LIMIT, MAX_LIMIT
 
@@ -53,3 +57,43 @@ def update_vehicle(
     _: User = Depends(require_roles("fleet_manager")),
 ) -> object:
     return VehicleService.update(db, vehicle_id, payload)
+
+
+@router.get("/{vehicle_id}/documents", response_model=list[VehicleDocumentResponse])
+def list_documents(
+    vehicle_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> list[VehicleDocument]:
+    return (
+        db.query(VehicleDocument)
+        .filter(VehicleDocument.vehicle_id == vehicle_id)
+        .order_by(VehicleDocument.id.desc())
+        .all()
+    )
+
+
+@router.post("/{vehicle_id}/documents", response_model=VehicleDocumentResponse)
+def create_document(
+    vehicle_id: int,
+    doc_type: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("fleet_manager")),
+) -> VehicleDocument:
+    VehicleService.get(db, vehicle_id)
+    storage_dir = Path(settings.document_storage_dir)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = f"vehicle-{vehicle_id}-{file.filename or 'document'}"
+    file_path = storage_dir / safe_name
+    file_path.write_bytes(file.file.read())
+    doc = VehicleDocument(
+        vehicle_id=vehicle_id,
+        doc_type=doc_type.strip(),
+        file_name=file.filename or safe_name,
+        file_path=str(file_path),
+    )
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+    return doc
