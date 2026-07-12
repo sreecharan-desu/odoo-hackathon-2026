@@ -13,7 +13,8 @@ class ReportService:
             f"License reminder window: {settings.license_reminder_days} days\n"
             "\nThis report is generated from the live fleet dashboard."
         )
-        stream = f"BT /F1 12 Tf 72 740 Td ({body.replace('\\', '\\\\').replace('(', '\\(').replace(')', '\\)')}) Tj ET"
+        escaped_body = body.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        stream = f"BT /F1 12 Tf 72 740 Td ({escaped_body}) Tj ET"
         objects = [
             b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
             b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
