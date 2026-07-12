@@ -446,18 +446,18 @@ def seed() -> None:
             )
 
         # Maintenance — open for In Shop vehicles, closed history for others
-        for veh in in_shop_vehicles:
+        for veh in in_shop_vehicles[: SEED_PROFILE["maintenance_open"]]:
             maintenance.append(
                 MaintenanceLog(
                     vehicle_id=veh.id,
                     title=RNG.choice(MAINT_TITLES),
                     description=f"Open job for {veh.registration_number}",
-                    estimated_cost=float(RNG.randint(2500, 45000)),
+                    estimated_cost=float(RNG.randint(3200, 38000)),
                     status="Open",
                     opened_at=_utc_days_ago(RNG.randint(0, 10)),
                 )
             )
-        for i in range(20):
+        for i in range(SEED_PROFILE["maintenance_history"]):
             veh = RNG.choice(vehicles)
             opened = _utc_days_ago(RNG.randint(10, 120))
             maintenance.append(
@@ -465,7 +465,7 @@ def seed() -> None:
                     vehicle_id=veh.id,
                     title=RNG.choice(MAINT_TITLES),
                     description="Completed scheduled service",
-                    estimated_cost=float(RNG.randint(1500, 60000)),
+                    estimated_cost=float(RNG.randint(1800, 48000)),
                     status="Closed",
                     opened_at=opened,
                     closed_at=opened + timedelta(days=RNG.randint(1, 7)),
