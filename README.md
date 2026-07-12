@@ -79,6 +79,57 @@ Walkthrough: [docs/DEMO.md](./docs/DEMO.md)
 
 Own backend and database — no Firebase / Supabase / Atlas.
 
+### Data model (ER)
+
+```mermaid
+erDiagram
+  users ||--o| drivers : "user_id"
+  users ||--o{ trips : "created_by"
+  vehicles ||--o{ trips : "vehicle_id"
+  drivers ||--o{ trips : "driver_id"
+  vehicles ||--o{ maintenance_logs : "vehicle_id"
+  vehicles ||--o{ fuel_logs : "vehicle_id"
+  vehicles ||--o{ expenses : "vehicle_id"
+  trips ||--o{ fuel_logs : "trip_id"
+
+  users {
+    int id PK
+    string email UK
+    string role
+  }
+  vehicles {
+    int id PK
+    string registration_number UK
+    string status
+  }
+  drivers {
+    int id PK
+    string license_number UK
+    int user_id FK "nullable"
+    string status
+  }
+  trips {
+    int id PK
+    int vehicle_id FK
+    int driver_id FK
+    string status
+  }
+  maintenance_logs {
+    int id PK
+    int vehicle_id FK
+    string status
+  }
+  fuel_logs {
+    int id PK
+    int vehicle_id FK
+    int trip_id FK
+  }
+  expenses {
+    int id PK
+    int vehicle_id FK
+  }
+```
+
 ---
 
 ## Project layout

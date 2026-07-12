@@ -148,11 +148,11 @@ export default function MaintenancePage() {
                         background: log.status === "Closed" ? "rgba(40, 167, 69, 0.15)" : "rgba(255, 193, 7, 0.15)",
                         color: log.status === "Closed" ? "#28a745" : "#ffc107"
                       }}>
-                        {log.status === "open" ? "In Shop" : log.status}
+                        {log.status === "Open" ? "In Shop" : log.status}
                       </span>
                     </td>
                     <td style={{ padding: "var(--space-2)" }}>
-                      {log.status === "open" && allowManage && (
+                      {log.status === "Open" && allowManage && (
                         <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCloseMaintenance(log.id)}>Close Order</Button>
                       )}
                       {log.status === "Closed" && (

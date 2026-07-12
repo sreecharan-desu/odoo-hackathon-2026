@@ -42,6 +42,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     name: str
     role: str
+    driver_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -93,6 +94,7 @@ class DriverCreate(BaseModel):
     license_expiry: date
     contact_number: str | None = None
     safety_score: float = Field(default=100, ge=0, le=100)
+    user_id: int | None = None
 
 
 class DriverUpdate(BaseModel):
@@ -102,6 +104,7 @@ class DriverUpdate(BaseModel):
     contact_number: str | None = None
     safety_score: float | None = Field(default=None, ge=0, le=100)
     status: str | None = None
+    user_id: int | None = None
 
 
 class DriverResponse(BaseModel):
@@ -113,6 +116,7 @@ class DriverResponse(BaseModel):
     contact_number: str | None
     safety_score: float
     status: str
+    user_id: int | None = None
 
     model_config = {"from_attributes": True}
 

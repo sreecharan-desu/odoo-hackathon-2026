@@ -3,6 +3,7 @@ export type AuthUser = {
   email: string;
   name: string;
   role: string;
+  driver_id?: number | null;
 };
 
 export type LoginCredentials = {
