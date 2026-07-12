@@ -1,13 +1,19 @@
 import { useState } from "react";
-import { Card, Spinner, Button } from "../components/ui";
+import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import type { Vehicle } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function FleetPage() {
-  const { data: vehicles, error, loading, apiMissing, refetch } = useApiList<Vehicle[]>(endpoints.vehicles);
+  const [offset, setOffset] = useState(0);
+  const { data: vehicles, total, error, loading, apiMissing, refetch } = useApiList<Vehicle>(
+    endpoints.vehicles,
+    { limit: PAGE_SIZE, offset },
+  );
   
   const [isAdding, setIsAdding] = useState(false);
   const [regNum, setRegNum] = useState("");
@@ -145,6 +151,9 @@ export default function FleetPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {vehicles && (
+          <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
 
