@@ -18,6 +18,15 @@ export function minLength(value: string, min: number, label = "This field"): str
   return value.trim().length >= min ? null : `${label} must be at least ${min} characters`;
 }
 
+/** Mirrors API UserCreate: password 8–128 chars */
+export function password(value: string, label = "Password"): string | null {
+  if (!value) return `${label} is required`;
+  if (value.length < 8) return `${label} must be at least 8 characters`;
+  if (value.length > 128) return `${label} must be at most 128 characters`;
+  return null;
+}
+
+
 export function positiveNumber(value: string | number, label = "This field"): string | null {
   const raw = typeof value === "number" ? String(value) : value.trim();
   if (!raw) return `${label} is required`;

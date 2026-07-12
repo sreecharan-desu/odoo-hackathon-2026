@@ -46,3 +46,28 @@
 .form-field__error {
   margin: 0;
 }
+
+.form-field__password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.form-field__password-wrap .form-field__input {
+  padding-right: 60px;
+}
+
+.form-field__toggle {
+  position: absolute;
+  right: var(--space-2);
+  background: transparent;
+  border: none;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+}
+
+.form-field__toggle:hover {
+  color: var(--color-text);
+}
