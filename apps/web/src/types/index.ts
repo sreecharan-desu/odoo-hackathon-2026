@@ -9,6 +9,8 @@ export {
   type FuelLog,
   type Expense,
   type DashboardKpis,
+  type VehicleDocument,
+  type LicenseReminder,
 } from "./api";
 export { type AuthUser, type LoginCredentials, type LoginResponse } from "./auth";
 export { ROUTES, NAV_ITEMS, type AppRoute, type NavItem } from "./routes";

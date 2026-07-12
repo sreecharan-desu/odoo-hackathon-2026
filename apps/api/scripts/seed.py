@@ -454,7 +454,7 @@ def seed() -> None:
               f"Dispatched={db.query(Trip).filter_by(status='Dispatched').count()}, "
               f"Completed={db.query(Trip).filter_by(status='Completed').count()}, "
               f"Cancelled={db.query(Trip).filter_by(status='Cancelled').count()})")
-          print(f"  Freight rate: ₹{FREIGHT_REVENUE_PER_KM:.2f}/km")
+        print(f"  Freight rate: ₹{FREIGHT_REVENUE_PER_KM:.2f}/km")
         print(f"  Maintenance:  {db.query(MaintenanceLog).count()}")
         print(f"  Fuel logs:    {db.query(FuelLog).count()}")
         print(f"  Expenses:     {db.query(Expense).count()}")

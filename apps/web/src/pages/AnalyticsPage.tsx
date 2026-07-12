@@ -58,6 +58,25 @@ export default function AnalyticsPage() {
     }
   };
 
+  const downloadPdf = async () => {
+    try {
+      const rawToken = sessionStorage.getItem("transitops_auth");
+      const token = rawToken ? JSON.parse(rawToken).token : null;
+      const response = await fetch(`${API_BASE_URL}${endpoints.reportsPdf}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("PDF download failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.setAttribute("href", url);
+      a.setAttribute("download", `operational_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+      a.click();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to download PDF");
+    }
+  };
+
   const maxCost = fleetCosts ? Math.max(...fleetCosts.map((f) => f.total_operational_cost), 100) : 100;
   const efficiencyValues =
     fleetCosts
@@ -74,9 +93,14 @@ export default function AnalyticsPage() {
           <h2>{chrome.title}</h2>
           <p className="text-muted">{chrome.sub}</p>
         </div>
-        <Button onClick={() => void downloadCsv()}>
-          {isFinance ? "Export Cost Report" : "Export CSV"}
-        </Button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button onClick={() => void downloadCsv()}>
+            {isFinance ? "Export Cost Report" : "Export CSV"}
+          </Button>
+          <Button variant="ghost" onClick={() => void downloadPdf()}>
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       {loading && <Spinner />}

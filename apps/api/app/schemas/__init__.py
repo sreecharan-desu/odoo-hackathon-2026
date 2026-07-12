@@ -86,6 +86,21 @@ class VehicleResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class VehicleDocumentCreate(BaseModel):
+    doc_type: str = Field(min_length=1, max_length=80)
+    file_name: str = Field(min_length=1, max_length=255)
+    file_path: str = Field(min_length=1, max_length=500)
+
+class VehicleDocumentResponse(BaseModel):
+    id: int
+    vehicle_id: int
+    doc_type: str
+    file_name: str
+    file_path: str
+    uploaded_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
 
 class DriverCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -108,6 +123,14 @@ class DriverUpdate(BaseModel):
 
 
 class DriverResponse(BaseModel):
+
+    class LicenseReminderResponse(BaseModel):
+        driver_id: int
+        driver_name: str
+        license_number: str
+        license_expiry: date
+        days_remaining: int
+        email: str | None = None
     id: int
     name: str
     license_number: str
@@ -119,6 +142,15 @@ class DriverResponse(BaseModel):
     user_id: int | None = None
 
     model_config = {"from_attributes": True}
+
+
+class LicenseReminderResponse(BaseModel):
+    driver_id: int
+    driver_name: str
+    license_number: str
+    license_expiry: date
+    days_remaining: int
+    email: str | None = None
 
 
 class TripCreate(BaseModel):
