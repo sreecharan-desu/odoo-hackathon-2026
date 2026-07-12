@@ -35,9 +35,11 @@ function Sidebar() {
     }}>
       {/* Logo area */}
       <div style={{ padding: "4px 10px 20px", fontSize: "13px", fontWeight: 700, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: "8px" }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
+        <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 22 L38 22 L48 38 L30 38 Z" fill="currentColor" />
+          <path d="M95 22 L62 22 L52 38 L70 38 Z" fill="currentColor" />
+          <path d="M38 40 L46 40 L46 78 L38 68 Z" fill="currentColor" />
+          <path d="M62 40 L54 40 L54 78 L62 68 Z" fill="currentColor" />
         </svg>
         TransitOps
       </div>
