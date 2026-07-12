@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const counts = {
     Available: vehicleList.filter((v) => v.status === "Available").length,
     OnTrip: vehicleList.filter((v) => v.status === "On Trip").length,
-    InShop: vehicleList.filter((v) => v.status === "In Shop").length,
+    InShop: vehicleList.filter((v) => v.status === "In Shop" || v.status === "Maintenance").length,
     Retired: vehicleList.filter((v) => v.status === "Retired").length,
   };
   const totalVehicles = vehicleList.length || 1;
@@ -77,6 +77,20 @@ export default function DashboardPage() {
     return matchesType && matchesStatus && matchesRegion;
   });
 
+  // SVG circular segments calculation parameters
+  // Circle radius = 70. Circumference = 2 * PI * r = 439.82
+  const r = 70;
+  const circumference = 2 * Math.PI * r;
+  
+  const segments = [
+    { label: "Available", count: counts.Available, color: "#ffffff" },
+    { label: "On Trip", count: counts.OnTrip, color: "#cccccc" },
+    { label: "In Shop", count: counts.InShop, color: "#777777" },
+    { label: "Retired", count: counts.Retired, color: "#333333" },
+  ];
+
+  let accumulatedCircumference = 0;
+
   return (
     <>
       <div className="page-header">
@@ -84,7 +98,8 @@ export default function DashboardPage() {
         <p className="text-muted">Real-time fleet performance & operations monitoring</p>
       </div>
 
-      <div className="dashboard-filters">
+      {/* Responsive Filters */}
+      <div className="dashboard-filters" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
         <span className="dashboard-filters-label">Filters</span>
         <select
           className="dashboard-filter-select"
@@ -101,7 +116,7 @@ export default function DashboardPage() {
         <select
           className="dashboard-filter-select"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setTypeFilter("All"); setStatusFilter(e.target.value); }}
         >
           <option value="All">Status: All</option>
           <option value="Available">Available</option>
@@ -123,140 +138,242 @@ export default function DashboardPage() {
         </select>
       </div>
 
+      {/* KPI 7 Data Cards Grid */}
       {kpis && (
-        <div className="page-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginBottom: "var(--space-4)" }}>
-          <div className="stat-card" style={{ borderLeft: "4px solid #3b82f6" }}>
-            <p className="stat-card-label">ACTIVE VEHICLES</p>
-            <p className="stat-card-value">{kpis.active_vehicles}</p>
+        <div 
+          className="page-grid" 
+          style={{ 
+            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", 
+            marginBottom: "var(--space-4)",
+            gap: "var(--space-2)"
+          }}
+        >
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>ACTIVE VEHICLES</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.active_vehicles}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #28a745" }}>
-            <p className="stat-card-label">AVAILABLE VEHICLES</p>
-            <p className="stat-card-value">{kpis.available_vehicles}</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>AVAILABLE VEHICLES</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.available_vehicles}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #ffc107" }}>
-            <p className="stat-card-label">VEHICLES IN MAINTENANCE</p>
-            <p className="stat-card-value" style={{ color: "#ffc107" }}>{kpis.vehicles_in_shop}</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>VEHICLES IN MAINT.</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.vehicles_in_shop}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #17a2b8" }}>
-            <p className="stat-card-label">ACTIVE TRIPS</p>
-            <p className="stat-card-value">{kpis.active_trips}</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>ACTIVE TRIPS</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.active_trips}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #6c757d" }}>
-            <p className="stat-card-label">PENDING TRIPS</p>
-            <p className="stat-card-value">{kpis.pending_trips}</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>PENDING TRIPS</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.pending_trips}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #6f42c1" }}>
-            <p className="stat-card-label">DRIVERS ON DUTY</p>
-            <p className="stat-card-value">{kpis.drivers_on_duty}</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>DRIVERS ON DUTY</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.drivers_on_duty}</p>
           </div>
-          <div className="stat-card" style={{ borderLeft: "4px solid #fd7e14" }}>
-            <p className="stat-card-label">FLEET UTILIZATION</p>
-            <p className="stat-card-value">{kpis.fleet_utilization_pct.toFixed(0)}%</p>
+          <div className="stat-card" style={{ transition: "none", border: "1px solid rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
+            <p className="stat-card-label" style={{ fontSize: "0.75rem", letterSpacing: "0.02em" }}>FLEET UTILIZATION</p>
+            <p className="stat-card-value" style={{ color: "#ffffff" }}>{kpis.fleet_utilization_pct.toFixed(0)}%</p>
           </div>
         </div>
       )}
 
-      <div className="split-pane-layout">
-        <div className="split-pane-main">
-          <Card>
-            <h3 style={{ margin: "0 0 var(--space-3)" }}>RECENT TRIPS</h3>
-            {filteredTrips.length === 0 ? (
-              <p className="page-empty">No recent trips match the filter criteria.</p>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="ops-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                      <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>TRIP</th>
-                      <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>VEHICLE</th>
-                      <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>DRIVER</th>
-                      <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>STATUS</th>
-                      <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>ETA</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTrips.slice(0, 10).map((trip) => {
-                      const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
-                      const d = driverList.find((drv) => drv.id === trip.driver_id);
+      {/* Full-width Stack Panel */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", width: "100%" }}>
+        
+        {/* Vehicle Stats Pie/Donut Chart Container */}
+        <Card style={{ width: "100%", padding: "var(--space-4)" }}>
+          <h3 style={{ margin: "0 0 var(--space-4)", fontSize: "1.1rem", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "8px" }}>
+            VEHICLE STATUS
+          </h3>
 
-                      let eta = "—";
-                      if (trip.status === "Dispatched") {
-                        eta = "45 min";
-                      } else if (trip.status === "Draft") {
-                        eta = "Awaiting vehicle";
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-around",
+            gap: "var(--space-4)",
+            padding: "var(--space-2) 0"
+          }}>
+            {/* SVG Donut Chart */}
+            <div style={{ position: "relative", width: "220px", height: "220px" }}>
+              <svg viewBox="0 0 200 200" width="100%" height="100%">
+                {/* Base background circle */}
+                <circle 
+                  cx="100" 
+                  cy="100" 
+                  r={r} 
+                  fill="transparent" 
+                  stroke="rgba(255, 255, 255, 0.02)" 
+                  strokeWidth="20" 
+                />
+                
+                {segments.map((seg) => {
+                  const pct = totalVehicles > 0 ? seg.count / totalVehicles : 0;
+                  const strokeDasharray = `${pct * circumference} ${circumference}`;
+                  const strokeDashoffset = -accumulatedCircumference;
+                  accumulatedCircumference += pct * circumference;
+                  
+                  if (seg.count === 0) return null;
+                  
+                  return (
+                    <circle
+                      key={seg.label}
+                      cx="100"
+                      cy="100"
+                      r={r}
+                      fill="transparent"
+                      stroke={seg.color}
+                      strokeWidth="20"
+                      strokeDasharray={strokeDasharray}
+                      strokeDashoffset={strokeDashoffset}
+                      transform="rotate(-90 100 100)"
+                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                    />
+                  );
+                })}
+              </svg>
+              {/* Central text badge */}
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <span style={{ fontSize: "1.75rem", fontWeight: "800", color: "#ffffff" }}>{totalVehicles}</span>
+                <span style={{ fontSize: "0.6875rem", fontWeight: "700", color: "rgba(255, 255, 255, 0.4)", letterSpacing: "0.08em", marginTop: "2px" }}>
+                  TOTAL ASSETS
+                </span>
+              </div>
+            </div>
+
+            {/* Monochrome Legend Table */}
+            <div style={{ flex: 1, minWidth: "280px", maxWidth: "450px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  {segments.map((seg) => {
+                    const pct = totalVehicles > 0 ? ((seg.count / totalVehicles) * 100).toFixed(0) : "0";
+                    return (
+                      <tr key={seg.label} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                        <td style={{ padding: "10px 0", display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span style={{
+                            display: "inline-block",
+                            width: "10px",
+                            height: "10px",
+                            borderRadius: "50%",
+                            background: seg.color,
+                            border: "1px solid rgba(255, 255, 255, 0.1)"
+                          }} />
+                          <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff" }}>{seg.label}</span>
+                        </td>
+                        <td style={{ padding: "10px 16px", textAlign: "right", fontSize: "0.875rem", fontWeight: "bold", color: "#ffffff" }}>
+                          {seg.count}
+                        </td>
+                        <td style={{ padding: "10px 0", textAlign: "right", fontSize: "0.875rem", color: "rgba(255, 255, 255, 0.4)" }}>
+                          {pct}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Card>
+
+        {/* Recent Trips Table Container */}
+        <Card style={{ width: "100%", padding: "var(--space-4)" }}>
+          <h3 style={{ margin: "0 0 var(--space-3)", fontSize: "1.1rem" }}>RECENT TRIPS</h3>
+          {filteredTrips.length === 0 ? (
+            <p className="page-empty">No recent trips match the filter criteria.</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="ops-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>TRIP</th>
+                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>VEHICLE</th>
+                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>DRIVER</th>
+                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>STATUS</th>
+                    <th style={{ padding: "10px 0", color: "var(--color-muted)" }}>ETA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTrips.slice(0, 10).map((trip) => {
+                    const v = vehicleList.find((veh) => veh.id === trip.vehicle_id);
+                    const d = driverList.find((drv) => drv.id === trip.driver_id);
+
+                    let eta = "—";
+                    if (trip.status === "Dispatched") {
+                      eta = "45 min";
+                    } else if (trip.status === "Draft") {
+                      eta = "Awaiting vehicle";
+                    }
+
+                    // Strict black & white badge styling
+                    const getBadgeStyle = (status: string) => {
+                      switch (status) {
+                        case "Completed":
+                          return {
+                            border: "1px solid #ffffff",
+                            background: "rgba(255, 255, 255, 0.06)",
+                            color: "#ffffff"
+                          };
+                        case "Dispatched":
+                          return {
+                            border: "1px dashed rgba(255, 255, 255, 0.4)",
+                            background: "rgba(255, 255, 255, 0.03)",
+                            color: "rgba(255, 255, 255, 0.85)"
+                          };
+                        case "Cancelled":
+                          return {
+                            border: "1px solid rgba(255, 255, 255, 0.15)",
+                            background: "transparent",
+                            color: "rgba(255, 255, 255, 0.4)",
+                            textDecoration: "line-through"
+                          };
+                        default: // Draft / Pending
+                          return {
+                            border: "1px dotted rgba(255, 255, 255, 0.3)",
+                            background: "transparent",
+                            color: "rgba(255, 255, 255, 0.6)"
+                          };
                       }
+                    };
 
-                      return (
-                        <tr key={trip.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                          <td style={{ padding: "var(--space-2) 0", fontWeight: "bold" }}>TR{String(trip.id).padStart(3, "0")}</td>
-                          <td style={{ padding: "var(--space-2) 0" }}>{v ? v.registration_number : `Vehicle #${trip.vehicle_id}`}</td>
-                          <td style={{ padding: "var(--space-2) 0" }}>{d ? d.name : `Driver #${trip.driver_id}`}</td>
-                          <td style={{ padding: "var(--space-2) 0" }}>
-                            <span style={{
-                              padding: "2px 8px",
-                              borderRadius: "12px",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              background: trip.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
-                                          trip.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
-                                          trip.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
-                                          "rgba(108, 117, 125, 0.15)",
-                              color: trip.status === "Completed" ? "#28a745" :
-                                     trip.status === "Dispatched" ? "#007bff" :
-                                     trip.status === "Cancelled" ? "#dc3545" :
-                                     "#6c757d"
-                            }}>
-                              {trip.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: "var(--space-2) 0", color: "var(--color-muted)", fontSize: "0.875rem" }}>{eta}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="split-pane-side">
-          <Card>
-            <h3 style={{ margin: "0 0 var(--space-4)" }}>VEHICLE STATUS</h3>
-
-            <div className="progress-chart-row">
-              <span className="progress-chart-label">Available</span>
-              <div className="progress-chart-bar-container">
-                <div className="progress-chart-bar" style={{ background: "#28a745", width: `${(counts.Available / totalVehicles) * 100}%` }} />
-              </div>
-              <span className="progress-chart-value">{counts.Available}</span>
+                    return (
+                      <tr key={trip.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                        <td style={{ padding: "12px 0", fontWeight: "bold" }}>TR{String(trip.id).padStart(3, "0")}</td>
+                        <td style={{ padding: "12px 0" }}>{v ? v.registration_number : `Vehicle #${trip.vehicle_id}`}</td>
+                        <td style={{ padding: "12px 0" }}>{d ? d.name : `Driver #${trip.driver_id}`}</td>
+                        <td style={{ padding: "12px 0" }}>
+                          <span style={{
+                            padding: "3px 10px",
+                            borderRadius: "4px",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            display: "inline-block",
+                            textAlign: "center",
+                            ...getBadgeStyle(trip.status)
+                          }}>
+                            {trip.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 0", color: "var(--color-muted)", fontSize: "0.875rem" }}>{eta}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            <div className="progress-chart-row">
-              <span className="progress-chart-label">On Trip</span>
-              <div className="progress-chart-bar-container">
-                <div className="progress-chart-bar" style={{ background: "#007bff", width: `${(counts.OnTrip / totalVehicles) * 100}%` }} />
-              </div>
-              <span className="progress-chart-value">{counts.OnTrip}</span>
-            </div>
-
-            <div className="progress-chart-row">
-              <span className="progress-chart-label">In Shop</span>
-              <div className="progress-chart-bar-container">
-                <div className="progress-chart-bar" style={{ background: "#ffc107", width: `${(counts.InShop / totalVehicles) * 100}%` }} />
-              </div>
-              <span className="progress-chart-value">{counts.InShop}</span>
-            </div>
-
-            <div className="progress-chart-row">
-              <span className="progress-chart-label">Retired</span>
-              <div className="progress-chart-bar-container">
-                <div className="progress-chart-bar" style={{ background: "#dc3545", width: `${(counts.Retired / totalVehicles) * 100}%` }} />
-              </div>
-              <span className="progress-chart-value">{counts.Retired}</span>
-            </div>
-          </Card>
-        </div>
+          )}
+        </Card>
       </div>
     </>
   );
