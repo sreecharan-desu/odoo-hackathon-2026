@@ -1,16 +1,14 @@
 # Odoo Hackathon 2026
 
-We are building our virtual-round submission for **Odoo Hackathon 2026** — four developers, one monorepo, and a simple rule we agreed on early: **understand the problem first, then ship something that works locally and that we can demo with confidence.**
+We are building **TransitOps** — a smart transport operations platform (vehicles, drivers, trips, maintenance, fuel, KPIs) for the **Odoo Hackathon 2026** virtual round. Four developers, one monorepo: **understand the workflow, then ship something that works locally and demos cleanly.**
 
-The problem statement goes live on **12 July**. Until then, this repository is our foundation — PostgreSQL, a custom API, and a React client — structured the way we would run a small production product, not a last-minute demo.
+Architecture and ownership: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) · Tasks: [docs/TEAM_TASKS.md](./docs/TEAM_TASKS.md) · Demo: [docs/DEMO.md](./docs/DEMO.md)
 
 ---
 
 ## What we are building
 
-The product scope will be defined when the problem statement is released. Our goal is a complete end-to-end flow: real data in the database, validated inputs, a clear UI, and a demo we can explain without hiding behind slides.
-
-We would rather ship **one flow done well** than ten features half-finished.
+TransitOps digitizes fleet operations with hard business rules (status transitions, license checks, load capacity). Goal: one complete end-to-end flow with real Postgres data, dual-side validation, and a 90-second demo — not ten half-finished features.
 
 ---
 
