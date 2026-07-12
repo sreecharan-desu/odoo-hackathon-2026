@@ -186,7 +186,7 @@ export default function LoginPage() {
                   onBlur={(e) => e.target.style.borderColor = "var(--color-border)"}
                 />
               </div>
-              {emailError && <div style={{ color: "#f85149", fontSize: "12px", marginTop: "6px" }}>{emailError}</div>}
+              {emailError && <div style={{ color: "var(--color-danger)", fontSize: "12px", marginTop: "6px" }}>{emailError}</div>}
             </div>
 
             <div>
@@ -217,7 +217,7 @@ export default function LoginPage() {
                   <EyeIcon />
                 </div>
               </div>
-              {passwordError && <div style={{ color: "#f85149", fontSize: "12px", marginTop: "6px" }}>{passwordError}</div>}
+              {passwordError && <div style={{ color: "var(--color-danger)", fontSize: "12px", marginTop: "6px" }}>{passwordError}</div>}
             </div>
 
             <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "12px", lineHeight: 1.45 }}>
@@ -225,7 +225,7 @@ export default function LoginPage() {
             </p>
 
             {error && (
-              <div style={{ padding: "12px", background: "rgba(248, 81, 73, 0.1)", border: "1px solid rgba(248, 81, 73, 0.4)", borderRadius: "8px", color: "#f85149", fontSize: "13px", textAlign: "center" }}>
+              <div style={{ padding: "12px", background: "var(--color-danger-bg)", border: "1px solid var(--color-danger)", borderRadius: "8px", color: "var(--color-danger)", fontSize: "13px", textAlign: "center" }}>
                 {error}
               </div>
             )}
