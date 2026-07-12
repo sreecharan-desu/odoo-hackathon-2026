@@ -60,8 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me);
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) {
+          // /me endpoint doesn't exist yet — trust the stored user
           setUser(stored.user);
+        } else if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          // JWT expired or invalid (e.g. after API restart) — force re-login
+          writeStoredAuth(null);
+          setUser(null);
         } else if (stored.user) {
+          // Network error etc — trust the stored user optimistically
           setUser(stored.user);
         }
       } finally {

@@ -109,7 +109,6 @@
 }
 
 .shell-nav-link:hover {
-  background: var(--color-surface-2);
   color: var(--color-text);
 }
 
@@ -153,7 +152,7 @@
   overflow: hidden;
 }
 .sidebar-logout-btn:hover {
-  background: var(--color-danger-bg);
+  opacity: 0.8;
 }
 
 /* ─── Shell body ─────────────────────────────────────────── */
