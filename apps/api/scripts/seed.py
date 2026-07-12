@@ -473,15 +473,15 @@ def seed() -> None:
             )
 
         # Expenses
-        for i in range(40):
+        for i in range(SEED_PROFILE["expenses"]):
             veh = RNG.choice(vehicles)
             cat = RNG.choice(EXPENSE_CATS)
             expenses.append(
                 Expense(
                     vehicle_id=veh.id,
                     category=cat,
-                    amount=round(RNG.uniform(50, 12000), 2),
-                    note=f"{cat} — {veh.registration_number}",
+                    amount=round(RNG.uniform(120, 8500), 2),
+                    note=f"{cat} for {veh.registration_number} ({veh.vehicle_type})",
                     logged_at=_utc_days_ago(RNG.randint(0, 90)),
                 )
             )
