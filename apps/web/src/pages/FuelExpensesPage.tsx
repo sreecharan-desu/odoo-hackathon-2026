@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Spinner, Button } from "../components/ui";
+import { TextField, NumberField, SelectField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiGet } from "../lib/api";
 import type { FuelLog, Expense, Vehicle } from "../types";
@@ -24,6 +26,16 @@ export default function FuelExpensesPage() {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
 
+  // Input validation states
+  const [vehicleIdError, setVehicleIdError] = useState<string | null>(null);
+  const [litersError, setLitersError] = useState<string | null>(null);
+  const [costError, setCostError] = useState<string | null>(null);
+  const [tripIdError, setTripIdError] = useState<string | null>(null);
+  
+  const [expenseVehicleIdError, setExpenseVehicleIdError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,6 +52,22 @@ export default function FuelExpensesPage() {
   const handleLogFuel = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validate inputs
+    const vehErr = validators.required(vehicleId, "Vehicle Selection");
+    const litersErr = validators.positiveNumber(liters, "Liters");
+    const costErr = validators.positiveNumber(cost, "Total Cost");
+    const tripErr = tripId && parseFloat(tripId) < 0 ? "Trip ID cannot be negative" : null;
+
+    setVehicleIdError(vehErr);
+    setLitersError(litersErr);
+    setCostError(costErr);
+    setTripIdError(tripErr);
+
+    if (vehErr || litersErr || costErr || tripErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.fuelLogs, {
@@ -64,6 +92,20 @@ export default function FuelExpensesPage() {
   const handleLogExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validate inputs
+    const vehErr = validators.required(vehicleId, "Vehicle Selection");
+    const catErr = validators.required(category, "Category");
+    const amtErr = validators.positiveNumber(amount, "Amount");
+
+    setExpenseVehicleIdError(vehErr);
+    setCategoryError(catErr);
+    setAmountError(amtErr);
+
+    if (vehErr || catErr || amtErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.expenses, {
@@ -211,60 +253,61 @@ export default function FuelExpensesPage() {
             ) : (
               <form onSubmit={(e) => void handleLogFuel(e)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                  <div>
-                    <label htmlFor="fuelVehicle" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Select Vehicle *</label>
-                    <select
-                      id="fuelVehicle"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={vehicleId}
-                      onChange={(e) => setVehicleId(e.target.value)}
-                    >
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.map(v => (
-                        <option key={v.id} value={v.id}>{v.registration_number} - {v.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <SelectField
+                    id="fuelVehicle"
+                    label="Select Vehicle *"
+                    required
+                    options={vehicles.map(v => ({
+                      value: String(v.id),
+                      label: `${v.registration_number} - ${v.name}`
+                    }))}
+                    placeholder="-- Choose Vehicle --"
+                    value={vehicleId}
+                    error={vehicleIdError}
+                    onChange={(e) => {
+                      setVehicleId(e.target.value);
+                      if (vehicleIdError) setVehicleIdError(null);
+                    }}
+                  />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <div>
-                      <label htmlFor="fuelLiters" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Liters *</label>
-                      <input
-                        id="fuelLiters"
-                        type="number"
-                        required
-                        min="0.1"
-                        step="0.01"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={liters}
-                        onChange={(e) => setLiters(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="fuelCostVal" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Total Cost ($) *</label>
-                      <input
-                        id="fuelCostVal"
-                        type="number"
-                        required
-                        min="0"
-                        step="0.01"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={cost}
-                        onChange={(e) => setCost(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="fuelTrip" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Trip ID (Optional)</label>
-                    <input
-                      id="fuelTrip"
-                      type="number"
-                      placeholder="e.g. 5"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={tripId}
-                      onChange={(e) => setTripId(e.target.value)}
+                    <NumberField
+                      id="fuelLiters"
+                      label="Liters *"
+                      required
+                      min={0.1}
+                      step="0.01"
+                      value={liters}
+                      error={litersError}
+                      onChange={(e) => {
+                        setLiters(e.target.value);
+                        if (litersError) setLitersError(null);
+                      }}
+                    />
+                    <NumberField
+                      id="fuelCostVal"
+                      label="Total Cost ($) *"
+                      required
+                      min={0}
+                      step="0.01"
+                      value={cost}
+                      error={costError}
+                      onChange={(e) => {
+                        setCost(e.target.value);
+                        if (costError) setCostError(null);
+                      }}
                     />
                   </div>
+                  <NumberField
+                    id="fuelTrip"
+                    label="Trip ID (Optional)"
+                    placeholder="e.g. 5"
+                    value={tripId}
+                    error={tripIdError}
+                    onChange={(e) => {
+                      setTripId(e.target.value);
+                      if (tripIdError) setTripIdError(null);
+                    }}
+                  />
                 </div>
                 {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
@@ -299,64 +342,63 @@ export default function FuelExpensesPage() {
             ) : (
               <form onSubmit={(e) => void handleLogExpense(e)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                  <div>
-                    <label htmlFor="expVehicle" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Select Vehicle *</label>
-                    <select
-                      id="expVehicle"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={vehicleId}
-                      onChange={(e) => setVehicleId(e.target.value)}
-                    >
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.map(v => (
-                        <option key={v.id} value={v.id}>{v.registration_number} - {v.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <SelectField
+                    id="expVehicle"
+                    label="Select Vehicle *"
+                    required
+                    options={vehicles.map(v => ({
+                      value: String(v.id),
+                      label: `${v.registration_number} - ${v.name}`
+                    }))}
+                    placeholder="-- Choose Vehicle --"
+                    value={vehicleId}
+                    error={expenseVehicleIdError}
+                    onChange={(e) => {
+                      setVehicleId(e.target.value);
+                      if (expenseVehicleIdError) setExpenseVehicleIdError(null);
+                    }}
+                  />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <div>
-                      <label htmlFor="expCategory" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Category *</label>
-                      <select
-                        id="expCategory"
-                        required
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                      >
-                        <option value="">-- Select Category --</option>
-                        <option value="Toll">Toll</option>
-                        <option value="Permit">Permit</option>
-                        <option value="Fine">Fine</option>
-                        <option value="Cleaning">Cleaning</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="expAmount" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Amount ($) *</label>
-                      <input
-                        id="expAmount"
-                        type="number"
-                        required
-                        min="0.01"
-                        step="0.01"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="expNote" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Note/Explanation</label>
-                    <input
-                      id="expNote"
-                      type="text"
-                      placeholder="e.g. Route 66 Toll fee"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
+                    <SelectField
+                      id="expCategory"
+                      label="Category *"
+                      required
+                      options={[
+                        { value: "Toll", label: "Toll" },
+                        { value: "Permit", label: "Permit" },
+                        { value: "Fine", label: "Fine" },
+                        { value: "Cleaning", label: "Cleaning" },
+                        { value: "Other", label: "Other" }
+                      ]}
+                      placeholder="-- Select Category --"
+                      value={category}
+                      error={categoryError}
+                      onChange={(e) => {
+                        setCategory(e.target.value);
+                        if (categoryError) setCategoryError(null);
+                      }}
+                    />
+                    <NumberField
+                      id="expAmount"
+                      label="Amount ($) *"
+                      required
+                      min={0.01}
+                      step="0.01"
+                      value={amount}
+                      error={amountError}
+                      onChange={(e) => {
+                        setAmount(e.target.value);
+                        if (amountError) setAmountError(null);
+                      }}
                     />
                   </div>
+                  <TextField
+                    id="expNote"
+                    label="Note/Explanation"
+                    placeholder="e.g. Route 66 Toll fee"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
                 </div>
                 {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>

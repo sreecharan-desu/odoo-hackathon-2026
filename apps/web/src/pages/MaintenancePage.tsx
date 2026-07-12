@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Spinner, Button } from "../components/ui";
+import { TextField, NumberField, SelectField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiGet } from "../lib/api";
 import type { MaintenanceLog, Vehicle } from "../types";
@@ -15,6 +17,12 @@ export default function MaintenancePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [estimatedCost, setEstimatedCost] = useState("");
+
+  // Input validation states
+  const [vehicleIdError, setVehicleIdError] = useState<string | null>(null);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [estimatedCostError, setEstimatedCostError] = useState<string | null>(null);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,6 +39,20 @@ export default function MaintenancePage() {
   const handleOpenMaintenance = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validate inputs
+    const vehErr = validators.required(vehicleId, "Vehicle Selection");
+    const titleErr = validators.required(title, "Maintenance Title");
+    const costErr = validators.positiveNumber(estimatedCost, "Estimated Cost");
+
+    setVehicleIdError(vehErr);
+    setTitleError(titleErr);
+    setEstimatedCostError(costErr);
+
+    if (vehErr || titleErr || costErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.maintenance, {
@@ -157,34 +179,35 @@ export default function MaintenancePage() {
             ) : (
               <form onSubmit={(e) => void handleOpenMaintenance(e)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                  <div>
-                    <label htmlFor="maintVehicle" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Select Vehicle *</label>
-                    <select
-                      id="maintVehicle"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={vehicleId}
-                      onChange={(e) => setVehicleId(e.target.value)}
-                    >
-                      <option value="">-- Select Vehicle --</option>
-                      {vehicles.map(v => (
-                        <option key={v.id} value={v.id}>{v.registration_number} - {v.name} ({v.status})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="maintTitle" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Maintenance Title *</label>
-                    <input
-                      id="maintTitle"
-                      type="text"
-                      required
-                      placeholder="e.g. 50k miles Oil Change"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                  </div>
-                  <div>
+                  <SelectField
+                    id="maintVehicle"
+                    label="Select Vehicle *"
+                    required
+                    options={vehicles.map(v => ({
+                      value: String(v.id),
+                      label: `${v.registration_number} - ${v.name} (${v.status})`
+                    }))}
+                    placeholder="-- Select Vehicle --"
+                    value={vehicleId}
+                    error={vehicleIdError}
+                    onChange={(e) => {
+                      setVehicleId(e.target.value);
+                      if (vehicleIdError) setVehicleIdError(null);
+                    }}
+                  />
+                  <TextField
+                    id="maintTitle"
+                    label="Maintenance Title *"
+                    required
+                    placeholder="e.g. 50k miles Oil Change"
+                    value={title}
+                    error={titleError}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (titleError) setTitleError(null);
+                    }}
+                  />
+                  <div className="form-field">
                     <label htmlFor="maintDesc" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Detailed Description</label>
                     <textarea
                       id="maintDesc"
@@ -195,19 +218,18 @@ export default function MaintenancePage() {
                       onChange={(e) => setDescription(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label htmlFor="maintCost" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Estimated Cost ($) *</label>
-                    <input
-                      id="maintCost"
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={estimatedCost}
-                      onChange={(e) => setEstimatedCost(e.target.value)}
-                    />
-                  </div>
+                  <NumberField
+                    id="maintCost"
+                    label="Estimated Cost ($) *"
+                    required
+                    min={0}
+                    value={estimatedCost}
+                    error={estimatedCostError}
+                    onChange={(e) => {
+                      setEstimatedCost(e.target.value);
+                      if (estimatedCostError) setEstimatedCostError(null);
+                    }}
+                  />
                 </div>
                 {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Card, Spinner, Button } from "../components/ui";
+import { TextField, NumberField, DateField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import type { Driver } from "../types";
@@ -14,19 +16,45 @@ export default function DriversPage() {
   const [licenseExp, setLicenseExp] = useState("");
   const [contact, setContact] = useState("");
   const [safetyScore, setSafetyScore] = useState("100");
+
+  // Input validation states
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [licenseNumError, setLicenseNumError] = useState<string | null>(null);
+  const [licenseCatError, setLicenseCatError] = useState<string | null>(null);
+  const [licenseExpError, setLicenseExpError] = useState<string | null>(null);
+  const [safetyScoreError, setSafetyScoreError] = useState<string | null>(null);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validate inputs using Anand's validators
+    const nameErr = validators.required(name, "Full Name");
+    const licErr = validators.required(licenseNum, "License Number");
+    const catErr = validators.required(licenseCat, "Category");
+    const expErr = validators.required(licenseExp, "License Expiry");
+    const safetyErr = safetyScore ? (parseFloat(safetyScore) < 0 || parseFloat(safetyScore) > 100 ? "Safety score must be between 0 and 100" : null) : null;
+
+    setNameError(nameErr);
+    setLicenseNumError(licErr);
+    setLicenseCatError(catErr);
+    setLicenseExpError(expErr);
+    setSafetyScoreError(safetyErr);
+
+    if (nameErr || licErr || catErr || expErr || safetyErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.drivers, {
         name,
         license_number: licenseNum,
         license_category: licenseCat,
-        license_expiry: licenseExp, // Expected format YYYY-MM-DD
+        license_expiry: licenseExp,
         contact_number: contact || null,
         safety_score: parseFloat(safetyScore)
       });
@@ -153,76 +181,72 @@ export default function DriversPage() {
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Add New Driver</h3>
             <form onSubmit={(e) => void handleAddDriver(e)}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                <div>
-                  <label htmlFor="driverName" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Full Name *</label>
-                  <input
-                    id="driverName"
-                    type="text"
+                <TextField
+                  id="driverName"
+                  label="Full Name *"
+                  required
+                  value={name}
+                  error={nameError}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (nameError) setNameError(null);
+                  }}
+                />
+                <TextField
+                  id="licenseNum"
+                  label="License Number *"
+                  required
+                  value={licenseNum}
+                  error={licenseNumError}
+                  onChange={(e) => {
+                    setLicenseNum(e.target.value);
+                    if (licenseNumError) setLicenseNumError(null);
+                  }}
+                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+                  <TextField
+                    id="licenseCat"
+                    label="Category *"
                     required
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. HGV, LMV"
+                    value={licenseCat}
+                    error={licenseCatError}
+                    onChange={(e) => {
+                      setLicenseCat(e.target.value);
+                      if (licenseCatError) setLicenseCatError(null);
+                    }}
                   />
-                </div>
-                <div>
-                  <label htmlFor="licenseNum" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>License Number *</label>
-                  <input
-                    id="licenseNum"
-                    type="text"
+                  <DateField
+                    id="licenseExp"
+                    label="License Expiry *"
                     required
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={licenseNum}
-                    onChange={(e) => setLicenseNum(e.target.value)}
+                    value={licenseExp}
+                    error={licenseExpError}
+                    onChange={(e) => {
+                      setLicenseExp(e.target.value);
+                      if (licenseExpError) setLicenseExpError(null);
+                    }}
                   />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                  <div>
-                    <label htmlFor="licenseCat" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Category *</label>
-                    <input
-                      id="licenseCat"
-                      type="text"
-                      required
-                      placeholder="e.g. HGV, LMV"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={licenseCat}
-                      onChange={(e) => setLicenseCat(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="licenseExp" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>License Expiry *</label>
-                    <input
-                      id="licenseExp"
-                      type="date"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={licenseExp}
-                      onChange={(e) => setLicenseExp(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                  <div>
-                    <label htmlFor="contact" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Contact Number</label>
-                    <input
-                      id="contact"
-                      type="text"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={contact}
-                      onChange={(e) => setContact(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="safetyScore" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Initial Safety Score (0-100)</label>
-                    <input
-                      id="safetyScore"
-                      type="number"
-                      min="0"
-                      max="100"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={safetyScore}
-                      onChange={(e) => setSafetyScore(e.target.value)}
-                    />
-                  </div>
+                  <TextField
+                    id="contact"
+                    label="Contact Number"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                  />
+                  <NumberField
+                    id="safetyScore"
+                    label="Initial Safety Score (0-100)"
+                    min={0}
+                    max={100}
+                    value={safetyScore}
+                    error={safetyScoreError}
+                    onChange={(e) => {
+                      setSafetyScore(e.target.value);
+                      if (safetyScoreError) setSafetyScoreError(null);
+                    }}
+                  />
                 </div>
               </div>
               {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
