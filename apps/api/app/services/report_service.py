@@ -32,6 +32,7 @@ STYLE_TITLE = ParagraphStyle(
     "ReportTitle",
     fontName="Helvetica-Bold",
     fontSize=22,
+    leading=26,
     textColor=BRAND_DARK,
     spaceAfter=2,
 )
