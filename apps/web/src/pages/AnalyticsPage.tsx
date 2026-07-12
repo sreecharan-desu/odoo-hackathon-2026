@@ -179,15 +179,15 @@ export default function AnalyticsPage() {
                 {/* Legend */}
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "20px", fontSize: "0.75rem", color: "var(--color-muted)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #3b82f6, #60a5fa)" }} />
+                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, var(--chart-fuel), var(--chart-fuel-2))" }} />
                     <span>Fuel Cost</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #f59e0b, #fbbf24)" }} />
+                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, var(--chart-maint), var(--chart-maint-2))" }} />
                     <span>Maintenance</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #a855f7, #c084fc)" }} />
+                    <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, var(--chart-other), var(--color-muted-2))" }} />
                     <span>Other Expenses</span>
                   </div>
                 </div>
@@ -220,13 +220,13 @@ export default function AnalyticsPage() {
                           width: "100%",
                         }}>
                           {v.fuel_cost > 0 && (
-                            <div style={{ width: `${fuelPct}%`, background: "linear-gradient(to right, #3b82f6, #60a5fa)", height: "100%" }} title={`Fuel: ${formatInr(v.fuel_cost, 2)}`} />
+                            <div style={{ width: `${fuelPct}%`, background: "linear-gradient(to right, var(--chart-fuel), var(--chart-fuel-2))", height: "100%" }} title={`Fuel: ${formatInr(v.fuel_cost, 2)}`} />
                           )}
                           {v.maintenance_cost > 0 && (
-                            <div style={{ width: `${maintPct}%`, background: "linear-gradient(to right, #f59e0b, #fbbf24)", height: "100%" }} title={`Maintenance: ${formatInr(v.maintenance_cost, 2)}`} />
+                            <div style={{ width: `${maintPct}%`, background: "linear-gradient(to right, var(--chart-maint), var(--chart-maint-2))", height: "100%" }} title={`Maintenance: ${formatInr(v.maintenance_cost, 2)}`} />
                           )}
                           {v.other_expenses > 0 && (
-                            <div style={{ width: `${otherPct}%`, background: "linear-gradient(to right, #a855f7, #c084fc)", height: "100%" }} title={`Other Expenses: ${formatInr(v.other_expenses, 2)}`} />
+                            <div style={{ width: `${otherPct}%`, background: "linear-gradient(to right, var(--chart-other), var(--color-muted-2))", height: "100%" }} title={`Other Expenses: ${formatInr(v.other_expenses, 2)}`} />
                           )}
                         </div>
                         
@@ -240,19 +240,19 @@ export default function AnalyticsPage() {
                         }}>
                           {v.fuel_cost > 0 && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#3b82f6" }} />
+                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--chart-fuel)" }} />
                               Fuel: {formatInr(v.fuel_cost)} ({((v.fuel_cost / totalCost) * 100).toFixed(0)}%)
                             </span>
                           )}
                           {v.maintenance_cost > 0 && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#f59e0b" }} />
+                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--chart-maint)" }} />
                               Maint: {formatInr(v.maintenance_cost)} ({((v.maintenance_cost / totalCost) * 100).toFixed(0)}%)
                             </span>
                           )}
                           {v.other_expenses > 0 && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#a855f7" }} />
+                              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--chart-other)" }} />
                               Other: {formatInr(v.other_expenses)} ({((v.other_expenses / totalCost) * 100).toFixed(0)}%)
                             </span>
                           )}
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
                                 fontSize: "0.75rem",
                                 fontWeight: 800,
                                 background: v.roi >= 0 ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                                color: v.roi >= 0 ? "#10b981" : "#ef4444"
+                                color: v.roi >= 0 ? "var(--status-available)" : "var(--status-retired)"
                               }}>
                                 {fmtRoi(v.roi)}
                               </span>

@@ -5,8 +5,8 @@
   /* Ink / Text */
   --color-ink:          #0a0a0a;
   --color-ink-soft:     #171717;
-  --color-muted:        #737373;
-  --color-muted-2:      #a3a3a3;
+  --color-muted:        #525252;
+  --color-muted-2:      #737373;
   --color-faint:        #d4d4d4;
 
   /* Paper / Surfaces */
@@ -61,42 +61,59 @@
   /* Primary accent (nav active, focus rings — monochrome) */
   --color-primary:       #0a0a0a;
   --color-primary-hover: #171717;
+
+  /* Status / chart accents (light keeps color) */
+  --status-available:    #22c55e;
+  --status-on-trip:      #3b82f6;
+  --status-in-shop:      #f59e0b;
+  --status-retired:      #ef4444;
+  --status-draft:        #94a3b8;
+  --status-available-bg: rgba(34, 197, 94, 0.12);
+  --status-on-trip-bg:   rgba(59, 130, 246, 0.12);
+  --status-in-shop-bg:   rgba(245, 158, 11, 0.12);
+  --status-retired-bg:   rgba(239, 68, 68, 0.10);
+  --chart-fuel:          #3b82f6;
+  --chart-fuel-2:        #60a5fa;
+  --chart-maint:         #f59e0b;
+  --chart-maint-2:       #fbbf24;
+  --chart-other:         #a855f7;
+  --color-info:          #3b82f6;
 }
 
-/* ── DARK (html.dark) ───────────────────────────────── */
+/* ── DARK (html.dark) — pure black & white ───────────── */
 html.dark {
   /* Ink / Text */
-  --color-ink:          #f0fdfa;
-  --color-ink-soft:     #ccfbf1;
-  --color-muted:        #94a3b8;
-  --color-muted-2:      #64748b;
-  --color-faint:        #334155;
+  --color-ink:          #ffffff;
+  --color-ink-soft:     #f5f5f5;
+  --color-muted:        #a3a3a3;
+  --color-muted-2:      #737373;
+  --color-faint:        #404040;
 
   /* Paper / Surfaces */
-  --color-paper:        #071318;
-  --color-surface:      #0a1a24;
-  --color-surface-2:    #0f2533;
+  --color-paper:        #000000;
+  --color-surface:      #0a0a0a;
+  --color-surface-2:    #141414;
 
   /* Lines / Borders */
-  --color-line:         #152e3d;
-  --color-line-strong:  #1e4054;
+  --color-line:         #262626;
+  --color-line-strong:  #404040;
 
   /* Background / Foreground (compatibility) */
-  --background:         #040b10;
-  --foreground:         #f0fdfa;
+  --background:         #000000;
+  --foreground:         #ffffff;
 
-  /* Semantic status */
+  /* Semantic status — readable accents (chrome stays B&W) */
   --color-positive:     #4ade80;
-  --color-positive-bg:  #0e2a1a;
+  --color-positive-bg:  rgba(74, 222, 128, 0.12);
   --color-warn:         #fbbf24;
-  --color-warn-bg:      #2a2109;
-  --color-danger:       #fb7185;
-  --color-danger-bg:    #2c1015;
+  --color-warn-bg:      rgba(251, 191, 36, 0.12);
+  --color-danger:       #f87171;
+  --color-danger-bg:    rgba(248, 113, 113, 0.12);
 
   /* Shadows */
-  --shadow-soft:  0 1px 2px rgba(0, 0, 0, 0.18);
-  --shadow-pop:   0 2px 8px rgba(0, 0, 0, 0.22);
-  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-soft:  0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop:   0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.65);
 
   /* Aliases */
   --color-bg:          var(--color-paper);
@@ -106,14 +123,31 @@ html.dark {
   --color-warning:     var(--color-warn);
   --color-error:       var(--color-danger);
 
-  /* Primary button — cyan */
-  --btn-primary-bg:    #00d4a1;
-  --btn-primary-text:  #040b10;
-  --btn-primary-hover: #14eab8;
+  /* Primary button — white on black (UI chrome stays B&W) */
+  --btn-primary-bg:    #ffffff;
+  --btn-primary-text:  #000000;
+  --btn-primary-hover: #e5e5e5;
 
   /* Primary accent (nav active, focus rings) */
-  --color-primary:       #00d4a1;
-  --color-primary-hover: #14eab8;
+  --color-primary:       #ffffff;
+  --color-primary-hover: #e5e5e5;
+
+  /* Status / chart accents — full color for graphs & badges */
+  --status-available:    #22c55e;
+  --status-on-trip:      #3b82f6;
+  --status-in-shop:      #f59e0b;
+  --status-retired:      #ef4444;
+  --status-draft:        #94a3b8;
+  --status-available-bg: rgba(34, 197, 94, 0.16);
+  --status-on-trip-bg:   rgba(59, 130, 246, 0.16);
+  --status-in-shop-bg:   rgba(245, 158, 11, 0.16);
+  --status-retired-bg:   rgba(239, 68, 68, 0.14);
+  --chart-fuel:          #3b82f6;
+  --chart-fuel-2:        #60a5fa;
+  --chart-maint:         #f59e0b;
+  --chart-maint-2:       #fbbf24;
+  --chart-other:         #a855f7;
+  --color-info:          #60a5fa;
 }
 
 /* ── Smooth theme transition (skip if reduced-motion) ─── */

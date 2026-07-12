@@ -365,8 +365,8 @@ export default function FuelExpensesPage() {
                   <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
                     <defs>
                       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.15" />
-                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                        <stop offset="0%" stopColor="var(--status-available)" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="var(--status-available)" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     
@@ -407,7 +407,7 @@ export default function FuelExpensesPage() {
                       <path
                         d={pathD}
                         fill="none"
-                        stroke="#22c55e"
+                        stroke="var(--status-available)"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -422,7 +422,7 @@ export default function FuelExpensesPage() {
                           cy={p.y}
                           r="4"
                           fill="var(--color-paper)"
-                          stroke="#22c55e"
+                          stroke="var(--status-available)"
                           strokeWidth="2.5"
                         />
                         <text
@@ -511,7 +511,7 @@ export default function FuelExpensesPage() {
                             fontSize: "0.68rem",
                             fontWeight: 700,
                             background: isFuel ? "rgba(59, 130, 246, 0.1)" : "rgba(168, 85, 247, 0.1)",
-                            color: isFuel ? "#3b82f6" : "#a855f7"
+                            color: isFuel ? "var(--status-on-trip)" : "var(--chart-other)"
                           }}>
                             {log.category}
                           </span>

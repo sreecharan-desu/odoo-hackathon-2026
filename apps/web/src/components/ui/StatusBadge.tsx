@@ -39,9 +39,9 @@ export default function StatusBadge({ status, className = "", ...props }: Status
     case "On Trip":
     case "Dispatched":
       style = {
-        background: "rgba(59,130,246,0.10)",
-        color: "#3b82f6",
-        border: "1px dashed #3b82f6",
+        background: "var(--status-on-trip-bg)",
+        color: "var(--status-on-trip)",
+        border: "1px dashed var(--status-on-trip)",
       };
       break;
     case "In Shop":

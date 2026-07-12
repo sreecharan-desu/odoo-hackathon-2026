@@ -12,9 +12,9 @@ import "../components/layout/shell.css";
 const PAGE_SIZE = 25;
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  Completed: { bg: "rgba(34,197,94,0.15)", text: "var(--color-success, #22c55e)" },
-  Dispatched: { bg: "rgba(59,130,246,0.15)", text: "var(--color-info, #3b82f6)" },
-  Cancelled: { bg: "rgba(239,68,68,0.15)", text: "var(--color-danger, #ef4444)" },
+  Completed: { bg: "var(--status-available-bg)", text: "var(--color-success)" },
+  Dispatched: { bg: "var(--status-on-trip-bg)", text: "var(--color-info)" },
+  Cancelled: { bg: "var(--status-retired-bg)", text: "var(--color-danger)" },
   Draft: { bg: "var(--color-surface-raised, rgba(128,128,128,0.12))", text: "var(--color-muted)" },
 };
 
@@ -262,9 +262,9 @@ export default function TripsPage() {
 
           <div style={{ display: "flex", height: "8px", borderRadius: "99px", overflow: "hidden", background: "var(--color-surface-2)" }}>
             {draftCount > 0 && <div style={{ width: `${draftPct}%`, background: "var(--color-muted-2)", transition: "width 0.5s" }} />}
-            {dispatchedCount > 0 && <div style={{ width: `${dispatchedPct}%`, background: "#3b82f6", transition: "width 0.5s" }} />}
-            {completedCount > 0 && <div style={{ width: `${completedPct}%`, background: "#22c55e", transition: "width 0.5s" }} />}
-            {cancelledCount > 0 && <div style={{ width: `${cancelledPct}%`, background: "#ef4444", transition: "width 0.5s" }} />}
+            {dispatchedCount > 0 && <div style={{ width: `${dispatchedPct}%`, background: "var(--status-on-trip)", transition: "width 0.5s" }} />}
+            {completedCount > 0 && <div style={{ width: `${completedPct}%`, background: "var(--status-available)", transition: "width 0.5s" }} />}
+            {cancelledCount > 0 && <div style={{ width: `${cancelledPct}%`, background: "var(--status-retired)", transition: "width 0.5s" }} />}
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "0.72rem", fontWeight: 600 }}>
@@ -273,15 +273,15 @@ export default function TripsPage() {
               <span style={{ color: "var(--color-text)" }}>Draft ({draftCount})</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#3b82f6" }} />
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--status-on-trip)" }} />
               <span style={{ color: "var(--color-text)" }}>Dispatched ({dispatchedCount})</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }} />
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--status-available)" }} />
               <span style={{ color: "var(--color-text)" }}>Completed ({completedCount})</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }} />
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--status-retired)" }} />
               <span style={{ color: "var(--color-text)" }}>Cancelled ({cancelledCount})</span>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function TripsPage() {
                 <span style={{ color: "var(--color-text)" }}>{dispatchPool.length}/{allVehicles.length}</span>
               </div>
               <div style={{ height: "5px", borderRadius: "99px", background: "var(--color-surface-2)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${allVehicles.length > 0 ? (dispatchPool.length / allVehicles.length) * 100 : 0}%`, background: "#10b981", borderRadius: "99px", transition: "width 0.5s" }} />
+                <div style={{ height: "100%", width: `${allVehicles.length > 0 ? (dispatchPool.length / allVehicles.length) * 100 : 0}%`, background: "var(--status-available)", borderRadius: "99px", transition: "width 0.5s" }} />
               </div>
               <span style={{ fontSize: "0.62rem", color: "var(--color-muted-2)", fontWeight: 500 }}>Ready / Standby</span>
             </div>
@@ -311,7 +311,7 @@ export default function TripsPage() {
                 <span style={{ color: "var(--color-text)" }}>{availableDrivers.length}/{allDrivers.length}</span>
               </div>
               <div style={{ height: "5px", borderRadius: "99px", background: "var(--color-surface-2)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${allDrivers.length > 0 ? (availableDrivers.length / allDrivers.length) * 100 : 0}%`, background: "#3b82f6", borderRadius: "99px", transition: "width 0.5s" }} />
+                <div style={{ height: "100%", width: `${allDrivers.length > 0 ? (availableDrivers.length / allDrivers.length) * 100 : 0}%`, background: "var(--status-on-trip)", borderRadius: "99px", transition: "width 0.5s" }} />
               </div>
               <span style={{ fontSize: "0.62rem", color: "var(--color-muted-2)", fontWeight: 500 }}>On Duty / Idle</span>
             </div>
@@ -401,7 +401,7 @@ export default function TripsPage() {
                           <div style={{
                             height: "100%",
                             width: `${progressPct}%`,
-                            background: isCompleted ? "#22c55e" : "#3b82f6",
+                            background: isCompleted ? "var(--status-available)" : "var(--status-on-trip)",
                             borderRadius: "2px",
                             transition: "width 0.5s ease"
                           }} />
@@ -411,7 +411,7 @@ export default function TripsPage() {
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
                             <span style={{
                               width: "10px", height: "10px", borderRadius: "50%",
-                              background: isCancelled ? "#ef4444" : "#3b82f6",
+                              background: isCancelled ? "var(--status-retired)" : "var(--status-on-trip)",
                               border: "2px solid var(--color-bg)",
                               boxShadow: "0 0 0 1px var(--color-border)",
                               zIndex: 2
@@ -423,7 +423,7 @@ export default function TripsPage() {
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
                             <span style={{
                               width: "10px", height: "10px", borderRadius: "50%",
-                              background: isCompleted ? "#22c55e" : "var(--color-muted-2)",
+                              background: isCompleted ? "var(--status-available)" : "var(--color-muted-2)",
                               border: "2px solid var(--color-bg)",
                               boxShadow: "0 0 0 1px var(--color-border)",
                               zIndex: 2
@@ -441,7 +441,7 @@ export default function TripsPage() {
                             transition: "left 0.5s ease",
                             zIndex: 3,
                             background: "var(--color-bg)",
-                            border: `1.5px solid ${isCompleted ? "#22c55e" : "#3b82f6"}`,
+                            border: `1.5px solid ${isCompleted ? "var(--status-available)" : "var(--status-on-trip)"}`,
                             borderRadius: "50%",
                             width: "20px",
                             height: "20px",
@@ -450,7 +450,7 @@ export default function TripsPage() {
                             justifyContent: "center",
                             boxShadow: "var(--shadow-soft)"
                           }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isCompleted ? "#22c55e" : "#3b82f6"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isCompleted ? "var(--status-available)" : "var(--status-on-trip)"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <rect x="1" y="3" width="15" height="13"/>
                               <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
                               <circle cx="5.5" cy="18.5" r="2.5"/>
@@ -519,7 +519,7 @@ export default function TripsPage() {
                           {(t.status === "Draft" || t.status === "Dispatched") && allowSchedule && (
                             <div style={{ display: "flex", gap: "6px" }}>
                               <Button
-                                style={{ padding: "4px 12px", fontSize: "0.78rem", background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
+                                style={{ padding: "4px 12px", fontSize: "0.78rem", background: "var(--color-success)", color: "#000", border: "none" }}
                                 onClick={() => setCompletingTripId(t.id)}
                               >
                                 Complete
@@ -527,7 +527,7 @@ export default function TripsPage() {
                               {allowDispatch && (
                                 <Button
                                   variant="ghost"
-                                  style={{ padding: "4px 12px", fontSize: "0.78rem", border: "1px solid var(--color-danger, #ef4444)", color: "var(--color-danger, #ef4444)" }}
+                                  style={{ padding: "4px 12px", fontSize: "0.78rem", border: "1px solid var(--color-danger)", color: "var(--color-danger)" }}
                                   onClick={() => void handleCancel(t.id)}
                                 >
                                   Cancel
@@ -586,9 +586,9 @@ export default function TripsPage() {
                 }} />
                 {[
                   { label: "Draft", color: "#94a3b8" },
-                  { label: "Dispatched", color: "#3b82f6" },
-                  { label: "Completed", color: "#22c55e" },
-                  { label: "Cancelled", color: "#ef4444" },
+                  { label: "Dispatched", color: "var(--status-on-trip)" },
+                  { label: "Completed", color: "var(--status-available)" },
+                  { label: "Cancelled", color: "var(--status-retired)" },
                 ].map((step, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", zIndex: 2 }}>
                     <div style={{
@@ -691,7 +691,7 @@ export default function TripsPage() {
                           <div style={{
                             height: "100%",
                             width: `${Math.min((cargoWeightVal / capacityLimit) * 100, 100)}%`,
-                            background: isOverweight ? "#ef4444" : "#22c55e",
+                            background: isOverweight ? "var(--status-retired)" : "var(--status-available)",
                             borderRadius: "2px",
                             transition: "width 0.3s ease"
                           }} />
@@ -803,7 +803,7 @@ export default function TripsPage() {
                 <Button
                   type="submit"
                   disabled={completing}
-                  style={{ background: "var(--color-success, #22c55e)", color: "#000", border: "none" }}
+                  style={{ background: "var(--color-success)", color: "#000", border: "none" }}
                 >
                   {completing ? "Completing..." : "Complete & Log"}
                 </Button>
