@@ -242,7 +242,7 @@ def seed() -> None:
         )
         RNG.shuffle(driver_statuses)
 
-        for i, first in enumerate(FIRST_NAMES, start=1):
+        for i, first in enumerate(FIRST_NAMES[:12], start=1):
             status = driver_statuses[(i - 1) % len(driver_statuses)]
             expiry_offset = RNG.choice([90, 180, 365, 400, 500, -5, -20]) if i % 17 == 0 else RNG.randint(60, 700)
             # Keep only Expired Sam as the intentional expired demo case for Available drivers
