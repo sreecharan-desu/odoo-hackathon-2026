@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Spinner, Button } from "../components/ui";
+import { TextField, NumberField, SelectField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiGet } from "../lib/api";
 import type { Trip, Vehicle, Driver } from "../types";
@@ -7,9 +9,9 @@ import type { Trip, Vehicle, Driver } from "../types";
 export default function TripsPage() {
   const { data: trips, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip[]>(endpoints.trips);
   
-  // Available assets for dispatch
-  const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
-  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
+  // All assets loaded for list lookup and select dropdowns
+  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
   // Modals & form state
@@ -20,33 +22,44 @@ export default function TripsPage() {
   const [driverId, setDriverId] = useState("");
   const [cargoWeight, setCargoWeight] = useState("");
   const [plannedDist, setPlannedDist] = useState("");
+
+  // Input validation states
+  const [sourceError, setSourceError] = useState<string | null>(null);
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [vehicleIdError, setVehicleIdError] = useState<string | null>(null);
+  const [driverIdError, setDriverIdError] = useState<string | null>(null);
+  const [cargoWeightError, setCargoWeightError] = useState<string | null>(null);
+  const [plannedDistError, setPlannedDistError] = useState<string | null>(null);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Dispatch errors state
+  const [dispatchError, setDispatchError] = useState<Record<number, string | null>>({});
 
   // Completion modal state
   const [completingTripId, setCompletingTripId] = useState<number | null>(null);
   const [finalOdo, setFinalOdo] = useState("");
   const [fuelConsumed, setFuelConsumed] = useState("");
   const [fuelCost, setFuelCost] = useState("");
+
+  // Complete validation states
+  const [finalOdoError, setFinalOdoError] = useState<string | null>(null);
+  const [fuelConsumedError, setFuelConsumedError] = useState<string | null>(null);
+  const [fuelCostError, setFuelCostError] = useState<string | null>(null);
+
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
 
-  // Fetch available vehicles and drivers when scheduling a trip
-  const fetchAvailableAssets = async () => {
+  // Fetch all vehicles and drivers
+  const fetchAssets = async () => {
     setLoadingAssets(true);
     try {
-      // 1. Fetch vehicles in dispatch pool
-      const vehicles = await apiGet<Vehicle[]>("/api/vehicles/dispatch-pool").catch(() => 
-        // Fallback: fetch all and filter Available
-        apiGet<Vehicle[]>(endpoints.vehicles).then(res => res.filter(v => v.status === "Available"))
-      );
-      setAvailableVehicles(vehicles);
+      const vehicles = await apiGet<Vehicle[]>(endpoints.vehicles);
+      setAllVehicles(vehicles);
 
-      // 2. Fetch drivers and filter Available
-      const drivers = await apiGet<Driver[]>(endpoints.drivers).then(res => 
-        res.filter(d => d.status === "Available")
-      );
-      setAvailableDrivers(drivers);
+      const drivers = await apiGet<Driver[]>(endpoints.drivers);
+      setAllDrivers(drivers);
     } catch (err) {
       console.error("Failed to load assets", err);
     } finally {
@@ -55,14 +68,49 @@ export default function TripsPage() {
   };
 
   useEffect(() => {
-    if (isAdding) {
-      void fetchAvailableAssets();
-    }
-  }, [isAdding]);
+    void fetchAssets();
+  }, [trips, isAdding]);
 
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validate inputs using Anand's validators
+    const srcErr = validators.required(source, "Source Route");
+    const destErr = validators.required(destination, "Destination Route");
+    const vehErr = validators.required(vehicleId, "Vehicle Selection");
+    const drvErr = validators.required(driverId, "Driver Selection");
+    const cargoErr = validators.positiveNumber(cargoWeight, "Cargo Weight");
+    const distErr = plannedDist ? (parseFloat(plannedDist) <= 0 ? "Planned distance must be greater than zero" : null) : null;
+
+    let capacityErr: string | null = null;
+    let licenseErr: string | null = null;
+
+    if (!vehErr && vehicleId) {
+      const selectedVehicle = allVehicles.find(v => v.id === parseInt(vehicleId));
+      if (selectedVehicle) {
+        capacityErr = validators.cargoWithinMaxLoad(parseFloat(cargoWeight), selectedVehicle.max_load_kg);
+      }
+    }
+
+    if (!drvErr && driverId) {
+      const selectedDriver = allDrivers.find(d => d.id === parseInt(driverId));
+      if (selectedDriver) {
+        licenseErr = validators.licenseNotExpired(selectedDriver.license_expiry, new Date(), selectedDriver.name);
+      }
+    }
+
+    setSourceError(srcErr);
+    setDestinationError(destErr);
+    setVehicleIdError(vehErr);
+    setDriverIdError(drvErr || licenseErr);
+    setCargoWeightError(capacityErr || cargoErr);
+    setPlannedDistError(distErr);
+
+    if (srcErr || destErr || vehErr || drvErr || cargoErr || capacityErr || licenseErr || distErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.trips, {
@@ -90,11 +138,13 @@ export default function TripsPage() {
   };
 
   const handleDispatch = async (tripId: number) => {
+    setDispatchError(prev => ({ ...prev, [tripId]: null }));
     try {
       await apiPost(`/api/trips/${tripId}/dispatch`, {});
       void refetchTrips();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to dispatch trip");
+      const msg = err instanceof Error ? err.message : "Failed to dispatch trip";
+      setDispatchError(prev => ({ ...prev, [tripId]: msg }));
     }
   };
 
@@ -112,8 +162,34 @@ export default function TripsPage() {
     e.preventDefault();
     if (completingTripId === null) return;
     setCompleteError(null);
+
+    // Validate inputs
+    const odoNumErr = validators.positiveNumber(finalOdo, "Final Odometer");
+    const fuelErr = validators.positiveNumber(fuelConsumed, "Fuel Consumed");
+    const costErr = fuelCost && parseFloat(fuelCost) < 0 ? "Fuel cost cannot be negative" : null;
+
+    setFinalOdoError(odoNumErr);
+    setFuelConsumedError(fuelErr);
+    setFuelCostError(costErr);
+
+    if (odoNumErr || fuelErr || costErr) {
+      return;
+    }
+
     setCompleting(true);
     try {
+      // Find current vehicle odometer to run odometerNotBelowCurrent
+      const trip = trips?.find(t => t.id === completingTripId);
+      if (trip) {
+        const vehicle = await apiGet<Vehicle>(`/api/vehicles/${trip.vehicle_id}`);
+        const odometerCheck = validators.odometerNotBelowCurrent(parseFloat(finalOdo), vehicle.odometer);
+        if (odometerCheck) {
+          setFinalOdoError(odometerCheck);
+          setCompleting(false);
+          return;
+        }
+      }
+
       await apiPost(`/api/trips/${completingTripId}/complete`, {
         final_odometer: parseFloat(finalOdo),
         fuel_consumed: parseFloat(fuelConsumed),
@@ -163,60 +239,96 @@ export default function TripsPage() {
                 </tr>
               </thead>
               <tbody>
-                {trips.map((t) => (
-                  <tr key={t.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                    <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{t.id}</td>
-                    <td style={{ padding: "var(--space-2)" }}>{t.source} → {t.destination}</td>
-                    <td style={{ padding: "var(--space-2)" }}>Vehicle #{t.vehicle_id}</td>
-                    <td style={{ padding: "var(--space-2)" }}>Driver #{t.driver_id}</td>
-                    <td style={{ padding: "var(--space-2)" }}>{t.cargo_weight} kg</td>
-                    <td style={{ padding: "var(--space-2)" }}>{t.planned_distance} km</td>
-                    <td style={{ padding: "var(--space-2)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          background: t.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
-                                      t.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
-                                      t.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
-                                      "rgba(255, 193, 7, 0.15)",
-                          color: t.status === "Completed" ? "#28a745" :
-                                 t.status === "Dispatched" ? "#007bff" :
-                                 t.status === "Cancelled" ? "#dc3545" :
-                                 "#ffc107"
-                        }}>
-                          {t.status}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "var(--space-2)" }}>
-                      {t.status === "Draft" && (
-                        <Button style={{ padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleDispatch(t.id)}>Dispatch</Button>
-                      )}
-                      {t.status === "Dispatched" && (
-                        <div style={{ display: "flex", gap: "var(--space-1)" }}>
-                          <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
-                          <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                {trips.map((t) => {
+                  const vehicle = allVehicles.find(v => v.id === t.vehicle_id);
+                  const driver = allDrivers.find(d => d.id === t.driver_id);
+                  const isVehicleAvailable = vehicle ? vehicle.status === "Available" : true;
+                  const isDriverAvailable = driver ? driver.status === "Available" : true;
+                  const canDispatch = isVehicleAvailable && isDriverAvailable;
+
+                  return (
+                    <tr key={t.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                      <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>#{t.id}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{t.source} → {t.destination}</td>
+                      <td style={{ padding: "var(--space-2)" }}>
+                        Vehicle #{t.vehicle_id}
+                        {vehicle && vehicle.status !== "Available" && (
+                          <span style={{ fontSize: "0.75rem", color: "var(--color-error)", display: "block" }}>({vehicle.status})</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "var(--space-2)" }}>
+                        Driver #{t.driver_id}
+                        {driver && driver.status !== "Available" && (
+                          <span style={{ fontSize: "0.75rem", color: "var(--color-error)", display: "block" }}>({driver.status})</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "var(--space-2)" }}>{t.cargo_weight} kg</td>
+                      <td style={{ padding: "var(--space-2)" }}>{t.planned_distance} km</td>
+                      <td style={{ padding: "var(--space-2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{
+                            padding: "2px 8px",
+                            borderRadius: "12px",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            background: t.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
+                                        t.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
+                                        t.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
+                                        "rgba(255, 193, 7, 0.15)",
+                            color: t.status === "Completed" ? "#28a745" :
+                                   t.status === "Dispatched" ? "#007bff" :
+                                   t.status === "Cancelled" ? "#dc3545" :
+                                   "#ffc107"
+                          }}>
+                            {t.status}
+                          </span>
                         </div>
-                      )}
-                      {t.status === "Completed" && (
-                        <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>Closed</span>
-                      )}
-                      {t.status === "Cancelled" && (
-                        <span style={{ fontSize: "0.85rem", color: "var(--color-error)" }}>Cancelled</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td style={{ padding: "var(--space-2)" }}>
+                        {t.status === "Draft" && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <Button 
+                              style={{ padding: "4px 8px", fontSize: "0.85rem" }} 
+                              onClick={() => void handleDispatch(t.id)}
+                              disabled={!canDispatch}
+                            >
+                              Dispatch
+                            </Button>
+                            {!canDispatch && (
+                              <span style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>
+                                Assets busy/shop
+                              </span>
+                            )}
+                            {dispatchError[t.id] && (
+                              <p className="error" style={{ fontSize: "0.75rem", margin: "4px 0 0", maxWidth: "150px" }}>
+                                {dispatchError[t.id]}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {t.status === "Dispatched" && (
+                          <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                            <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
+                            <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                          </div>
+                        )}
+                        {t.status === "Completed" && (
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>Closed</span>
+                        )}
+                        {t.status === "Cancelled" && (
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-error)" }}>Cancelled</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </Card>
 
-      {/* Schedule Trip Modal */}
+      {/* Add Trip Modal */}
       {isAdding && (
         <div style={{
           position: "fixed",
@@ -239,88 +351,90 @@ export default function TripsPage() {
               <form onSubmit={(e) => void handleCreateTrip(e)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <div>
-                      <label htmlFor="source" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Source Route *</label>
-                      <input
-                        id="source"
-                        type="text"
-                        required
-                        placeholder="e.g. Warehouse A"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={source}
-                        onChange={(e) => setSource(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="destination" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Destination Route *</label>
-                      <input
-                        id="destination"
-                        type="text"
-                        required
-                        placeholder="e.g. Client Site B"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
-                      />
-                    </div>
+                    <TextField
+                      id="source"
+                      label="Source Route *"
+                      required
+                      placeholder="e.g. Warehouse A"
+                      value={source}
+                      error={sourceError}
+                      onChange={(e) => {
+                        setSource(e.target.value);
+                        if (sourceError) setSourceError(null);
+                      }}
+                    />
+                    <TextField
+                      id="destination"
+                      label="Destination Route *"
+                      required
+                      placeholder="e.g. Client Site B"
+                      value={destination}
+                      error={destinationError}
+                      onChange={(e) => {
+                        setDestination(e.target.value);
+                        if (destinationError) setDestinationError(null);
+                      }}
+                    />
                   </div>
 
-                  <div>
-                    <label htmlFor="vehicle" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Select Vehicle *</label>
-                    <select
-                      id="vehicle"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={vehicleId}
-                      onChange={(e) => setVehicleId(e.target.value)}
-                    >
-                      <option value="">-- Choose Available Vehicle --</option>
-                      {availableVehicles.map(v => (
-                        <option key={v.id} value={v.id}>{v.registration_number} - {v.name} (Max Load: {v.max_load_kg} kg)</option>
-                      ))}
-                    </select>
-                  </div>
+                  <SelectField
+                    id="vehicle"
+                    label="Select Vehicle *"
+                    required
+                    options={allVehicles.map(v => ({
+                      value: String(v.id),
+                      label: `${v.registration_number} - ${v.name} (Max: ${v.max_load_kg} kg) [${v.status}]`
+                    }))}
+                    placeholder="-- Select Vehicle --"
+                    value={vehicleId}
+                    error={vehicleIdError}
+                    onChange={(e) => {
+                      setVehicleId(e.target.value);
+                      if (vehicleIdError) setVehicleIdError(null);
+                    }}
+                  />
 
-                  <div>
-                    <label htmlFor="driver" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Select Driver *</label>
-                    <select
-                      id="driver"
-                      required
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={driverId}
-                      onChange={(e) => setDriverId(e.target.value)}
-                    >
-                      <option value="">-- Choose Available Driver --</option>
-                      {availableDrivers.map(d => (
-                        <option key={d.id} value={d.id}>{d.name} (Safety: {d.safety_score})</option>
-                      ))}
-                    </select>
-                  </div>
+                  <SelectField
+                    id="driver"
+                    label="Select Driver *"
+                    required
+                    options={allDrivers.map(d => ({
+                      value: String(d.id),
+                      label: `${d.name} (Safety: ${d.safety_score}) [${d.status}]`
+                    }))}
+                    placeholder="-- Select Driver --"
+                    value={driverId}
+                    error={driverIdError}
+                    onChange={(e) => {
+                      setDriverId(e.target.value);
+                      if (driverIdError) setDriverIdError(null);
+                    }}
+                  />
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                    <div>
-                      <label htmlFor="cargo" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Cargo Weight (kg) *</label>
-                      <input
-                        id="cargo"
-                        type="number"
-                        required
-                        min="1"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={cargoWeight}
-                        onChange={(e) => setCargoWeight(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="distance" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Planned Distance (km)</label>
-                      <input
-                        id="distance"
-                        type="number"
-                        min="1"
-                        style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                        value={plannedDist}
-                        onChange={(e) => setPlannedDist(e.target.value)}
-                      />
-                    </div>
+                    <NumberField
+                      id="cargo"
+                      label="Cargo Weight (kg) *"
+                      required
+                      min={1}
+                      value={cargoWeight}
+                      error={cargoWeightError}
+                      onChange={(e) => {
+                        setCargoWeight(e.target.value);
+                        if (cargoWeightError) setCargoWeightError(null);
+                      }}
+                    />
+                    <NumberField
+                      id="distance"
+                      label="Planned Distance (km)"
+                      min={1}
+                      value={plannedDist}
+                      error={plannedDistError}
+                      onChange={(e) => {
+                        setPlannedDist(e.target.value);
+                        if (plannedDistError) setPlannedDistError(null);
+                      }}
+                    />
                   </div>
                 </div>
                 {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
@@ -353,43 +467,43 @@ export default function TripsPage() {
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Complete Trip #{completingTripId}</h3>
             <form onSubmit={(e) => void handleCompleteSubmit(e)}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                <div>
-                  <label htmlFor="finalOdo" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Final Odometer Reading (km) *</label>
-                  <input
-                    id="finalOdo"
-                    type="number"
-                    required
-                    min="0"
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={finalOdo}
-                    onChange={(e) => setFinalOdo(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="fuelConsumed" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Fuel Consumed (Liters) *</label>
-                  <input
-                    id="fuelConsumed"
-                    type="number"
-                    required
-                    min="0"
-                    step="0.01"
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={fuelConsumed}
-                    onChange={(e) => setFuelConsumed(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="fuelCost" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Total Fuel Cost ($)</label>
-                  <input
-                    id="fuelCost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={fuelCost}
-                    onChange={(e) => setFuelCost(e.target.value)}
-                  />
-                </div>
+                <NumberField
+                  id="finalOdo"
+                  label="Final Odometer Reading (km) *"
+                  required
+                  min={0}
+                  value={finalOdo}
+                  error={finalOdoError}
+                  onChange={(e) => {
+                    setFinalOdo(e.target.value);
+                    if (finalOdoError) setFinalOdoError(null);
+                  }}
+                />
+                <NumberField
+                  id="fuelConsumed"
+                  label="Fuel Consumed (Liters) *"
+                  required
+                  min={0}
+                  step="0.01"
+                  value={fuelConsumed}
+                  error={fuelConsumedError}
+                  onChange={(e) => {
+                    setFuelConsumed(e.target.value);
+                    if (fuelConsumedError) setFuelConsumedError(null);
+                  }}
+                />
+                <NumberField
+                  id="fuelCost"
+                  label="Total Fuel Cost ($)"
+                  min={0}
+                  step="0.01"
+                  value={fuelCost}
+                  error={fuelCostError}
+                  onChange={(e) => {
+                    setFuelCost(e.target.value);
+                    if (fuelCostError) setFuelCostError(null);
+                  }}
+                />
               </div>
               {completeError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{completeError}</p>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>

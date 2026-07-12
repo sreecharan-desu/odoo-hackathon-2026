@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Card, Spinner, Button } from "../components/ui";
+import { TextField, NumberField, SelectField } from "../components/forms";
+import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import type { Vehicle } from "../types";
@@ -15,12 +17,38 @@ export default function FleetPage() {
   const [odometer, setOdometer] = useState("");
   const [cost, setCost] = useState("");
   const [region, setRegion] = useState("");
+  
+  // Input validation states
+  const [regNumError, setRegNumError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [maxLoadError, setMaxLoadError] = useState<string | null>(null);
+  const [odometerError, setOdometerError] = useState<string | null>(null);
+  const [costError, setCostError] = useState<string | null>(null);
+  
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    
+    // Validate inputs using Anand's validators
+    const regErr = validators.required(regNum, "Registration Number");
+    const nameErr = validators.required(name, "Vehicle Model/Name");
+    const loadErr = validators.positiveNumber(maxLoad, "Max Load");
+    const odoErr = odometer && parseFloat(odometer) < 0 ? "Odometer cannot be negative" : null;
+    const costErr = cost && parseFloat(cost) < 0 ? "Acquisition cost cannot be negative" : null;
+
+    setRegNumError(regErr);
+    setNameError(nameErr);
+    setMaxLoadError(loadErr);
+    setOdometerError(odoErr);
+    setCostError(costErr);
+
+    if (regErr || nameErr || loadErr || odoErr || costErr) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiPost(endpoints.vehicles, {
@@ -139,90 +167,85 @@ export default function FleetPage() {
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Add New Vehicle</h3>
             <form onSubmit={(e) => void handleAddVehicle(e)}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                <div>
-                  <label htmlFor="regNum" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Registration Number *</label>
-                  <input
-                    id="regNum"
-                    type="text"
+                <TextField
+                  id="regNum"
+                  label="Registration Number *"
+                  required
+                  value={regNum}
+                  error={regNumError}
+                  onChange={(e) => {
+                    setRegNum(e.target.value);
+                    if (regNumError) setRegNumError(null);
+                  }}
+                />
+                <TextField
+                  id="name"
+                  label="Vehicle Model/Name *"
+                  required
+                  value={name}
+                  error={nameError}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (nameError) setNameError(null);
+                  }}
+                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+                  <SelectField
+                    id="type"
+                    label="Type *"
                     required
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={regNum}
-                    onChange={(e) => setRegNum(e.target.value)}
+                    options={[
+                      { value: "Van", label: "Van" },
+                      { value: "Truck", label: "Truck" },
+                      { value: "Sedan", label: "Sedan" },
+                      { value: "SUV", label: "SUV" },
+                    ]}
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
                   />
-                </div>
-                <div>
-                  <label htmlFor="name" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Vehicle Model/Name *</label>
-                  <input
-                    id="name"
-                    type="text"
+                  <NumberField
+                    id="maxLoad"
+                    label="Max Load (kg) *"
                     required
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    min={1}
+                    value={maxLoad}
+                    error={maxLoadError}
+                    onChange={(e) => {
+                      setMaxLoad(e.target.value);
+                      if (maxLoadError) setMaxLoadError(null);
+                    }}
                   />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                  <div>
-                    <label htmlFor="type" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Type *</label>
-                    <select
-                      id="type"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={type}
-                      onChange={(e) => setType(e.target.value)}
-                    >
-                      <option value="Van">Van</option>
-                      <option value="Truck">Truck</option>
-                      <option value="Sedan">Sedan</option>
-                      <option value="SUV">SUV</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="maxLoad" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Max Load (kg) *</label>
-                    <input
-                      id="maxLoad"
-                      type="number"
-                      required
-                      min="1"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={maxLoad}
-                      onChange={(e) => setMaxLoad(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                  <div>
-                    <label htmlFor="odometer" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Initial Odometer (km)</label>
-                    <input
-                      id="odometer"
-                      type="number"
-                      min="0"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={odometer}
-                      onChange={(e) => setOdometer(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cost" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Acquisition Cost ($)</label>
-                    <input
-                      id="cost"
-                      type="number"
-                      min="0"
-                      style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                      value={cost}
-                      onChange={(e) => setCost(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="region" style={{ display: "block", fontSize: "0.875rem", color: "var(--color-muted)", marginBottom: "4px" }}>Operating Region</label>
-                  <input
-                    id="region"
-                    type="text"
-                    style={{ width: "100%", padding: "var(--space-2)", background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius)", color: "var(--color-text)" }}
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
+                  <NumberField
+                    id="odometer"
+                    label="Initial Odometer (km)"
+                    min={0}
+                    value={odometer}
+                    error={odometerError}
+                    onChange={(e) => {
+                      setOdometer(e.target.value);
+                      if (odometerError) setOdometerError(null);
+                    }}
+                  />
+                  <NumberField
+                    id="cost"
+                    label="Acquisition Cost ($)"
+                    min={0}
+                    value={cost}
+                    error={costError}
+                    onChange={(e) => {
+                      setCost(e.target.value);
+                      if (costError) setCostError(null);
+                    }}
                   />
                 </div>
+                <TextField
+                  id="region"
+                  label="Operating Region"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                />
               </div>
               {formError && <p className="error" style={{ marginBottom: "var(--space-3)" }}>{formError}</p>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
