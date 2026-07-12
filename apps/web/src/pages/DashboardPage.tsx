@@ -194,6 +194,7 @@ function Td({ children, style }: { children: React.ReactNode; style?: React.CSSP
     </td>
   );
 }
+}
 
 /* ─── Trips table ─── */
 function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Vehicle[]; drivers: Driver[] }) {
@@ -208,7 +209,7 @@ function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Veh
           </tr>
         </thead>
         <tbody>
-          {trips.slice(0, 12).map((trip) => {
+          {trips.slice(0, 7).map((trip) => {
             const v = vehicles.find((x) => x.id === trip.vehicle_id);
             const d = drivers.find((x) => x.id === trip.driver_id);
             return (
@@ -450,7 +451,7 @@ function FinanceDashboard({ kpis, trips, vehicles, drivers }: any) {
               </tr>
             </thead>
             <tbody>
-              {tripList.slice(0, 12).map((trip) => {
+              {tripList.slice(0, 7).map((trip) => {
                 const v = vehicleList.find((x) => x.id === trip.vehicle_id);
                 const d = (drivers ?? []).find((x: Driver) => x.id === trip.driver_id);
                 return (
