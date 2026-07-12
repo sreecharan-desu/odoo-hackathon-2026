@@ -123,7 +123,7 @@ def seed() -> None:
             User(email="safety@example.com", name="Safety Officer", password_hash=password, role="safety_officer"),
             User(email="finance@example.com", name="Finance Analyst", password_hash=password, role="financial_analyst"),
         ]
-        for i in range(1, 9):
+        for i in range(1, 4):
             users.append(
                 User(
                     email=f"ops{i}@example.com",
@@ -180,16 +180,16 @@ def seed() -> None:
         ]
         # Status mix for bulk: mostly Available, some On Trip / In Shop / Retired
         status_cycle = (
-            ["Available"] * 28
-            + ["On Trip"] * 8
-            + ["In Shop"] * 6
-            + ["Retired"] * 4
+            ["Available"] * 14
+            + ["On Trip"] * 5
+            + ["In Shop"] * 3
+            + ["Retired"] * 2
         )
         RNG.shuffle(status_cycle)
 
         n = 0
         for prefix, vtype, lo, hi, cost_lo, cost_hi in specs:
-            for i in range(1, 13):  # 5 types × 12 = 60 + 3 demo = 63 vehicles
+            for i in range(1, 7):  # 5 types × 6 = 30 + 3 demo = 33 vehicles
                 n += 1
                 reg = f"{prefix}-{100 + i}"
                 if any(v.registration_number == reg for v in vehicles):
@@ -242,7 +242,7 @@ def seed() -> None:
         )
         RNG.shuffle(driver_statuses)
 
-        for i, first in enumerate(FIRST_NAMES, start=1):
+        for i, first in enumerate(FIRST_NAMES[:12], start=1):
             status = driver_statuses[(i - 1) % len(driver_statuses)]
             expiry_offset = RNG.choice([90, 180, 365, 400, 500, -5, -20]) if i % 17 == 0 else RNG.randint(60, 700)
             # Keep only Expired Sam as the intentional expired demo case for Available drivers
@@ -306,7 +306,7 @@ def seed() -> None:
         # Completed trips (history) — use Available fleet + Alex heavily
         history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
-        for i in range(120):
+        for i in range(36):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -331,7 +331,7 @@ def seed() -> None:
             )
 
         # Draft trips ready to dispatch in UI
-        for i in range(18):
+        for i in range(8):
             veh = RNG.choice(available_vehicles)
             drv = RNG.choice(available_drivers)
             src, dst = RNG.sample(CITIES, 2)
@@ -350,7 +350,7 @@ def seed() -> None:
             )
 
         # Cancelled trips
-        for i in range(15):
+        for i in range(6):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -385,7 +385,7 @@ def seed() -> None:
                     logged_at=t.created_at + timedelta(hours=RNG.randint(2, 10)),
                 )
             )
-        for i in range(80):
+        for i in range(20):
             veh = RNG.choice(vehicles)
             liters = RNG.uniform(15, 90)
             fuel_logs.append(
@@ -410,7 +410,7 @@ def seed() -> None:
                     opened_at=_utc_days_ago(RNG.randint(0, 10)),
                 )
             )
-        for i in range(70):
+        for i in range(20):
             veh = RNG.choice(vehicles)
             opened = _utc_days_ago(RNG.randint(10, 120))
             maintenance.append(
@@ -426,7 +426,7 @@ def seed() -> None:
             )
 
         # Expenses
-        for i in range(150):
+        for i in range(40):
             veh = RNG.choice(vehicles)
             cat = RNG.choice(EXPENSE_CATS)
             expenses.append(
@@ -444,7 +444,7 @@ def seed() -> None:
         db.add_all(expenses)
         db.commit()
 
-        print("✓ Seed complete — large fleet dataset ready.")
+        print("✓ Seed complete — compact fleet dataset ready.")
         print(f"  Login: fleet@example.com / {DEMO_PASSWORD}")
         print(f"  Users:        {db.query(User).count()}")
         print(f"  Vehicles:     {db.query(Vehicle).count()}")
