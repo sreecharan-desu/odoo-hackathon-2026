@@ -28,16 +28,14 @@ The seed loads a full fleet (60+ vehicles, 40+ drivers, 150+ trips, plus fuel, m
 ## Reset the database
 
 ```bash
-docker compose up -d
-
-cd apps/api
-source .venv/bin/activate
-pip install -r requirements.txt
-python scripts/seed.py
+docker compose down -v
+docker compose up --build
 ```
 
-API docs: http://localhost:8000/docs  
-Web app: http://localhost:5173
+Then open http://localhost:8080 and log in with `fleet@example.com` / `Password123!`.
+
+API docs: http://localhost:8080/docs  
+*(Swagger is also on http://localhost:8000/docs if that port is free.)*
 
 ## Suggested walkthrough
 

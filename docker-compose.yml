@@ -1,2 +1,59 @@
-include:
-  - path: docker/compose.yml
+# TransitOps full stack — run from repo root on any OS:
+#   docker compose up --build
+#   docker-compose up --build
+#
+# App:  http://localhost:8080
+# API:  http://localhost:8000/docs  (Swagger; optional if port free)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: transitops_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-hackathon}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-hackathon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: transitops_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_secret}@postgres:5432/${POSTGRES_DB:-hackathon}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8080","http://127.0.0.1:8080"]'
+      SEED_IF_EMPTY: "1"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  web:
+    build:
+      context: ./apps/web
+      # Empty = browser calls /api on same origin (nginx proxies to api). Works on any host port.
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: transitops_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  postgres_data:
