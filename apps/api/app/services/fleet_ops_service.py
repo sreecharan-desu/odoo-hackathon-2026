@@ -11,15 +11,22 @@ from app.models.maintenance import MaintenanceLog
 from app.models.vehicle import Vehicle
 from app.schemas import ExpenseCreate, FuelLogCreate, MaintenanceCreate
 from app.services.vehicle_service import VehicleService
+from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
 
 
 class MaintenanceService:
     @staticmethod
-    def list(db: Session, status: str | None = None) -> list[MaintenanceLog]:
+    def list(
+        db: Session,
+        status: str | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[MaintenanceLog]:
         q = db.query(MaintenanceLog).order_by(MaintenanceLog.id.desc())
         if status:
             q = q.filter(MaintenanceLog.status == status)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def open(db: Session, data: MaintenanceCreate) -> MaintenanceLog:
@@ -62,11 +69,17 @@ class MaintenanceService:
 
 class FuelService:
     @staticmethod
-    def list(db: Session, vehicle_id: int | None = None) -> list[FuelLog]:
+    def list(
+        db: Session,
+        vehicle_id: int | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[FuelLog]:
         q = db.query(FuelLog).order_by(FuelLog.id.desc())
         if vehicle_id:
             q = q.filter(FuelLog.vehicle_id == vehicle_id)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def create(db: Session, data: FuelLogCreate) -> FuelLog:
@@ -85,11 +98,17 @@ class FuelService:
 
 class ExpenseService:
     @staticmethod
-    def list(db: Session, vehicle_id: int | None = None) -> list[Expense]:
+    def list(
+        db: Session,
+        vehicle_id: int | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[Expense]:
         q = db.query(Expense).order_by(Expense.id.desc())
         if vehicle_id:
             q = q.filter(Expense.vehicle_id == vehicle_id)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def create(db: Session, data: ExpenseCreate) -> Expense:
@@ -145,8 +164,13 @@ class DashboardService:
 
     @staticmethod
     def operational_cost(db: Session, vehicle_id: int) -> dict:
-        VehicleService.get(db, vehicle_id)
-        fuel = db.query(func.coalesce(func.sum(FuelLog.cost), 0.0)).filter(FuelLog.vehicle_id == vehicle_id).scalar()
+        from app.models.trip import Trip
+
+        vehicle = VehicleService.get(db, vehicle_id)
+        fuel_cost = db.query(func.coalesce(func.sum(FuelLog.cost), 0.0)).filter(FuelLog.vehicle_id == vehicle_id).scalar()
+        fuel_liters = (
+            db.query(func.coalesce(func.sum(FuelLog.liters), 0.0)).filter(FuelLog.vehicle_id == vehicle_id).scalar()
+        )
         maint = (
             db.query(func.coalesce(func.sum(MaintenanceLog.estimated_cost), 0.0))
             .filter(MaintenanceLog.vehicle_id == vehicle_id, MaintenanceLog.status == "Closed")
@@ -155,10 +179,32 @@ class DashboardService:
         other = (
             db.query(func.coalesce(func.sum(Expense.amount), 0.0)).filter(Expense.vehicle_id == vehicle_id).scalar()
         )
+        distance = (
+            db.query(func.coalesce(func.sum(Trip.planned_distance), 0.0))
+            .filter(Trip.vehicle_id == vehicle_id, Trip.status == "Completed")
+            .scalar()
+        )
+        # Estimated freight revenue for ROI: ₹40 per km on completed trips
+        revenue = float(distance or 0) * 40.0
+        fuel = float(fuel_cost or 0)
+        maintenance = float(maint or 0)
+        other_exp = float(other or 0)
+        liters = float(fuel_liters or 0)
+        dist = float(distance or 0)
+        acquisition = float(vehicle.acquisition_cost or 0)
+        efficiency = round(dist / liters, 2) if liters > 0 else None
+        roi = round((revenue - (maintenance + fuel)) / acquisition, 4) if acquisition > 0 else None
+
         return {
             "vehicle_id": vehicle_id,
-            "fuel_cost": float(fuel or 0),
-            "maintenance_cost": float(maint or 0),
-            "other_expenses": float(other or 0),
-            "total_operational_cost": float((fuel or 0) + (maint or 0) + (other or 0)),
+            "fuel_cost": fuel,
+            "fuel_liters": liters,
+            "distance_km": dist,
+            "fuel_efficiency_km_per_l": efficiency,
+            "maintenance_cost": maintenance,
+            "other_expenses": other_exp,
+            "estimated_revenue": revenue,
+            "total_operational_cost": fuel + maintenance + other_exp,
+            "acquisition_cost": acquisition,
+            "roi": roi,
         }

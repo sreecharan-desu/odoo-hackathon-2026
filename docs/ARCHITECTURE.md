@@ -1,122 +1,112 @@
 # Architecture — TransitOps
 
-> Team lead owns this file. Others request changes via PR.
-> **Problem locked:** TransitOps — Smart Transport Operations Platform
+TransitOps is a transport operations platform covering vehicles, drivers, trip dispatch, maintenance, fuel and expenses, and operational reporting.
 
-## Problem summary
+The system is a modular monorepo: **PostgreSQL** for persistence, **FastAPI** for the API, and **React** for the web client.
 
-TransitOps is an end-to-end transport operations platform: vehicles, drivers, dispatch (trips), maintenance, fuel/expenses, and operational KPIs. It digitizes fleet workflows with hard business rules (no double-booking vehicles/drivers, license checks, load capacity, automatic status transitions).
+## Core user flow
 
-We are building a simplified **Odoo Fleet–style** app: own PostgreSQL + FastAPI backend, React UI, no BaaS, no AI bolted on.
+1. Sign in as a fleet manager
+2. Register a vehicle (e.g. Van-05, max load 500 kg) → Available
+3. Register a driver with a valid license → Available
+4. Create a trip with cargo within capacity → dispatch
+5. Vehicle and driver move to On Trip
+6. Complete the trip (odometer + fuel) → both return to Available
+7. Open a maintenance job → vehicle moves to In Shop (excluded from dispatch)
+8. Dashboard and reports reflect live costs and activity
+9. Invalid dispatch attempts (overweight, expired license, vehicle in shop) return clear errors
 
-## MVP user flow (demo = PDF Steps 1–9)
-
-1. Login as Fleet Manager
-2. Register vehicle `Van-05` (max load 500 kg) → Available
-3. Register driver `Alex` with valid license → Available
-4. Create trip (cargo 450 kg) → validates 450 ≤ 500 → Dispatch
-5. Vehicle + driver become On Trip
-6. Complete trip (odometer + fuel) → both Available again
-7. Open maintenance (e.g. Oil Change) → vehicle In Shop (hidden from dispatch)
-8. Dashboard/reports show cost + fuel efficiency from live DB
-9. **Validation beat:** try illegal dispatch (overweight / expired license / In Shop vehicle) → clear error
-
-## Deferred (do not start until MVP is green)
-
-- PDF export, email license reminders, document uploads, dark mode toggle, heavy chart libraries
-
-## Database entities
+## Data model
 
 | Table | Key fields | Notes |
 |-------|------------|-------|
-| users | id, email, name, password_hash, role, created_at | roles: `fleet_manager`, `driver`, `safety_officer`, `financial_analyst` |
-| vehicles | id, registration_number (unique), name, type, max_load_kg, odometer, acquisition_cost, status, region | status: Available, On Trip, In Shop, Retired |
-| drivers | id, name, license_number, license_category, license_expiry, contact, safety_score, status | status: Available, On Trip, Off Duty, Suspended |
-| trips | id, source, destination, vehicle_id, driver_id, cargo_weight, planned_distance, status, created_by, final_odometer, fuel_consumed | status: Draft, Dispatched, Completed, Cancelled |
-| maintenance_logs | id, vehicle_id, title, description, status, opened_at, closed_at | open → vehicle In Shop; close → Available (unless Retired) |
-| fuel_logs | id, vehicle_id, liters, cost, logged_at, trip_id nullable | |
-| expenses | id, vehicle_id, category, amount, note, logged_at | tolls, etc. |
+| users | id, email, name, password_hash, role, created_at | Roles: `fleet_manager`, `driver`, `safety_officer`, `financial_analyst` |
+| vehicles | id, registration_number (unique), name, type, max_load_kg, odometer, acquisition_cost, status, region | Status: Available, On Trip, In Shop, Retired |
+| drivers | id, name, license_number, license_category, license_expiry, contact, safety_score, status | Status: Available, On Trip, Off Duty, Suspended |
+| trips | id, source, destination, vehicle_id, driver_id, cargo_weight, planned_distance, status, created_by, final_odometer, fuel_consumed | Status: Draft, Dispatched, Completed, Cancelled |
+| maintenance_logs | id, vehicle_id, title, description, status, opened_at, closed_at | Open → In Shop; close → Available (unless Retired) |
+| fuel_logs | id, vehicle_id, liters, cost, logged_at, trip_id (nullable) | |
+| expenses | id, vehicle_id, category, amount, note, logged_at | |
 
-## Mandatory business rules (enforce in `services/`)
+## Business rules
 
-1. Vehicle registration_number unique
-2. Retired / In Shop vehicles never in dispatch pool
-3. Expired license or Suspended driver cannot be assigned
-4. Vehicle or driver already On Trip cannot take another trip
-5. Cargo weight ≤ vehicle max_load_kg
-6. Dispatch → vehicle + driver On Trip
-7. Complete / Cancel dispatched → both Available
-8. Open maintenance → vehicle In Shop; close maintenance → Available
+Enforced in the service layer:
 
-## API contract (initial)
+1. Vehicle `registration_number` is unique
+2. Retired or In Shop vehicles are excluded from the dispatch pool
+3. Drivers with expired licenses or Suspended status cannot be assigned
+4. A vehicle or driver already On Trip cannot take another trip
+5. Cargo weight must be ≤ vehicle `max_load_kg`
+6. Dispatch sets vehicle and driver to On Trip
+7. Complete or cancel returns both to Available
+8. Opening maintenance sets the vehicle to In Shop; closing restores Available
 
-| Method | Path | Owner | Status |
-|--------|------|-------|--------|
-| GET | /api/health | SreeCharan | done |
-| POST | /api/auth/login | SreeCharan | done |
-| POST | /api/auth/register | SreeCharan | done |
-| GET/POST | /api/vehicles | SreeCharan | done |
-| GET/PATCH | /api/vehicles/{id} | SreeCharan | done |
-| GET/POST | /api/drivers | SreeCharan | done |
-| GET/PATCH | /api/drivers/{id} | SreeCharan | done |
-| GET/POST | /api/trips | SreeCharan | done |
-| POST | /api/trips/{id}/dispatch | SreeCharan | done |
-| POST | /api/trips/{id}/complete | SreeCharan | done |
-| POST | /api/trips/{id}/cancel | SreeCharan | done |
-| GET/POST | /api/maintenance | SreeCharan | done |
-| POST | /api/maintenance/{id}/close | SreeCharan | done |
-| GET/POST | /api/fuel-logs | SreeCharan | done |
-| GET | /api/dashboard/kpis | SreeCharan | done |
-| GET | /api/reports/operational.csv | SreeCharan | done |
+## API surface
 
-## Monorepo ownership
+| Method | Path |
+|--------|------|
+| GET | `/api/health` |
+| POST | `/api/auth/register` |
+| POST | `/api/auth/login` |
+| GET | `/api/auth/me` |
+| GET, POST | `/api/vehicles` |
+| GET | `/api/vehicles/dispatch-pool` |
+| GET, PATCH | `/api/vehicles/{id}` |
+| GET, POST | `/api/drivers` |
+| GET, PATCH | `/api/drivers/{id}` |
+| GET, POST | `/api/trips` |
+| POST | `/api/trips/{id}/dispatch` |
+| POST | `/api/trips/{id}/complete` |
+| POST | `/api/trips/{id}/cancel` |
+| GET, POST | `/api/maintenance` |
+| POST | `/api/maintenance/{id}/close` |
+| GET, POST | `/api/fuel-logs` |
+| GET, POST | `/api/expenses` |
+| GET | `/api/dashboard/kpis` |
+| GET | `/api/vehicles/{id}/operational-cost` |
+| GET | `/api/reports/operational.csv` |
 
-| Member | Paths |
-|--------|-------|
-| SreeCharan | `apps/api/` (all layers), `docker/`, `docs/ARCHITECTURE.md`, `docs/STACK.md` |
-| Bhanu | `apps/web/src/pages/`, `apps/web/src/App.tsx`, `apps/web/src/hooks/`, `apps/web/src/lib/api/`, `apps/web/src/components/layout/`, `apps/web/src/types/` |
-| Anand | `apps/web/src/components/forms/`, `apps/web/src/lib/validators.ts`, `apps/api/scripts/`, `docs/DEMO.md` |
-| Mohan | `apps/web/src/styles/`, `apps/web/src/components/ui/`, `apps/web/src/constants/` |
+Interactive docs: `http://localhost:8000/docs`
 
-### Backend layers (lead)
+List endpoints return a paginated envelope:
 
-| Folder | Purpose |
-|--------|---------|
+```json
+{ "items": [], "total": 0, "limit": 25, "offset": 0 }
+```
+
+Query params: `limit` (1–100, default 25), `offset` (default 0). Filters such as `status` still apply.
+
+## Backend structure
+
+| Folder | Responsibility |
+|--------|----------------|
 | `controllers/` | HTTP handlers |
-| `services/` | Business logic + rules |
-| `models/` | DB tables |
-| `schemas/` | Pydantic DTOs |
-| `core/` | Config, deps, security |
-| `utils/` | Helpers |
-| `exceptions/` | Error handling |
+| `services/` | Business logic and rules |
+| `models/` | ORM entities |
+| `schemas/` | Request and response DTOs |
+| `core/` | Configuration, security, dependencies |
+| `utils/` | Shared helpers |
+| `exceptions/` | Error types and handlers |
 
-### Frontend layers
+## Frontend structure
 
-| Folder | Owner | Purpose |
-|--------|-------|---------|
-| `components/ui/` | Mohan | Buttons, cards, spinners, badges, KPI tiles |
-| `styles/` | Mohan | Theme tokens, visual system |
-| `constants/` | Mohan | Routes, status labels/colors |
-| `components/layout/` | Bhanu | Header, shell, nav |
-| `components/forms/` | Anand | Validated inputs |
-| `pages/` | Bhanu | Login, Dashboard, Vehicles, Drivers, Trips, Maintenance |
-| `hooks/` | Bhanu | `useAsync`, data hooks |
-| `lib/api/` | Bhanu | HTTP client + endpoints |
-| `types/` | Bhanu | TS types matching API |
+| Folder | Responsibility |
+|--------|----------------|
+| `pages/` | Route-level screens |
+| `components/layout/` | Application shell and navigation |
+| `components/ui/` | Shared UI primitives |
+| `components/forms/` | Validated form fields |
+| `hooks/` | Auth and data hooks |
+| `lib/api/` | HTTP client and endpoint map |
+| `lib/validators.ts` | Client-side validation helpers |
+| `types/` | Shared TypeScript contracts |
+| `styles/` | Design tokens and global styles |
+| `constants/` | Routes and status maps |
 
-## How we meet Odoo criteria
+## Out of scope (for now)
 
-| Their priority | Our proof |
-|----------------|-----------|
-| Own DB + APIs | Postgres + FastAPI (no Firebase/Supabase) |
-| From scratch | No third-party business APIs |
-| Dynamic data | Seed + live CRUD; UI never depends on static JSON |
-| Validation | Pydantic + service errors + Anand form validators |
-| Collaborative Git | 4 contributors; `feat/<name>/...` PRs |
-| Clean UI | Mohan design system + Bhanu pages |
-| Team presentation | DEMO.md — each person speaks |
-| No fake trendy tech | No AI/blockchain |
+PDF export, email reminders, document uploads, dark-mode toggle, and heavy chart libraries are deferred until the core flow is stable.
 
-## Demo script (90 seconds)
+## Demo walkthrough
 
-See [docs/DEMO.md](./DEMO.md).
+See [DEMO.md](./DEMO.md).

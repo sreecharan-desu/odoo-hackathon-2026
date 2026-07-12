@@ -35,7 +35,7 @@ export default function AppShell() {
   const { pathname } = useLocation();
   const title = pageTitle(pathname);
 
-  const displayUser = user || { name: "Raven K.", role: "dispatcher" };
+  const displayUser = user || { name: "Operator", role: "fleet_manager" };
 
   return (
     <div className="shell">

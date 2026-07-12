@@ -1,42 +1,31 @@
-# Stack decisions — minimal by default
+# Stack
 
-> Match Odoo guidance: use modern tech **only when it adds real value** for the problem statement.
+Technology choices for TransitOps. Prefer a small, understandable stack that supports the product — add tools only when they solve a concrete need.
 
-## Baseline (keep unless PS forces change)
+## Current stack
 
-| Tool | Status | Notes |
-|------|--------|-------|
-| PostgreSQL | ✅ Keep | Required taste for Odoo evaluators |
-| FastAPI | ✅ Keep | Fast CRUD, validation, clear structure |
-| SQLAlchemy | ✅ Keep | Relational modeling |
-| Alembic | ⏳ Add on 12 Jul | When schema is defined |
-| React + Vite | ✅ Keep | Simpler than Next unless PS needs SEO/SSR |
-| TypeScript | ✅ Keep | Safer forms and API client |
+| Component | Choice | Notes |
+|-----------|--------|-------|
+| Database | PostgreSQL 16 | Relational model with constraints |
+| API | FastAPI | Typed routes, Pydantic validation |
+| ORM | SQLAlchemy | Models and queries |
+| Migrations | Alembic | Versioned schema changes |
+| Web | React 19 + Vite | SPA client |
+| Language | TypeScript | Shared contracts with the API |
+| Auth | JWT + password hashing | Stateless API sessions |
+| Runtime | Docker Compose | Postgres + API + web in one command |
 
-## Do not add upfront
+## Not used (by design)
 
-| Tool | Why wait |
-|------|----------|
-| Redis | Only if sessions/cache/rate-limit needed |
-| Elasticsearch | Only if full-text search is core to PS |
-| Next.js | Heavier; use only if SSR/routing complexity needed |
-| GraphQL | REST is enough for 8 hours |
-| Microservices | Single `apps/api` is correct |
-| Turborepo / Nx | Overhead for 3 people |
-| Firebase / Supabase | Explicitly discouraged by Odoo |
+| Option | Reason |
+|--------|--------|
+| Firebase / Supabase / MongoDB Atlas | Prefer an owned database and API |
+| Redis | Not required for the current workload |
+| Elasticsearch | SQL filtering is sufficient |
+| GraphQL | REST covers the surface area |
+| Microservices | Single API package keeps deployment simple |
+| Kubernetes | Local Docker Compose is enough for development and demo |
 
-## Decision on hackathon day (first 30 min)
+## Guidance
 
-After reading the problem statement, team lead updates this table:
-
-| Need from PS | Add? | Owner |
-|--------------|------|-------|
-| Real-time updates | WebSockets / SSE? | |
-| File uploads | Local storage + API | |
-| Auth | JWT or session cookies | |
-| Search | SQL LIKE vs dedicated search | |
-| Maps / external API | Only if PS requires | |
-
-## Rule
-
-**One working MVP flow > trendy stack.** If a feature can ship with Postgres + REST + React, do that.
+Ship one complete operational flow with clear validation and modular code before introducing additional infrastructure.

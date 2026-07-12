@@ -1,5 +1,6 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
@@ -13,20 +14,25 @@ from app.schemas import (
     FuelLogResponse,
     MaintenanceCreate,
     MaintenanceResponse,
+    PaginatedResponse,
 )
 from app.services.fleet_ops_service import DashboardService, ExpenseService, FuelService, MaintenanceService
 from app.services.vehicle_service import VehicleService
+from app.utils.pagination import DEFAULT_LIMIT, MAX_LIMIT
 
 router = APIRouter(tags=["operations"])
 
 
-@router.get("/maintenance", response_model=list[MaintenanceResponse])
+@router.get("/maintenance", response_model=PaginatedResponse[MaintenanceResponse])
 def list_maintenance(
     status: str | None = None,
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> list:
-    return MaintenanceService.list(db, status=status)
+) -> dict:
+    page = MaintenanceService.list(db, status=status, limit=limit, offset=offset)
+    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
 
 
 @router.post("/maintenance", response_model=MaintenanceResponse)
@@ -47,13 +53,16 @@ def close_maintenance(
     return MaintenanceService.close(db, log_id)
 
 
-@router.get("/fuel-logs", response_model=list[FuelLogResponse])
+@router.get("/fuel-logs", response_model=PaginatedResponse[FuelLogResponse])
 def list_fuel(
     vehicle_id: int | None = None,
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> list:
-    return FuelService.list(db, vehicle_id=vehicle_id)
+) -> dict:
+    page = FuelService.list(db, vehicle_id=vehicle_id, limit=limit, offset=offset)
+    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
 
 
 @router.post("/fuel-logs", response_model=FuelLogResponse)
@@ -65,13 +74,16 @@ def create_fuel(
     return FuelService.create(db, payload)
 
 
-@router.get("/expenses", response_model=list[ExpenseResponse])
+@router.get("/expenses", response_model=PaginatedResponse[ExpenseResponse])
 def list_expenses(
     vehicle_id: int | None = None,
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> list:
-    return ExpenseService.list(db, vehicle_id=vehicle_id)
+) -> dict:
+    page = ExpenseService.list(db, vehicle_id=vehicle_id, limit=limit, offset=offset)
+    return {"items": page.items, "total": page.total, "limit": page.limit, "offset": page.offset}
 
 
 @router.post("/expenses", response_model=ExpenseResponse)
@@ -97,12 +109,18 @@ def operational_cost(
 
 @router.get("/reports/operational.csv")
 def operational_csv(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> PlainTextResponse:
-    vehicles = VehicleService.list(db)
-    lines = ["vehicle_id,registration_number,status,fuel_cost,maintenance_cost,other_expenses,total"]
+    vehicles = VehicleService.list_all(db)
+    lines = [
+        "vehicle_id,registration_number,status,distance_km,fuel_liters,fuel_efficiency_km_per_l,"
+        "fuel_cost,maintenance_cost,other_expenses,estimated_revenue,acquisition_cost,roi,total"
+    ]
     for v in vehicles:
         costs = DashboardService.operational_cost(db, v.id)
         lines.append(
             f"{v.id},{v.registration_number},{v.status},"
-            f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},{costs['total_operational_cost']}"
+            f"{costs['distance_km']},{costs['fuel_liters']},{costs['fuel_efficiency_km_per_l']},"
+            f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},"
+            f"{costs['estimated_revenue']},{costs['acquisition_cost']},{costs['roi']},"
+            f"{costs['total_operational_cost']}"
         )
     return PlainTextResponse("\n".join(lines) + "\n", media_type="text/csv")
