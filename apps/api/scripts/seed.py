@@ -1,4 +1,4 @@
-"""Seed TransitOps with a large realistic fleet dataset.
+"""Seed TransitOps with a compact realistic fleet dataset.
 
 Preserves demo spine (VAN-05, TRK-12, VAN-99, Alex, Expired Sam).
 Run:  python scripts/seed.py
@@ -97,6 +97,58 @@ FIRST_NAMES = (
     "Carlos",
 )
 
+LAST_NAMES = (
+    "Patel",
+    "Sharma",
+    "Khan",
+    "Reddy",
+    "Nair",
+    "Das",
+    "Iyer",
+    "Singh",
+    "Gupta",
+    "Joshi",
+)
+
+SEED_PROFILE = {
+    "users": 6,
+    "vehicle_templates": 5,
+    "vehicles_per_template": 4,
+    "driver_bulk": 10,
+    "active_dispatches": 4,
+    "completed_trips": 24,
+    "draft_trips": 6,
+    "cancelled_trips": 5,
+    "fuel_topups": 14,
+    "maintenance_history": 12,
+    "maintenance_open": 3,
+    "expenses": 28,
+}
+
+
+def _pick(*values: str) -> str:
+    return RNG.choice(values)
+
+
+def _person_name(first: str) -> str:
+    return f"{first} {_pick(*LAST_NAMES)}"
+
+
+def _phone_number() -> str:
+    return f"+91-9{RNG.randint(100000000, 999999999)}"
+
+
+def _license_number(prefix: str, index: int) -> str:
+    return f"DL-{prefix}-{100 + index:03d}"
+
+
+def _recent_days(min_days: int, max_days: int) -> int:
+    return RNG.randint(min_days, max_days)
+
+
+def _rand_amount(low: int, high: int) -> float:
+    return round(RNG.uniform(low, high), 2)
+
 
 def _utc_days_ago(days: int, hour: int = 10) -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=days, hours=hour % 5)
@@ -123,7 +175,7 @@ def seed() -> None:
             User(email="safety@example.com", name="Safety Officer", password_hash=password, role="safety_officer"),
             User(email="finance@example.com", name="Finance Analyst", password_hash=password, role="financial_analyst"),
         ]
-        for i in range(1, 4):
+        for i in range(1, max(SEED_PROFILE["users"] - len(users) + 1, 1)):
             users.append(
                 User(
                     email=f"ops{i}@example.com",
@@ -178,18 +230,18 @@ def seed() -> None:
             ("BUS", "MiniBus", 800, 2000, 1200000, 3200000),
             ("PICK", "Pickup", 600, 1200, 550000, 1100000),
         ]
-        # Status mix for bulk: mostly Available, some On Trip / In Shop / Retired
+        # Status mix for bulk: mostly Available, with a smaller live-ops slice.
         status_cycle = (
-            ["Available"] * 14
-            + ["On Trip"] * 5
-            + ["In Shop"] * 3
+            ["Available"] * 8
+            + ["On Trip"] * 4
+            + ["In Shop"] * 2
             + ["Retired"] * 2
         )
         RNG.shuffle(status_cycle)
 
         n = 0
-        for prefix, vtype, lo, hi, cost_lo, cost_hi in specs:
-            for i in range(1, 7):  # 5 types × 6 = 30 + 3 demo = 33 vehicles
+        for prefix, vtype, lo, hi, cost_lo, cost_hi in specs[: SEED_PROFILE["vehicle_templates"]]:
+            for i in range(1, SEED_PROFILE["vehicles_per_template"] + 1):
                 n += 1
                 reg = f"{prefix}-{100 + i}"
                 if any(v.registration_number == reg for v in vehicles):
@@ -234,15 +286,10 @@ def seed() -> None:
             ),
         ]
 
-        driver_statuses = (
-            ["Available"] * 28
-            + ["On Trip"] * 8
-            + ["Off Duty"] * 6
-            + ["Suspended"] * 3
-        )
+        driver_statuses = ["Available"] * 3 + ["On Trip"] * 4 + ["Off Duty"] * 2 + ["Suspended"] * 1
         RNG.shuffle(driver_statuses)
 
-        for i, first in enumerate(FIRST_NAMES[:12], start=1):
+        for i, first in enumerate(FIRST_NAMES[:SEED_PROFILE["driver_bulk"]], start=1):
             status = driver_statuses[(i - 1) % len(driver_statuses)]
             expiry_offset = RNG.choice([90, 180, 365, 400, 500, -5, -20]) if i % 17 == 0 else RNG.randint(60, 700)
             # Keep only Expired Sam as the intentional expired demo case for Available drivers
@@ -286,7 +333,7 @@ def seed() -> None:
         maintenance: list[MaintenanceLog] = []
 
         # Active dispatched trips
-        for idx, (veh, drv) in enumerate(active_pairs):
+        for idx, (veh, drv) in enumerate(active_pairs[: SEED_PROFILE["active_dispatches"]]):
             src, dst = RNG.sample(CITIES, 2)
             cargo = min(veh.max_load_kg * 0.7, veh.max_load_kg - 10)
             trips.append(
@@ -306,7 +353,7 @@ def seed() -> None:
         # Completed trips (history) — use Available fleet + Alex heavily
         history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
-        for i in range(36):
+        for i in range(SEED_PROFILE["completed_trips"]):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -331,7 +378,7 @@ def seed() -> None:
             )
 
         # Draft trips ready to dispatch in UI
-        for i in range(8):
+        for i in range(SEED_PROFILE["draft_trips"]):
             veh = RNG.choice(available_vehicles)
             drv = RNG.choice(available_drivers)
             src, dst = RNG.sample(CITIES, 2)
@@ -350,7 +397,7 @@ def seed() -> None:
             )
 
         # Cancelled trips
-        for i in range(6):
+        for i in range(SEED_PROFILE["cancelled_trips"]):
             veh = RNG.choice(history_pool_v)
             drv = RNG.choice(history_pool_d)
             src, dst = RNG.sample(CITIES, 2)
@@ -380,37 +427,37 @@ def seed() -> None:
                 FuelLog(
                     vehicle_id=t.vehicle_id,
                     liters=round(liters, 1),
-                    cost=round(liters * RNG.uniform(95, 115), 2),
+                    cost=round(liters * RNG.uniform(96, 112), 2),
                     trip_id=t.id,
                     logged_at=t.created_at + timedelta(hours=RNG.randint(2, 10)),
                 )
             )
-        for i in range(20):
+        for i in range(SEED_PROFILE["fuel_topups"]):
             veh = RNG.choice(vehicles)
-            liters = RNG.uniform(15, 90)
+            liters = RNG.uniform(12, 72)
             fuel_logs.append(
                 FuelLog(
                     vehicle_id=veh.id,
                     liters=round(liters, 1),
-                    cost=round(liters * RNG.uniform(95, 115), 2),
+                    cost=round(liters * RNG.uniform(96, 112), 2),
                     trip_id=None,
                     logged_at=_utc_days_ago(RNG.randint(0, 100)),
                 )
             )
 
         # Maintenance — open for In Shop vehicles, closed history for others
-        for veh in in_shop_vehicles:
+        for veh in in_shop_vehicles[: SEED_PROFILE["maintenance_open"]]:
             maintenance.append(
                 MaintenanceLog(
                     vehicle_id=veh.id,
                     title=RNG.choice(MAINT_TITLES),
                     description=f"Open job for {veh.registration_number}",
-                    estimated_cost=float(RNG.randint(2500, 45000)),
+                    estimated_cost=float(RNG.randint(3200, 38000)),
                     status="Open",
                     opened_at=_utc_days_ago(RNG.randint(0, 10)),
                 )
             )
-        for i in range(20):
+        for i in range(SEED_PROFILE["maintenance_history"]):
             veh = RNG.choice(vehicles)
             opened = _utc_days_ago(RNG.randint(10, 120))
             maintenance.append(
@@ -418,7 +465,7 @@ def seed() -> None:
                     vehicle_id=veh.id,
                     title=RNG.choice(MAINT_TITLES),
                     description="Completed scheduled service",
-                    estimated_cost=float(RNG.randint(1500, 60000)),
+                    estimated_cost=float(RNG.randint(1800, 48000)),
                     status="Closed",
                     opened_at=opened,
                     closed_at=opened + timedelta(days=RNG.randint(1, 7)),
@@ -426,15 +473,15 @@ def seed() -> None:
             )
 
         # Expenses
-        for i in range(40):
+        for i in range(SEED_PROFILE["expenses"]):
             veh = RNG.choice(vehicles)
             cat = RNG.choice(EXPENSE_CATS)
             expenses.append(
                 Expense(
                     vehicle_id=veh.id,
                     category=cat,
-                    amount=round(RNG.uniform(50, 12000), 2),
-                    note=f"{cat} — {veh.registration_number}",
+                    amount=round(RNG.uniform(120, 8500), 2),
+                    note=f"{cat} for {veh.registration_number} ({veh.vehicle_type})",
                     logged_at=_utc_days_ago(RNG.randint(0, 90)),
                 )
             )
@@ -444,7 +491,7 @@ def seed() -> None:
         db.add_all(expenses)
         db.commit()
 
-        print("✓ Seed complete — compact fleet dataset ready.")
+        print("✓ Seed complete — compact realistic dataset ready.")
         print(f"  Login: fleet@example.com / {DEMO_PASSWORD}")
         print(f"  Users:        {db.query(User).count()}")
         print(f"  Vehicles:     {db.query(Vehicle).count()}")
