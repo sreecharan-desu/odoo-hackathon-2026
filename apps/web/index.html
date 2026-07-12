@@ -13,8 +13,15 @@
       (function () {
         try {
           var stored = localStorage.getItem('transitops-theme');
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var isDark = stored === 'dark' || (!stored && prefersDark);
+          var isDark;
+          if (stored === 'light') {
+            isDark = false;
+          } else if (stored === 'system') {
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          } else {
+            // missing or "dark" → dark (product default)
+            isDark = true;
+          }
           if (isDark) document.documentElement.classList.add('dark');
         } catch (e) {}
       })();

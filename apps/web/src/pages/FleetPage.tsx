@@ -211,10 +211,10 @@ export default function FleetPage() {
                 <circle cx="100" cy="100" r="68" fill="transparent" stroke="var(--color-surface-2)" strokeWidth="22" />
                 {(() => {
                   const segs = [
-                    { label: "Available", count: (vehicles || []).filter(v => v.status === "Available").length, color: "#10b981" },
-                    { label: "On Trip", count: (vehicles || []).filter(v => v.status === "On Trip").length, color: "#3b82f6" },
-                    { label: "In Shop", count: (vehicles || []).filter(v => v.status === "In Shop" || v.status === "Maintenance").length, color: "#f59e0b" },
-                    { label: "Retired", count: (vehicles || []).filter(v => v.status === "Retired").length, color: "#ef4444" },
+                    { label: "Available", count: (vehicles || []).filter(v => v.status === "Available").length, color: "var(--status-available)" },
+                    { label: "On Trip", count: (vehicles || []).filter(v => v.status === "On Trip").length, color: "var(--status-on-trip)" },
+                    { label: "In Shop", count: (vehicles || []).filter(v => v.status === "In Shop" || v.status === "Maintenance").length, color: "var(--status-in-shop)" },
+                    { label: "Retired", count: (vehicles || []).filter(v => v.status === "Retired").length, color: "var(--status-retired)" },
                   ];
                   const total = (vehicles || []).length || 1;
                   const r = 68, circ = 2 * Math.PI * r;
@@ -243,10 +243,10 @@ export default function FleetPage() {
             
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "12px", flex: 1 }}>
               {[
-                { label: "Available", count: (vehicles || []).filter(v => v.status === "Available").length, color: "#10b981" },
-                { label: "On Trip", count: (vehicles || []).filter(v => v.status === "On Trip").length, color: "#3b82f6" },
-                { label: "In Shop", count: (vehicles || []).filter(v => v.status === "In Shop" || v.status === "Maintenance").length, color: "#f59e0b" },
-                { label: "Retired", count: (vehicles || []).filter(v => v.status === "Retired").length, color: "#ef4444" },
+                { label: "Available", count: (vehicles || []).filter(v => v.status === "Available").length, color: "var(--status-available)" },
+                { label: "On Trip", count: (vehicles || []).filter(v => v.status === "On Trip").length, color: "var(--status-on-trip)" },
+                { label: "In Shop", count: (vehicles || []).filter(v => v.status === "In Shop" || v.status === "Maintenance").length, color: "var(--status-in-shop)" },
+                { label: "Retired", count: (vehicles || []).filter(v => v.status === "Retired").length, color: "var(--status-retired)" },
               ].map((item) => {
                 const total = (vehicles || []).length || 1;
                 const pct = ((item.count / total) * 100).toFixed(0);

@@ -16,14 +16,13 @@ function IconTemplate({ path }: { path: string }) {
 
 function Sidebar() {
   const menu = [
-    { label: 'Dashboard', icon: 'dashboard', active: true },
-    { label: 'Fleet', icon: 'fleet' },
-    { label: 'Drivers', icon: 'drivers' },
-    { label: 'Routes', icon: 'routes' },
-    { label: 'Schedules', icon: 'schedules' },
-    { label: 'Analytics', icon: 'analytics' },
-    { label: 'Reports', icon: 'reports' },
-    { label: 'Settings', icon: 'settings' },
+    { label: "Operations", icon: "dashboard", active: true },
+    { label: "Vehicles", icon: "fleet" },
+    { label: "Drivers", icon: "drivers" },
+    { label: "Trips", icon: "routes" },
+    { label: "Maintenance", icon: "schedules" },
+    { label: "Fuel & Cost", icon: "analytics" },
+    { label: "Reports", icon: "reports" },
   ];
 
   return (
@@ -65,17 +64,17 @@ function Sidebar() {
 }
 
 const trips = [
-  { route: "MG Road → Banjara Hills",     bus: "BUS-01A", driver: "R. Kumar",   status: "In Transit", onTime: true },
-  { route: "Jubilee Hills → Hitec City",  bus: "BUS-42B", driver: "P. Reddy",   status: "In Transit", onTime: true },
-  { route: "Secunderabad → Airport",      bus: "BUS-19X", driver: "A. Singh",   status: "Delayed",    onTime: false },
-  { route: "Kukatpally → Mehdipatnam",    bus: "BUS-07C", driver: "S. Rao",     status: "In Transit", onTime: true },
+  { route: "Gandhinagar → Ahmedabad", bus: "MH04AB1234", driver: "Alex", status: "Dispatched", onTime: true },
+  { route: "Nagpur → Mumbai", bus: "UP32ZG1102", driver: "Priya Reddy", status: "Dispatched", onTime: true },
+  { route: "Bengaluru → Kochi", bus: "KA50IY5341", driver: "Vikram Khan", status: "Draft", onTime: true },
+  { route: "Delhi → Jaipur", bus: "DL01XY9876", driver: "Riya Singh", status: "Blocked", onTime: false },
 ];
 
 const kpis = [
-  { label: "Total Buses",         val: "128", delta: "+12%", icon: "fleet"     },
-  { label: "Active Routes",       val: "24",  delta: "+8%",  icon: "routes"    },
-  { label: "Today's Trips",       val: "346", delta: "+15%", icon: "tracking"  },
-  { label: "On-Time Performance", val: "92%", delta: "+5%",  icon: "analytics" },
+  { label: "Active Vehicles", val: "20", delta: "+4%", icon: "fleet" },
+  { label: "Available", val: "13", delta: "pool", icon: "routes" },
+  { label: "Active Trips", val: "4", delta: "live", icon: "tracking" },
+  { label: "Utilization", val: "20%", delta: "fleet", icon: "analytics" },
 ];
 
 export function DashboardPreview() {

@@ -12,29 +12,29 @@
 /* ── Landing page CSS variables ── */
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
+  --bg-secondary: #f4f4f5;
   --text-main: #0a0a0a;
-  --text-muted: #737373;
+  --text-muted: #525252;
   --accent-cyan: #0a0a0a;
-  --accent-cyan-hover: #1a1a1a;
-  --glass-bg: rgba(0, 0, 0, 0.04);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-border-hover: rgba(0, 0, 0, 0.2);
+  --accent-cyan-hover: #262626;
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.12);
+  --glass-border-hover: rgba(0, 0, 0, 0.28);
   --nav-height: 72px;
   --radius-lg: 16px;
   --radius-sm: 8px;
 }
 
 html.dark {
-  --bg-primary: #071318;
-  --bg-secondary: #0a1a24;
-  --text-main: #f0fdfa;
-  --text-muted: #94a3b8;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --text-main: #ffffff;
+  --text-muted: #a3a3a3;
   --accent-cyan: #ffffff;
   --accent-cyan-hover: #e5e5e5;
   --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(0, 212, 161, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(255, 255, 255, 0.28);
   --nav-height: 72px;
   --radius-lg: 16px;
   --radius-sm: 8px;
@@ -68,23 +68,29 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.06);
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .glass-panel:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.1);
+}
+html.dark .glass-panel {
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+html.dark .glass-panel:hover {
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.55);
 }
 
 /* Gradients */
 .text-gradient {
-  background: linear-gradient(90deg, #FFFFFF 0%, var(--accent-cyan) 100%);
+  background: linear-gradient(90deg, var(--text-main) 0%, var(--accent-cyan) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .text-gradient-cyan {
-  background: linear-gradient(90deg, var(--accent-cyan) 0%, #3b82f6 100%);
+  background: linear-gradient(90deg, var(--accent-cyan) 0%, var(--color-muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -118,11 +124,11 @@ body {
 .btn-outline {
   background-color: transparent;
   color: var(--text-main);
-  border-color: var(--glass-border);
+  border-color: var(--glass-border-hover);
 }
 .btn-outline:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--glass-border-hover);
+  background-color: var(--glass-bg);
+  border-color: var(--text-main);
 }
 
 /* Animations */
@@ -182,11 +188,14 @@ body {
   border-bottom: 1px solid var(--glass-border);
 }
 .feature-newspaper-grid > div {
-  background: var(--bg-primary); /* Fallback */
-  background: transparent;
+  background: var(--bg-primary);
   transition: background 0.2s;
 }
 .feature-newspaper-grid > div:hover {
+  background: var(--bg-secondary);
+}
+
+html.dark .feature-newspaper-grid > div:hover {
   background: var(--glass-bg);
 }
 
