@@ -96,6 +96,7 @@ export default function LoginPage() {
         alignItems: "flex-start",
         borderRight: "1px solid rgba(255, 255, 255, 0.05)"
       }}>
+<<<<<<< Updated upstream
         <div style={{ margin: "var(--space-4) 0 0 var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "var(--space-2)" }}>
             <div style={{ width: "24px", height: "24px", background: "#f0a500", borderRadius: "4px" }} />
@@ -104,6 +105,18 @@ export default function LoginPage() {
           <p style={{ color: "var(--color-muted)", fontSize: "1rem", margin: "0 0 var(--space-4)" }}>
             Smart Transport Operations Platform
           </p>
+=======
+        
+        <Link to="/" style={{ position: "absolute", top: "32px", left: "32px", color: "#8b949e", textDecoration: "none", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px", transition: "color 0.2s" }} onMouseOver={e => e.currentTarget.style.color = "#fff"} onMouseOut={e => e.currentTarget.style.color = "#8b949e"}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back to home
+        </Link>
+
+        <div style={{ textAlign: "center", maxWidth: "480px" }}>
+          
+          <h1 style={{ fontSize: "36px", fontWeight: 700, margin: "0 0 16px 0", letterSpacing: "-1px" }}>Join TransitOps in seconds.</h1>
+          <p style={{ margin: 0, color: "#8b949e", fontSize: "16px", lineHeight: "1.5" }}>Your friendly transport companion is ready to turn every operation into a clean, validated workflow.</p>
+>>>>>>> Stashed changes
         </div>
 
         <div style={{ margin: "0 0 0 var(--space-4)", maxWidth: "400px" }}>
@@ -145,6 +158,7 @@ export default function LoginPage() {
         justifyContent: "center",
         padding: "var(--space-4)"
       }}>
+<<<<<<< Updated upstream
         <Card style={{ width: "100%", maxWidth: "450px", padding: "var(--space-4)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: "1.625rem", fontWeight: 700 }}>Sign in to your account</h2>
           <p className="text-muted" style={{ margin: "0 0 var(--space-4)", fontSize: "0.9375rem" }}>Enter your credentials to continue</p>
@@ -188,6 +202,18 @@ export default function LoginPage() {
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
             />
+=======
+        <div style={{
+          width: "100%",
+          maxWidth: "420px",
+          background: "#080808",
+          borderRadius: "16px",
+          border: "1px solid #1f1f1f",
+          padding: "40px",
+        }}>
+          
+        
+>>>>>>> Stashed changes
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-2)", fontSize: "0.875rem" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--color-text)" }}>
