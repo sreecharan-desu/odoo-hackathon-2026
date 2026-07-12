@@ -1,7 +1,7 @@
 /** Shared form validators — TransitOps client-side mirrors of API rules */
 
 export function isValidEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim());
 }
 
 export function email(value: string, label = "Email"): string | null {
@@ -18,11 +18,22 @@ export function minLength(value: string, min: number, label = "This field"): str
   return value.trim().length >= min ? null : `${label} must be at least ${min} characters`;
 }
 
-/** Mirrors API UserCreate: password 8–128 chars */
+/** Mirrors API UserCreate: password 8–128 chars with complexity constraints */
 export function password(value: string, label = "Password"): string | null {
   if (!value) return `${label} is required`;
   if (value.length < 8) return `${label} must be at least 8 characters`;
   if (value.length > 128) return `${label} must be at most 128 characters`;
+
+  const hasUppercase = /[A-Z]/.test(value);
+  const hasLowercase = /[a-z]/.test(value);
+  const hasDigit = /[0-9]/.test(value);
+  const hasSpecial = /[^A-Za-z0-9]/.test(value);
+
+  if (!hasUppercase) return `${label} must contain at least one uppercase letter`;
+  if (!hasLowercase) return `${label} must contain at least one lowercase letter`;
+  if (!hasDigit) return `${label} must contain at least one number`;
+  if (!hasSpecial) return `${label} must contain at least one special character`;
+
   return null;
 }
 
