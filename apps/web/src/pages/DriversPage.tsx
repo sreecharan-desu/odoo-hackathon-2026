@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Spinner, Button, Pagination } from "../components/ui";
+import { Card, Spinner, Button, Pagination, StatusBadge } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
@@ -23,6 +23,8 @@ export default function DriversPage() {
   );
 
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
 
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
@@ -117,6 +119,11 @@ export default function DriversPage() {
     return "90%";
   };
 
+  const filteredDrivers = (drivers || []).filter((d) => {
+    const q = searchQuery.toLowerCase();
+    return d.name.toLowerCase().includes(q) || (d.contact_number && d.contact_number.includes(q));
+  });
+
   return (
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -125,8 +132,31 @@ export default function DriversPage() {
           <p className="text-muted">{chrome.sub}</p>
         </div>
         {allowManage && (
-          <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
+          <Button onClick={() => setIsAdding(true)}>+ Add Driver</Button>
         )}
+      </div>
+
+      {/* Driver Search Input */}
+      <div style={{ marginBottom: "16px" }}>
+        <input
+          type="text"
+          placeholder="Search driver by name or contact number..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: "100%",
+            maxWidth: "360px",
+            padding: "8px 12px",
+            fontSize: "0.875rem",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "8px",
+            color: "var(--color-text)",
+            outline: "none",
+            boxSizing: "border-box",
+            fontFamily: "inherit",
+          }}
+        />
       </div>
 
       <Card>
@@ -135,91 +165,64 @@ export default function DriversPage() {
           <p className="page-empty">Drivers API not available yet. Roster will appear here.</p>
         )}
         {error && <p className="error">{error}</p>}
-        {drivers && drivers.length === 0 && (
-          <p className="page-empty">No drivers registered yet.</p>
+        {drivers && filteredDrivers.length === 0 && (
+          <p className="page-empty">No drivers registered yet matching search.</p>
         )}
-        {drivers && drivers.length > 0 && (
+        {drivers && filteredDrivers.length > 0 && (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>DRIVER</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>LICENSE NO.</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CATEGORY</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>EXPIRY</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CONTACT</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>TRIP COMPL.</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>SAFETY</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>STATUS</th>
+                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>DRIVER</th>
+                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>CONTACT</th>
+                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600 }}>STATUS</th>
+                  <th style={{ padding: "10px 8px", color: "var(--color-muted)", fontSize: "0.75rem", fontWeight: 600, textAlign: "right" }}>MORE DETAILS</th>
                 </tr>
               </thead>
               <tbody>
-                {drivers.map((d) => {
-                  const expired = isExpired(d.license_expiry);
+                {filteredDrivers.map((d) => {
                   const isSelected = selectedDriverId === d.id;
-
-                  // Safety badge logic: if license is expired, it's not clear/safe.
-                  const isSafetyClear = !expired && d.status !== "Suspended";
-
-                  // Format expiry date as MM/YYYY
-                  let expiryLabel = d.license_expiry;
-                  try {
-                    const parts = d.license_expiry.split("-");
-                    if (parts.length === 3) {
-                      expiryLabel = `${parts[1]}/${parts[0]}`;
-                    }
-                  } catch {}
+                  const isExpanded = expandedIds[d.id] || false;
 
                   return (
                     <tr
                       key={d.id}
                       onClick={() => setSelectedDriverId(d.id)}
                       style={{
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+                        borderBottom: "1px solid var(--color-border)",
                         cursor: "pointer",
-                        background: isSelected ? "rgba(240, 165, 0, 0.08)" : "transparent"
+                        background: isSelected ? "var(--color-surface-2)" : "transparent"
                       }}
                     >
-                      <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>{d.name}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{d.license_number}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{d.license_category}</td>
-                      <td style={{ padding: "var(--space-2)", color: expired ? "var(--color-error)" : "inherit" }}>
-                        {expiryLabel} {expired && <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "var(--color-error)" }}> EXPIRED</span>}
+                      <td style={{ padding: "11px 8px", fontWeight: "bold", fontSize: "0.875rem" }}>{d.name}</td>
+                      <td style={{ padding: "11px 8px", fontSize: "0.875rem" }}>{d.contact_number ?? "—"}</td>
+                      <td style={{ padding: "11px 8px" }}>
+                        <StatusBadge status={d.status} />
                       </td>
-                      <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{d.contact_number ?? "—"}</td>
-                      <td style={{ padding: "var(--space-2)" }}>{getCompletionRate(d.name)}</td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        <span style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          background: isSafetyClear ? "rgba(40, 167, 69, 0.15)" : "rgba(220, 53, 69, 0.15)",
-                          color: isSafetyClear ? "#28a745" : "#dc3545"
-                        }}>
-                          {isSafetyClear ? "Available" : d.status === "Suspended" ? "Suspended" : "Expired"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "var(--space-2)" }}>
-                        <span style={{
-                          padding: "4px 12px",
-                          borderRadius: "12px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          background: d.status === "Available" ? "rgba(40, 167, 69, 0.15)" :
-                                      d.status === "On Trip" ? "rgba(0, 123, 255, 0.15)" :
-                                      d.status === "Suspended" ? "rgba(220, 53, 69, 0.15)" :
-                                      "rgba(108, 117, 125, 0.15)",
-                          color: d.status === "Available" ? "#28a745" :
-                                 d.status === "On Trip" ? "#007bff" :
-                                 d.status === "Suspended" ? "#dc3545" :
-                                 "#6c757d",
-                          display: "inline-block",
-                          minWidth: "75px",
-                          textAlign: "center"
-                        }}>
-                          {d.status}
-                        </span>
+                      <td style={{ padding: "11px 8px", textAlign: "right" }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedIds(prev => ({ ...prev, [d.id]: !prev[d.id] }));
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--color-muted)",
+                            cursor: "pointer",
+                            padding: "4px",
+                            display: "inline-flex",
+                            alignItems: "center"
+                          }}
+                          title={isExpanded ? "Show Less" : "Show More"}
+                        >
+                          {isExpanded ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                          )}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -233,40 +236,91 @@ export default function DriversPage() {
         )}
       </Card>
 
+      {/* Expanded details container if selected/expanded */}
+      {selectedDriverId !== null && (() => {
+        const d = (drivers ?? []).find(x => x.id === selectedDriverId);
+        if (!d) return null;
+        const expired = isExpired(d.license_expiry);
+        const isSafetyClear = !expired && d.status !== "Suspended";
+        let expiryLabel = d.license_expiry;
+        try {
+          const parts = d.license_expiry.split("-");
+          if (parts.length === 3) expiryLabel = `${parts[1]}/${parts[0]}`;
+        } catch {}
+
+        return (
+          <Card style={{ marginTop: "16px", padding: "16px", background: "var(--color-surface-2)", boxSizing: "border-box" }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: "0.8rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Detailed Profile: {d.name}
+            </h4>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px" }}>
+              <div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Number</span>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", fontFamily: "monospace" }}>{d.license_number}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Category</span>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{d.license_category}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>License Expiry</span>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: expired ? "var(--color-error)" : "inherit" }}>
+                  {expiryLabel} {expired && <span style={{ fontSize: "0.7rem", fontWeight: "bold", color: "var(--color-error)" }}> ⚠ EXPIRED</span>}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Trip Completion Rate</span>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px" }}>{getCompletionRate(d.name)}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Safety Score</span>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: "4px", color: isSafetyClear ? "var(--color-positive)" : "var(--color-error)" }}>
+                  {d.safety_score}% {isSafetyClear ? " (Clear)" : " (Risk)"}
+                </div>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* Toggle Status Bar */}
       {allowManage && (
-      <div className="status-toggle-row">
-        <span className="status-toggle-label">Toggle Status</span>
+      <div className="status-toggle-row" style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "20px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", color: "var(--color-muted)", letterSpacing: "0.05em" }}>Toggle Status:</span>
         <Button
-          style={{ background: "#28a745", borderColor: "#28a745", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-positive-bg)", borderColor: "var(--color-positive)", color: "var(--color-positive)" }}
           onClick={() => void handleToggleStatus("Available")}
           disabled={selectedDriverId === null}
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           Available
         </Button>
         <Button
-          style={{ background: "#007bff", borderColor: "#007bff", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "rgba(59,130,246,0.1)", borderColor: "#3b82f6", color: "#3b82f6" }}
           onClick={() => void handleToggleStatus("On Trip")}
           disabled={selectedDriverId === null}
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           On Trip
         </Button>
         <Button
-          style={{ background: "#6c757d", borderColor: "#6c757d", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-muted)" }}
           onClick={() => void handleToggleStatus("Off Duty")}
           disabled={selectedDriverId === null}
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           Off Duty
         </Button>
         <Button
-          style={{ background: "#dc3545", borderColor: "#dc3545", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "var(--color-danger-bg)", borderColor: "var(--color-danger)", color: "var(--color-danger)" }}
           onClick={() => void handleToggleStatus("Suspended")}
           disabled={selectedDriverId === null}
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           Suspended
         </Button>
         {selectedDriverId === null && (
-          <span style={{ fontSize: "0.8125rem", color: "var(--color-muted)" }}>(Select a driver from the list to change status)</span>
+          <span style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>(Select a driver from the list to change status)</span>
         )}
       </div>
       )}
