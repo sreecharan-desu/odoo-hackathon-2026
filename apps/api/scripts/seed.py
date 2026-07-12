@@ -1,6 +1,6 @@
 """Seed TransitOps with a compact realistic fleet dataset.
 
-Preserves demo spine (VAN-05, TRK-12, VAN-99, Alex, Expired Sam).
+Preserves demo spine (MH04AB1234, DL01XY9876, GJ05ZZ5555, Alex, Expired Sam).
 Run:  python scripts/seed.py
 """
 
@@ -322,7 +322,7 @@ def seed() -> None:
         db.add_all(drivers)
         db.flush()
 
-        available_vehicles = [v for v in vehicles if v.status == "Available" and v.registration_number != "VAN-99"]
+        available_vehicles = [v for v in vehicles if v.status == "Available" and v.registration_number != "GJ05ZZ5555"]
         on_trip_vehicles = [v for v in vehicles if v.status == "On Trip"]
         in_shop_vehicles = [v for v in vehicles if v.status == "In Shop"]
         available_drivers = [d for d in drivers if d.status == "Available" and d.name != "Expired Sam"]
@@ -363,7 +363,7 @@ def seed() -> None:
             )
 
         # Completed trips (history) — use Available fleet + Alex heavily
-        history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "VAN-99"]
+        history_pool_v = [v for v in vehicles if v.status in ("Available", "On Trip", "In Shop") and v.registration_number != "GJ05ZZ5555"]
         history_pool_d = [d for d in drivers if d.name != "Expired Sam"]
         for i in range(SEED_PROFILE["completed_trips"]):
             veh = RNG.choice(history_pool_v)
@@ -517,7 +517,7 @@ def seed() -> None:
         print(f"  Maintenance:  {db.query(MaintenanceLog).count()}")
         print(f"  Fuel logs:    {db.query(FuelLog).count()}")
         print(f"  Expenses:     {db.query(Expense).count()}")
-        print("  Demo spine kept: VAN-05, TRK-12 (In Shop), VAN-99 (Retired), Alex, Expired Sam")
+        print("  Demo spine kept: MH04AB1234, DL01XY9876 (In Shop), GJ05ZZ5555 (Retired), Alex, Expired Sam")
     finally:
         db.close()
 
