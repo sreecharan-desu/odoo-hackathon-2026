@@ -1,0 +1,41 @@
+# Environment
+.env
+.env.local
+*.pem
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build
+dist/
+build/
+.next/
+*.egg-info/
+*.tsbuildinfo
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs & DB volumes
+*.log
+postgres_data/
+
+# Distribution zip
+odoo-hackathon-2026-teammate.zip
+
+# Cursor — local per machine only
+.cursor/
+
+# Internal team tooling — never on GitHub (included in teammate zip only)
+team-playbook/
+
+# GitHub — CI workflow only
+.github/*
+!.github/workflows/
+!.github/workflows/**
