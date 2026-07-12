@@ -1,4 +1,4 @@
-"""Seed TransitOps with a large realistic fleet dataset.
+"""Seed TransitOps with a compact realistic fleet dataset.
 
 Preserves demo spine (VAN-05, TRK-12, VAN-99, Alex, Expired Sam).
 Run:  python scripts/seed.py
@@ -491,7 +491,7 @@ def seed() -> None:
         db.add_all(expenses)
         db.commit()
 
-        print("✓ Seed complete — compact fleet dataset ready.")
+        print("✓ Seed complete — compact realistic dataset ready.")
         print(f"  Login: fleet@example.com / {DEMO_PASSWORD}")
         print(f"  Users:        {db.query(User).count()}")
         print(f"  Vehicles:     {db.query(Vehicle).count()}")
