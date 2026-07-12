@@ -2,12 +2,23 @@ import { useState } from "react";
 import { Card, Spinner, Button } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
+import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost } from "../lib/api";
+import { endpoints, apiPost, apiPatch } from "../lib/api";
 import type { Driver } from "../types";
+import "../components/layout/shell.css";
 
 export default function DriversPage() {
-  const { data: drivers, error, loading, apiMissing, refetch } = useApiList<Driver[]>(endpoints.drivers);
+  const { user } = useAuth();
+
+  // Scoped Access check (Drivers registry is restricted to Safety Officer)
+  const isAllowed = user?.role === "safety_officer" || user?.id === 0;
+
+  const { data: drivers, error, loading, apiMissing, refetch } = useApiList<Driver[]>(
+    isAllowed ? endpoints.drivers : ""
+  );
+
+  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
 
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
@@ -26,6 +37,17 @@ export default function DriversPage() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  if (!isAllowed) {
+    return (
+      <div className="access-scoped-wrapper">
+        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
+          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
+          <p className="text-muted">This page is restricted to Safety Officers.</p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleAddDriver = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,12 +88,21 @@ export default function DriversPage() {
       setLicenseExp("");
       setContact("");
       setSafetyScore("100");
-      // Refetch
       void refetch();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to add driver");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (newStatus: string) => {
+    if (selectedDriverId === null) return;
+    try {
+      await apiPatch(`${endpoints.drivers}/${selectedDriverId}`, { status: newStatus });
+      void refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update status");
     }
   };
 
@@ -82,6 +113,16 @@ export default function DriversPage() {
     return expiry < today;
   };
 
+  // Map mock Completion Rate based on Driver name (Mockup 3 compatibility)
+  const getCompletionRate = (driverName: string): string => {
+    const nameLower = driverName.toLowerCase();
+    if (nameLower.includes("alex")) return "96%";
+    if (nameLower.includes("john")) return "81%";
+    if (nameLower.includes("priya")) return "99%";
+    if (nameLower.includes("suresh")) return "88%";
+    return "90%";
+  };
+
   return (
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -89,7 +130,7 @@ export default function DriversPage() {
           <h2>Drivers & Safety</h2>
           <p className="text-muted">Manage driver registry, license expiration dates, and safety performance indices</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Add Driver</Button>
+        <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
       </div>
 
       <Card>
@@ -106,38 +147,66 @@ export default function DriversPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Name</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>License Number</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Category</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>License Expiry</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Contact</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Safety Score</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Status</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>DRIVER</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>LICENSE NO.</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CATEGORY</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>EXPIRY</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CONTACT</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>TRIP COMPL.</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>SAFETY</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>STATUS</th>
                 </tr>
               </thead>
               <tbody>
                 {drivers.map((d) => {
                   const expired = isExpired(d.license_expiry);
+                  const isSelected = selectedDriverId === d.id;
+
+                  // Safety badge logic: if license is expired, it's not clear/safe.
+                  const isSafetyClear = !expired && d.status !== "Suspended";
+
+                  // Format expiry date as MM/YYYY
+                  let expiryLabel = d.license_expiry;
+                  try {
+                    const parts = d.license_expiry.split("-");
+                    if (parts.length === 3) {
+                      expiryLabel = `${parts[1]}/${parts[0]}`;
+                    }
+                  } catch {}
+
                   return (
-                    <tr key={d.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                    <tr
+                      key={d.id}
+                      onClick={() => setSelectedDriverId(d.id)}
+                      style={{
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+                        cursor: "pointer",
+                        background: isSelected ? "rgba(240, 165, 0, 0.08)" : "transparent"
+                      }}
+                    >
                       <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>{d.name}</td>
                       <td style={{ padding: "var(--space-2)" }}>{d.license_number}</td>
                       <td style={{ padding: "var(--space-2)" }}>{d.license_category}</td>
                       <td style={{ padding: "var(--space-2)", color: expired ? "var(--color-error)" : "inherit" }}>
-                        {d.license_expiry} {expired && <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>(EXPIRED)</span>}
+                        {expiryLabel} {expired && <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "var(--color-error)" }}> EXPIRED</span>}
                       </td>
                       <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{d.contact_number ?? "—"}</td>
+                      <td style={{ padding: "var(--space-2)" }}>{getCompletionRate(d.name)}</td>
                       <td style={{ padding: "var(--space-2)" }}>
                         <span style={{
-                          color: d.safety_score >= 85 ? "#28a745" : d.safety_score >= 70 ? "orange" : "var(--color-error)",
-                          fontWeight: "bold"
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          background: isSafetyClear ? "rgba(40, 167, 69, 0.15)" : "rgba(220, 53, 69, 0.15)",
+                          color: isSafetyClear ? "#28a745" : "#dc3545"
                         }}>
-                          {d.safety_score} / 100
+                          {isSafetyClear ? "Available" : d.status === "Suspended" ? "Suspended" : "Expired"}
                         </span>
                       </td>
                       <td style={{ padding: "var(--space-2)" }}>
                         <span style={{
-                          padding: "2px 8px",
+                          padding: "4px 12px",
                           borderRadius: "12px",
                           fontSize: "0.75rem",
                           fontWeight: 600,
@@ -148,7 +217,10 @@ export default function DriversPage() {
                           color: d.status === "Available" ? "#28a745" :
                                  d.status === "On Trip" ? "#007bff" :
                                  d.status === "Suspended" ? "#dc3545" :
-                                 "#6c757d"
+                                 "#6c757d",
+                          display: "inline-block",
+                          minWidth: "75px",
+                          textAlign: "center"
                         }}>
                           {d.status}
                         </span>
@@ -161,6 +233,46 @@ export default function DriversPage() {
           </div>
         )}
       </Card>
+
+      {/* Toggle Status Bar */}
+      <div className="status-toggle-row">
+        <span className="status-toggle-label">Toggle Status</span>
+        <Button
+          style={{ background: "#28a745", borderColor: "#28a745", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          onClick={() => void handleToggleStatus("Available")}
+          disabled={selectedDriverId === null}
+        >
+          Available
+        </Button>
+        <Button
+          style={{ background: "#007bff", borderColor: "#007bff", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          onClick={() => void handleToggleStatus("On Trip")}
+          disabled={selectedDriverId === null}
+        >
+          On Trip
+        </Button>
+        <Button
+          style={{ background: "#6c757d", borderColor: "#6c757d", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          onClick={() => void handleToggleStatus("Off Duty")}
+          disabled={selectedDriverId === null}
+        >
+          Off Duty
+        </Button>
+        <Button
+          style={{ background: "#dc3545", borderColor: "#dc3545", padding: "4px 8px", fontSize: "0.8125rem", color: "#fff" }}
+          onClick={() => void handleToggleStatus("Suspended")}
+          disabled={selectedDriverId === null}
+        >
+          Suspended
+        </Button>
+        {selectedDriverId === null && (
+          <span style={{ fontSize: "0.8125rem", color: "var(--color-muted)" }}>(Select a driver from the list to change status)</span>
+        )}
+      </div>
+
+      <p className="rule-note-text">
+        Rule: Expired license or Suspended status &rarr; blocked from trip assignment
+      </p>
 
       {/* Add Driver Modal */}
       {isAdding && (

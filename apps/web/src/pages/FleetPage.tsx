@@ -2,12 +2,21 @@ import { useState } from "react";
 import { Card, Spinner, Button } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
+import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import type { Vehicle } from "../types";
+import "../components/layout/shell.css";
 
 export default function FleetPage() {
-  const { data: vehicles, error, loading, apiMissing, refetch } = useApiList<Vehicle[]>(endpoints.vehicles);
+  const { user } = useAuth();
+  
+  // Scoped Access check (Fleet Registry is scoped to Fleet Manager)
+  const isAllowed = user?.role === "fleet_manager" || user?.id === 0;
+
+  const { data: vehicles, error, loading, apiMissing, refetch } = useApiList<Vehicle[]>(
+    isAllowed ? endpoints.vehicles : ""
+  );
   
   const [isAdding, setIsAdding] = useState(false);
   const [regNum, setRegNum] = useState("");
@@ -27,6 +36,22 @@ export default function FleetPage() {
   
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Table filters
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchReg, setSearchReg] = useState("");
+
+  if (!isAllowed) {
+    return (
+      <div className="access-scoped-wrapper">
+        <Card style={{ width: "100%", maxWidth: "500px", padding: "var(--space-4)", textAlign: "center" }}>
+          <h3 style={{ color: "var(--color-error)", margin: "0 0 var(--space-2)" }}>Access Scoped</h3>
+          <p className="text-muted">This page is restricted to Fleet Managers.</p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +103,14 @@ export default function FleetPage() {
     }
   };
 
+  // Filter logic
+  const filteredVehicles = (vehicles || []).filter(v => {
+    const matchesType = typeFilter === "All" || v.vehicle_type === typeFilter;
+    const matchesStatus = statusFilter === "All" || v.status === statusFilter;
+    const matchesSearch = !searchReg || v.registration_number.toLowerCase().includes(searchReg.toLowerCase());
+    return matchesType && matchesStatus && matchesSearch;
+  });
+
   return (
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -85,7 +118,41 @@ export default function FleetPage() {
           <h2>Vehicle Registry</h2>
           <p className="text-muted">Manage fleet assets, load parameters, and assignment statuses</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Add Vehicle</Button>
+        <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Vehicle</Button>
+      </div>
+
+      {/* Top Filter Bar */}
+      <div className="dashboard-filters" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-3)" }}>
+        <select
+          className="dashboard-filter-select"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="All">Type: All</option>
+          <option value="Van">Van</option>
+          <option value="Truck">Truck</option>
+          <option value="Sedan">Sedan</option>
+          <option value="SUV">SUV</option>
+        </select>
+        <select
+          className="dashboard-filter-select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="All">Status: All</option>
+          <option value="Available">Available</option>
+          <option value="On Trip">On Trip</option>
+          <option value="In Shop">In Shop</option>
+          <option value="Retired">Retired</option>
+        </select>
+        <input
+          type="text"
+          placeholder="Search reg. no..."
+          className="shell-header-search"
+          style={{ height: "28px", padding: "4px 8px", width: "180px" }}
+          value={searchReg}
+          onChange={(e) => setSearchReg(e.target.value)}
+        />
       </div>
 
       <Card>
@@ -94,48 +161,51 @@ export default function FleetPage() {
           <p className="page-empty">Fleet API not available yet. List will appear here.</p>
         )}
         {error && <p className="error">{error}</p>}
-        {vehicles && vehicles.length === 0 && (
-          <p className="page-empty">No vehicles registered yet.</p>
+        {vehicles && filteredVehicles.length === 0 && (
+          <p className="page-empty">No vehicles match the filter criteria.</p>
         )}
-        {vehicles && vehicles.length > 0 && (
+        {vehicles && filteredVehicles.length > 0 && (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Reg Number</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Name</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Type</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Max Load</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Odometer</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Cost</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Region</th>
-                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Status</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>REG. NO. (UNIQUE)</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>NAME/MODEL</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>TYPE</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>CAPACITY</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ODOMETER</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>ACQ. COST</th>
+                  <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>STATUS</th>
                 </tr>
               </thead>
               <tbody>
-                {vehicles.map((v) => (
+                {filteredVehicles.map((v) => (
                   <tr key={v.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
                     <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>{v.registration_number}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.name}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.vehicle_type}</td>
-                    <td style={{ padding: "var(--space-2)" }}>{v.max_load_kg} kg</td>
-                    <td style={{ padding: "var(--space-2)" }}>{v.odometer} km</td>
+                    <td style={{ padding: "var(--space-2)" }}>
+                      {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
+                    </td>
+                    <td style={{ padding: "var(--space-2)" }}>{v.odometer.toLocaleString()}</td>
                     <td style={{ padding: "var(--space-2)" }}>${v.acquisition_cost.toLocaleString()}</td>
-                    <td style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>{v.region ?? "—"}</td>
                     <td style={{ padding: "var(--space-2)" }}>
                       <span style={{
-                        padding: "2px 8px",
+                        padding: "4px 12px",
                         borderRadius: "12px",
                         fontSize: "0.75rem",
                         fontWeight: 600,
                         background: v.status === "Available" ? "rgba(40, 167, 69, 0.15)" :
                                     v.status === "On Trip" ? "rgba(0, 123, 255, 0.15)" :
-                                    v.status === "In Shop" ? "rgba(220, 53, 69, 0.15)" :
-                                    "rgba(108, 117, 125, 0.15)",
+                                    v.status === "In Shop" ? "rgba(255, 193, 7, 0.15)" :
+                                    "rgba(220, 53, 69, 0.15)",
                         color: v.status === "Available" ? "#28a745" :
                                v.status === "On Trip" ? "#007bff" :
-                               v.status === "In Shop" ? "#dc3545" :
-                               "#6c757d"
+                               v.status === "In Shop" ? "#ffc107" :
+                               "#dc3545",
+                        display: "inline-block",
+                        textAlign: "center",
+                        minWidth: "75px"
                       }}>
                         {v.status}
                       </span>
@@ -147,6 +217,10 @@ export default function FleetPage() {
           </div>
         )}
       </Card>
+
+      <p className="rule-note-text">
+        Rule: Registration No. must be unique &middot; Retired/In Shop vehicles are hidden from Trip Dispatcher
+      </p>
 
       {/* Add Vehicle Modal */}
       {isAdding && (

@@ -187,3 +187,218 @@
   color: var(--color-muted);
   font-size: 0.9375rem;
 }
+
+/* --- Hackathon Mockup UI additions --- */
+.shell-header-search {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  width: 240px;
+  transition: all 0.15s ease;
+}
+
+.shell-header-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.shell-header-user-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.shell-header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+}
+
+/* Dashboard Filters */
+.dashboard-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  background: rgba(255, 255, 255, 0.02);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.dashboard-filters-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: var(--space-2);
+}
+
+.dashboard-filter-select {
+  background: var(--color-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.dashboard-filter-select:focus {
+  border-color: var(--color-primary);
+}
+
+/* Split Pane Layouts */
+.split-pane-layout {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.split-pane-main {
+  flex: 2;
+  min-width: 0;
+}
+
+.split-pane-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Progress bar charts */
+.progress-chart-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 40px;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.progress-chart-label {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.progress-chart-bar-container {
+  background: rgba(255, 255, 255, 0.04);
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progress-chart-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-chart-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Live Board and Trip Cards */
+.live-board-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.trip-live-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.trip-live-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Error warning container */
+.warning-error-box {
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  background: rgba(220, 53, 69, 0.08);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+}
+
+.warning-error-title {
+  font-weight: 700;
+  color: var(--color-error);
+  margin: 0 0 4px;
+}
+
+.warning-error-desc {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.warning-error-detail {
+  font-weight: 600;
+  color: var(--color-error);
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Toggle Status Row */
+.status-toggle-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  align-items: center;
+}
+
+.status-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  margin-right: var(--space-2);
+}
+
+.rule-note-text {
+  font-size: 0.8125rem;
+  color: #ff9f43;
+  margin-top: var(--space-3);
+  font-weight: 500;
+}
+
+/* Scoped Access */
+.access-scoped-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  text-align: center;
+  min-height: 200px;
+}
+
