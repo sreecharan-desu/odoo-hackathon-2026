@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Odoo Hackathon 2026</title>
+    <title>TransitOps — Fleet Management</title>
+    <!-- FOUC prevention: apply theme class before first paint -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('transitops-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = stored === 'dark' || (!stored && prefersDark);
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
