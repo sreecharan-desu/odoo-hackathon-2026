@@ -1,11 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.controllers import api_router
 from app.core.config import settings
+from app.db.session import Base, engine
 from app.exceptions.handlers import AppError, app_error_handler
+import app.models  # noqa: F401 — register models on Base.metadata
 
-app = FastAPI(title="Odoo Hackathon API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="TransitOps API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
