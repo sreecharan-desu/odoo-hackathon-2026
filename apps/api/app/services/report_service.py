@@ -463,6 +463,16 @@ class ReportService:
             elements.extend(ReportService._build_data_table(rows))
             elements.extend(ReportService._build_cost_breakdown(rows))
             elements.extend(ReportService._build_highlights(rows))
+
+            # Generated notice
+            elements.append(Spacer(1, 8))
+            elements.append(
+                Paragraph(
+                    f"This report was automatically generated on {now.strftime('%B %d, %Y at %I:%M %p UTC')} "
+                    "from live fleet data. Figures are estimates based on logged trips, fuel entries, and maintenance records.",
+                    ParagraphStyle("Disclaimer", fontName="Helvetica-Oblique", fontSize=7, textColor=BRAND_MUTED, alignment=1),
+                )
+            )
         else:
             elements.append(Spacer(1, 40))
             elements.append(
