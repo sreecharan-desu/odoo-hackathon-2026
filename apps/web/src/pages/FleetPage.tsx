@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost } from "../lib/api";
 import { canManageFleet } from "../lib/rbac";
+import { formatInr } from "../constants";
 import type { Vehicle } from "../types";
 import "../components/layout/shell.css";
 
@@ -184,7 +185,7 @@ export default function FleetPage() {
                       {v.max_load_kg >= 1000 ? `${(v.max_load_kg / 1000).toFixed(0)} Ton` : `${v.max_load_kg} kg`}
                     </td>
                     <td style={{ padding: "var(--space-2)" }}>{v.odometer.toLocaleString()}</td>
-                    <td style={{ padding: "var(--space-2)" }}>${v.acquisition_cost.toLocaleString()}</td>
+                    <td style={{ padding: "var(--space-2)" }}>{formatInr(v.acquisition_cost)}</td>
                     <td style={{ padding: "var(--space-2)" }}>
                       <span style={{
                         padding: "4px 12px",
@@ -299,7 +300,7 @@ export default function FleetPage() {
                   />
                   <NumberField
                     id="cost"
-                    label="Acquisition Cost ($)"
+                    label="Acquisition Cost (₹)"
                     min={0}
                     value={cost}
                     error={costError}
