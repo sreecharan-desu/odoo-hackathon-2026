@@ -1,5 +1,5 @@
 import type { AuthUser } from "../types";
-import { NAV_ITEMS, ROUTES, type AppRoute, type NavItem } from "../types";
+import { ROUTES, type AppRoute, type NavItem } from "../types";
 
 export function hasRole(user: AuthUser | null | undefined, ...roles: string[]): boolean {
   if (!user) return false;
@@ -40,21 +40,37 @@ export function canViewAnalytics(user: AuthUser | null | undefined): boolean {
   return hasRole(user, "fleet_manager", "financial_analyst");
 }
 
-/** Routes each role may open (nav + deep-link guards). */
-const ROLE_ROUTES: Record<string, AppRoute[]> = {
+/** Routes each role may open (nav + deep-link guards), with role-specific sidebar labels. */
+const ROLE_NAV: Record<string, NavItem[]> = {
   fleet_manager: [
-    ROUTES.dashboard,
-    ROUTES.fleet,
-    ROUTES.drivers,
-    ROUTES.trips,
-    ROUTES.maintenance,
-    ROUTES.fuelExpenses,
-    ROUTES.analytics,
+    { path: ROUTES.dashboard, label: "Operations Overview" },
+    { path: ROUTES.fleet, label: "Vehicle Registry" },
+    { path: ROUTES.drivers, label: "Driver Roster" },
+    { path: ROUTES.trips, label: "Trip Dispatch" },
+    { path: ROUTES.maintenance, label: "Shop & Maintenance" },
+    { path: ROUTES.fuelExpenses, label: "Fuel & Expenses" },
+    { path: ROUTES.analytics, label: "Fleet Reports" },
   ],
-  driver: [ROUTES.trips, ROUTES.fuelExpenses, ROUTES.dashboard],
-  safety_officer: [ROUTES.drivers, ROUTES.dashboard],
-  financial_analyst: [ROUTES.fuelExpenses, ROUTES.analytics, ROUTES.fleet, ROUTES.dashboard],
+  driver: [
+    { path: ROUTES.trips, label: "My Trips & Deliveries" },
+    { path: ROUTES.fuelExpenses, label: "Log Fuel" },
+    { path: ROUTES.dashboard, label: "Delivery Status" },
+  ],
+  safety_officer: [
+    { path: ROUTES.drivers, label: "License & Compliance" },
+    { path: ROUTES.dashboard, label: "Safety Overview" },
+  ],
+  financial_analyst: [
+    { path: ROUTES.fuelExpenses, label: "Fuel & Cost Tracking" },
+    { path: ROUTES.analytics, label: "Profitability & ROI" },
+    { path: ROUTES.fleet, label: "Asset Cost Review" },
+    { path: ROUTES.dashboard, label: "Cost Overview" },
+  ],
 };
+
+const ROLE_ROUTES: Record<string, AppRoute[]> = Object.fromEntries(
+  Object.entries(ROLE_NAV).map(([role, items]) => [role, items.map((item) => item.path)]),
+) as Record<string, AppRoute[]>;
 
 const ROLE_HOME: Record<string, AppRoute> = {
   fleet_manager: ROUTES.dashboard,
@@ -200,9 +216,7 @@ export function canAccessRoute(user: AuthUser | null | undefined, path: string):
 
 export function getNavItemsForRole(user: AuthUser | null | undefined): NavItem[] {
   if (!user) return [];
-  const order = ROLE_ROUTES[user.role] ?? [];
-  const byPath = new Map(NAV_ITEMS.map((item) => [item.path, item]));
-  return order.map((path) => byPath.get(path)).filter((item): item is NavItem => Boolean(item));
+  return ROLE_NAV[user.role] ?? [];
 }
 
 /** Alias used by AppShell */
