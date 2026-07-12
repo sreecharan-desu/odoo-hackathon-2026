@@ -255,9 +255,9 @@ def seed() -> None:
         for prefix, vtype, lo, hi, cost_lo, cost_hi in specs[: SEED_PROFILE["vehicle_templates"]]:
             for i in range(1, SEED_PROFILE["vehicles_per_template"] + 1):
                 n += 1
-                reg = f"{prefix}-{100 + i}"
-                if any(v.registration_number == reg for v in vehicles):
-                    reg = f"{prefix}-{200 + i}"
+                reg = _registration_number()
+                while any(v.registration_number == reg for v in vehicles):
+                    reg = _registration_number()
                 status = status_cycle[(n - 1) % len(status_cycle)]
                 vehicles.append(
                     Vehicle(
