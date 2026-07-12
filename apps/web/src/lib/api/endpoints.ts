@@ -5,6 +5,7 @@ export const endpoints = {
   logout: "/api/auth/logout",
   me: "/api/auth/me",
   vehicles: "/api/vehicles",
+  vehicleDispatchPool: "/api/vehicles/dispatch-pool",
   drivers: "/api/drivers",
   trips: "/api/trips",
   maintenance: "/api/maintenance",

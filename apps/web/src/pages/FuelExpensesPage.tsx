@@ -3,12 +3,17 @@ import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
+import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
+import { canLogFuel, canManageExpenses } from "../lib/rbac";
 import type { FuelLog, Expense, Vehicle } from "../types";
 
 const PAGE_SIZE = 25;
 
 export default function FuelExpensesPage() {
+  const { user } = useAuth();
+  const allowFuel = canLogFuel(user);
+  const allowExpense = canManageExpenses(user);
   const [fuelOffset, setFuelOffset] = useState(0);
   const [expenseOffset, setExpenseOffset] = useState(0);
   const { data: fuelLogs, total: fuelTotal, error: fuelError, loading: fuelLoading, refetch: refetchFuel } = useApiList<FuelLog>(
@@ -145,8 +150,8 @@ export default function FuelExpensesPage() {
           <p className="text-muted">Track fuel logs, tolls, and operational charges across assets</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          <Button onClick={() => setIsFuelModal(true)}>Log Fuel</Button>
-          <Button onClick={() => setIsExpenseModal(true)} variant="ghost">Log Expense</Button>
+          {allowFuel && <Button onClick={() => setIsFuelModal(true)}>Log Fuel</Button>}
+          {allowExpense && <Button onClick={() => setIsExpenseModal(true)} variant="ghost">Log Expense</Button>}
         </div>
       </div>
 
