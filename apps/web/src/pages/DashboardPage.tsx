@@ -1,9 +1,15 @@
+import { useMemo, useState } from "react";
 import { Card, Spinner } from "../components/ui";
+import { SelectField } from "../components/forms";
 import { useAsync } from "../hooks/useAsync";
 import { apiGet, apiGetItems, endpoints } from "../lib/api";
-import type { DashboardKpis, Trip } from "../types";
+import type { DashboardKpis, Trip, Vehicle } from "../types";
 
 export default function DashboardPage() {
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+
   const { data: kpis, error: kpiError, loading: kpiLoading } = useAsync<DashboardKpis>(
     () => apiGet(endpoints.kpis),
     [],
@@ -13,6 +19,32 @@ export default function DashboardPage() {
     () => apiGetItems<Trip>(endpoints.trips, { limit: 10 }),
     [],
   );
+
+  const { data: vehicles, error: vehiclesError, loading: vehiclesLoading } = useAsync<Vehicle[]>(
+    () => apiGetItems<Vehicle>(endpoints.vehicles),
+    [],
+  );
+
+  const typeOptions = useMemo(() => {
+    const types = Array.from(new Set((vehicles ?? []).map((v) => v.vehicle_type).filter(Boolean))).sort();
+    return [{ value: "", label: "All types" }, ...types.map((t) => ({ value: t, label: t }))];
+  }, [vehicles]);
+
+  const regionOptions = useMemo(() => {
+    const regions = Array.from(
+      new Set((vehicles ?? []).map((v) => v.region).filter((r): r is string => Boolean(r))),
+    ).sort();
+    return [{ value: "", label: "All regions" }, ...regions.map((r) => ({ value: r, label: r }))];
+  }, [vehicles]);
+
+  const filteredVehicles = useMemo(() => {
+    return (vehicles ?? []).filter((v) => {
+      if (typeFilter && v.vehicle_type !== typeFilter) return false;
+      if (statusFilter && v.status !== statusFilter) return false;
+      if (regionFilter && v.region !== regionFilter) return false;
+      return true;
+    });
+  }, [vehicles, typeFilter, statusFilter, regionFilter]);
 
   return (
     <>
@@ -41,35 +73,101 @@ export default function DashboardPage() {
             <p className="stat-card-value" style={{ color: kpis.vehicles_in_shop > 0 ? "orange" : "inherit" }}>
               {kpis.vehicles_in_shop}
             </p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-card-label">Active Trips</p>
+            <p className="stat-card-value">{kpis.active_trips}</p>
             <p style={{ margin: "var(--space-1) 0 0", fontSize: "0.75rem", color: "var(--color-muted)" }}>
-              In active maintenance
+              {kpis.pending_trips} Pending
             </p>
           </div>
           <div className="stat-card">
             <p className="stat-card-label">Drivers On Duty</p>
             <p className="stat-card-value">{kpis.drivers_on_duty}</p>
-            <p style={{ margin: "var(--space-1) 0 0", fontSize: "0.75rem", color: "var(--color-muted)" }}>
-              Assigned to active trips
-            </p>
           </div>
           <div className="stat-card">
             <p className="stat-card-label">Fleet Utilization</p>
             <p className="stat-card-value">{kpis.fleet_utilization_pct.toFixed(1)}%</p>
-            <p style={{ margin: "var(--space-1) 0 0", fontSize: "0.75rem", color: "var(--color-muted)" }}>
-              On trip vs Total fleet
-            </p>
           </div>
           <div className="stat-card">
             <p className="stat-card-label">Safety Alerts</p>
             <p className="stat-card-value" style={{ color: kpis.safety_alerts > 0 ? "var(--color-error)" : "inherit" }}>
               {kpis.safety_alerts}
             </p>
-            <p style={{ margin: "var(--space-1) 0 0", fontSize: "0.75rem", color: "var(--color-muted)" }}>
-              Requires attention
-            </p>
           </div>
         </div>
       ) : null}
+
+      <div style={{ marginTop: "var(--space-4)" }}>
+        <Card>
+          <h3 style={{ margin: "0 0 var(--space-3)" }}>Fleet filters</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
+            <SelectField
+              id="dash-type"
+              label="Vehicle type"
+              options={typeOptions}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            />
+            <SelectField
+              id="dash-status"
+              label="Status"
+              options={[
+                { value: "", label: "All statuses" },
+                { value: "Available", label: "Available" },
+                { value: "On Trip", label: "On Trip" },
+                { value: "In Shop", label: "In Shop" },
+                { value: "Retired", label: "Retired" },
+              ]}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
+            <SelectField
+              id="dash-region"
+              label="Region"
+              options={regionOptions}
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+            />
+          </div>
+
+          {vehiclesLoading ? (
+            <Spinner />
+          ) : vehiclesError ? (
+            <p className="error">Failed to load vehicles: {vehiclesError}</p>
+          ) : (
+            <>
+              <p className="text-muted" style={{ marginTop: 0 }}>
+                Showing {filteredVehicles.length} of {vehicles?.length ?? 0} vehicles
+              </p>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                      <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Reg</th>
+                      <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Type</th>
+                      <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Region</th>
+                      <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Status</th>
+                      <th style={{ padding: "var(--space-2)", color: "var(--color-muted)" }}>Max load</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVehicles.slice(0, 12).map((v) => (
+                      <tr key={v.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                        <td style={{ padding: "var(--space-2)", fontWeight: 600 }}>{v.registration_number}</td>
+                        <td style={{ padding: "var(--space-2)" }}>{v.vehicle_type}</td>
+                        <td style={{ padding: "var(--space-2)" }}>{v.region ?? "—"}</td>
+                        <td style={{ padding: "var(--space-2)" }}>{v.status}</td>
+                        <td style={{ padding: "var(--space-2)" }}>{v.max_load_kg} kg</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
 
       <div style={{ marginTop: "var(--space-4)" }}>
         <Card>
@@ -82,13 +180,13 @@ export default function DashboardPage() {
             <p className="page-empty">No trips registered yet.</p>
           ) : trips ? (
             <div style={{ overflowX: "auto" }}>
-              <table className="ops-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
                     <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>ID</th>
                     <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>Source</th>
                     <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>Destination</th>
-                    <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>Cargo Weight</th>
+                    <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>Cargo</th>
                     <th style={{ padding: "var(--space-2) 0", color: "var(--color-muted)" }}>Status</th>
                   </tr>
                 </thead>
@@ -99,24 +197,7 @@ export default function DashboardPage() {
                       <td style={{ padding: "var(--space-2) 0" }}>{trip.source}</td>
                       <td style={{ padding: "var(--space-2) 0" }}>{trip.destination}</td>
                       <td style={{ padding: "var(--space-2) 0" }}>{trip.cargo_weight} kg</td>
-                      <td style={{ padding: "var(--space-2) 0" }}>
-                        <span style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          background: trip.status === "Completed" ? "rgba(40, 167, 69, 0.15)" :
-                                      trip.status === "Dispatched" ? "rgba(0, 123, 255, 0.15)" :
-                                      trip.status === "Cancelled" ? "rgba(220, 53, 69, 0.15)" :
-                                      "rgba(108, 117, 125, 0.15)",
-                          color: trip.status === "Completed" ? "#28a745" :
-                                 trip.status === "Dispatched" ? "#007bff" :
-                                 trip.status === "Cancelled" ? "#dc3545" :
-                                 "#6c757d"
-                        }}>
-                          {trip.status}
-                        </span>
-                      </td>
+                      <td style={{ padding: "var(--space-2) 0" }}>{trip.status}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -3,21 +3,29 @@ import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
+import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGet, apiGetItems } from "../lib/api";
+import { canDispatchTrips, canManageTrips } from "../lib/rbac";
 import type { Trip, Vehicle, Driver } from "../types";
 
 const PAGE_SIZE = 25;
 
 export default function TripsPage() {
+  const { user } = useAuth();
+  const allowSchedule = canManageTrips(user);
+  const allowDispatch = canDispatchTrips(user);
+
   const [offset, setOffset] = useState(0);
   const { data: trips, total, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip>(
     endpoints.trips,
     { limit: PAGE_SIZE, offset },
   );
   
-  // All assets loaded for list lookup and select dropdowns
+  // Full lists for trip row lookups; dispatch-pool + Available drivers for create form
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+  const [dispatchPool, setDispatchPool] = useState<Vehicle[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
   // Modals & form state
@@ -57,15 +65,19 @@ export default function TripsPage() {
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
 
-  // Fetch all vehicles and drivers
   const fetchAssets = async () => {
     setLoadingAssets(true);
     try {
-      const vehicles = await apiGetItems<Vehicle>(endpoints.vehicles);
+      const [vehicles, drivers, pool, availDrivers] = await Promise.all([
+        apiGetItems<Vehicle>(endpoints.vehicles),
+        apiGetItems<Driver>(endpoints.drivers),
+        apiGet<Vehicle[]>(endpoints.vehicleDispatchPool),
+        apiGetItems<Driver>(endpoints.drivers, { status: "Available" }),
+      ]);
       setAllVehicles(vehicles);
-
-      const drivers = await apiGetItems<Driver>(endpoints.drivers);
       setAllDrivers(drivers);
+      setDispatchPool(pool);
+      setAvailableDrivers(availDrivers);
     } catch (err) {
       console.error("Failed to load assets", err);
     } finally {
@@ -93,14 +105,14 @@ export default function TripsPage() {
     let licenseErr: string | null = null;
 
     if (!vehErr && vehicleId) {
-      const selectedVehicle = allVehicles.find(v => v.id === parseInt(vehicleId));
+      const selectedVehicle = dispatchPool.find(v => v.id === parseInt(vehicleId));
       if (selectedVehicle) {
         capacityErr = validators.cargoWithinMaxLoad(parseFloat(cargoWeight), selectedVehicle.max_load_kg);
       }
     }
 
     if (!drvErr && driverId) {
-      const selectedDriver = allDrivers.find(d => d.id === parseInt(driverId));
+      const selectedDriver = availableDrivers.find(d => d.id === parseInt(driverId));
       if (selectedDriver) {
         licenseErr = validators.licenseNotExpired(selectedDriver.license_expiry, new Date(), selectedDriver.name);
       }
@@ -220,7 +232,7 @@ export default function TripsPage() {
           <h2>Trip Dispatcher</h2>
           <p className="text-muted">Schedule routes, dispatch vehicles, and track cargo transit stages</p>
         </div>
-        <Button onClick={() => setIsAdding(true)}>Schedule Trip</Button>
+        {allowSchedule && <Button onClick={() => setIsAdding(true)}>Schedule Trip</Button>}
       </div>
 
       <Card>
@@ -250,7 +262,7 @@ export default function TripsPage() {
                   const driver = allDrivers.find(d => d.id === t.driver_id);
                   const isVehicleAvailable = vehicle ? vehicle.status === "Available" : true;
                   const isDriverAvailable = driver ? driver.status === "Available" : true;
-                  const canDispatch = isVehicleAvailable && isDriverAvailable;
+                  const assetsReady = isVehicleAvailable && isDriverAvailable;
 
                   return (
                     <tr key={t.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
@@ -291,16 +303,16 @@ export default function TripsPage() {
                         </div>
                       </td>
                       <td style={{ padding: "var(--space-2)" }}>
-                        {t.status === "Draft" && (
+                        {t.status === "Draft" && allowDispatch && (
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                             <Button 
                               style={{ padding: "4px 8px", fontSize: "0.85rem" }} 
                               onClick={() => void handleDispatch(t.id)}
-                              disabled={!canDispatch}
+                              disabled={!assetsReady}
                             >
                               Dispatch
                             </Button>
-                            {!canDispatch && (
+                            {!assetsReady && (
                               <span style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>
                                 Assets busy/shop
                               </span>
@@ -312,10 +324,12 @@ export default function TripsPage() {
                             )}
                           </div>
                         )}
-                        {t.status === "Dispatched" && (
+                        {t.status === "Dispatched" && allowSchedule && (
                           <div style={{ display: "flex", gap: "var(--space-1)" }}>
                             <Button style={{ background: "#28a745", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => setCompletingTripId(t.id)}>Complete</Button>
-                            <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                            {allowDispatch && (
+                              <Button variant="ghost" style={{ border: "1px solid #dc3545", color: "#dc3545", padding: "4px 8px", fontSize: "0.85rem" }} onClick={() => void handleCancel(t.id)}>Cancel</Button>
+                            )}
                           </div>
                         )}
                         {t.status === "Completed" && (
@@ -388,13 +402,13 @@ export default function TripsPage() {
 
                   <SelectField
                     id="vehicle"
-                    label="Select Vehicle *"
+                    label="Select Vehicle (dispatch pool) *"
                     required
-                    options={allVehicles.map(v => ({
+                    options={dispatchPool.map(v => ({
                       value: String(v.id),
-                      label: `${v.registration_number} - ${v.name} (Max: ${v.max_load_kg} kg) [${v.status}]`
+                      label: `${v.registration_number} - ${v.name} (Max: ${v.max_load_kg} kg)`
                     }))}
-                    placeholder="-- Select Vehicle --"
+                    placeholder={dispatchPool.length ? "-- Select Available Vehicle --" : "-- No vehicles in dispatch pool --"}
                     value={vehicleId}
                     error={vehicleIdError}
                     onChange={(e) => {
@@ -405,13 +419,13 @@ export default function TripsPage() {
 
                   <SelectField
                     id="driver"
-                    label="Select Driver *"
+                    label="Select Driver (Available) *"
                     required
-                    options={allDrivers.map(d => ({
+                    options={availableDrivers.map(d => ({
                       value: String(d.id),
-                      label: `${d.name} (Safety: ${d.safety_score}) [${d.status}]`
+                      label: `${d.name} (Safety: ${d.safety_score})`
                     }))}
-                    placeholder="-- Select Driver --"
+                    placeholder={availableDrivers.length ? "-- Select Available Driver --" : "-- No available drivers --"}
                     value={driverId}
                     error={driverIdError}
                     onChange={(e) => {

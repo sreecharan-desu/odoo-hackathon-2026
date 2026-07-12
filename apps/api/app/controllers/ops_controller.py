@@ -110,11 +110,17 @@ def operational_cost(
 @router.get("/reports/operational.csv")
 def operational_csv(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> PlainTextResponse:
     vehicles = VehicleService.list_all(db)
-    lines = ["vehicle_id,registration_number,status,fuel_cost,maintenance_cost,other_expenses,total"]
+    lines = [
+        "vehicle_id,registration_number,status,distance_km,fuel_liters,fuel_efficiency_km_per_l,"
+        "fuel_cost,maintenance_cost,other_expenses,estimated_revenue,acquisition_cost,roi,total"
+    ]
     for v in vehicles:
         costs = DashboardService.operational_cost(db, v.id)
         lines.append(
             f"{v.id},{v.registration_number},{v.status},"
-            f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},{costs['total_operational_cost']}"
+            f"{costs['distance_km']},{costs['fuel_liters']},{costs['fuel_efficiency_km_per_l']},"
+            f"{costs['fuel_cost']},{costs['maintenance_cost']},{costs['other_expenses']},"
+            f"{costs['estimated_revenue']},{costs['acquisition_cost']},{costs['roi']},"
+            f"{costs['total_operational_cost']}"
         )
     return PlainTextResponse("\n".join(lines) + "\n", media_type="text/csv")
