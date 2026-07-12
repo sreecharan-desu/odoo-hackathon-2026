@@ -565,7 +565,7 @@ export default function TripsPage() {
                 />
                 <NumberField
                   id="fuelCost"
-                  label="Total Fuel Cost ($)"
+                  label="Total Fuel Cost (₹)"
                   min={0}
                   step="0.01"
                   value={fuelCost}

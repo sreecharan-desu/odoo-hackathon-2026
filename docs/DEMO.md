@@ -11,6 +11,8 @@ Created by `apps/api/scripts/seed.py`:
 | Safety Officer | safety@example.com | Password123! |
 | Financial Analyst | finance@example.com | Password123! |
 
+Money amounts in the UI are **INR (₹)**. ROI uses estimated revenue of ₹40 per completed trip km.
+
 ## Seeded data
 
 The seed loads a full fleet (60+ vehicles, 40+ drivers, 150+ trips, plus fuel, maintenance, and expenses). Fixed demo rows:
