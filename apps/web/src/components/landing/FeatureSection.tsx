@@ -89,23 +89,11 @@ export function FeatureSection() {
       {/* Divider line */}
       <div style={{ borderTop: "1px solid var(--glass-border)", marginBottom: "0" }} />
 
-      {/* Feature grid — borderless row layout */}
-      <div className="container" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      {/* Feature grid — newspaper responsive layout */}
+      <div className="container feature-newspaper-grid">
         {features.map((feat, i) => {
-          const isLastRow = i >= 3;
-          const isRightEdge = (i + 1) % 3 === 0;
           return (
-            <div key={i} style={{
-              padding: "36px 32px",
-              display: "flex",
-              flexDirection: "column",
-              borderRight: isRightEdge ? "none" : "1px solid var(--glass-border)",
-              borderBottom: isLastRow ? "none" : "1px solid var(--glass-border)",
-              transition: "background 0.2s",
-            }}
-              onMouseOver={e => (e.currentTarget.style.background = "var(--glass-bg)")}
-              onMouseOut={e => (e.currentTarget.style.background = "transparent")}
-            >
+            <div key={i} style={{ padding: "36px 32px", display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
                 <FeatureIcon type={feat.icon} />
                 <span style={{
