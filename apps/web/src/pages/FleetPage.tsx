@@ -427,19 +427,7 @@ export default function FleetPage() {
 
       {/* Add Vehicle Modal */}
       {isAdding && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: "var(--space-4)"
-        }}>
+        <div className="modal-overlay">
           <Card style={{ width: "100%", maxWidth: "500px", position: "relative" }}>
             <h3 style={{ margin: "0 0 var(--space-3)" }}>Add New Vehicle</h3>
             <form onSubmit={(e) => void handleAddVehicle(e)}>
