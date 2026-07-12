@@ -208,3 +208,21 @@ class DashboardService:
             "acquisition_cost": acquisition,
             "roi": roi,
         }
+
+    @staticmethod
+    def operational_costs_all(db: Session) -> list[dict]:
+        """Return operational cost metrics for every vehicle (single list for analytics UI)."""
+        vehicles = VehicleService.list_all(db)
+        rows: list[dict] = []
+        for vehicle in vehicles:
+            costs = DashboardService.operational_cost(db, vehicle.id)
+            rows.append(
+                {
+                    **costs,
+                    "registration_number": vehicle.registration_number,
+                    "name": vehicle.name,
+                    "status": vehicle.status,
+                    "vehicle_type": vehicle.vehicle_type,
+                }
+            )
+        return rows
