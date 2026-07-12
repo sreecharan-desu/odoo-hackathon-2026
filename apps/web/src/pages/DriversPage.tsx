@@ -5,7 +5,7 @@ import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiPatch } from "../lib/api";
-import { canManageDrivers } from "../lib/rbac";
+import { canManageDrivers, pageChrome } from "../lib/rbac";
 import type { Driver } from "../types";
 import "../components/layout/shell.css";
 
@@ -14,6 +14,7 @@ const PAGE_SIZE = 50;
 export default function DriversPage() {
   const { user } = useAuth();
   const allowManage = canManageDrivers(user);
+  const chrome = pageChrome(user, "drivers");
   const [offset, setOffset] = useState(0);
 
   const { data: drivers, total, error, loading, apiMissing, refetch } = useApiList<Driver>(
@@ -119,8 +120,8 @@ export default function DriversPage() {
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Drivers & Safety</h2>
-          <p className="text-muted">Manage driver registry, license expiration dates, and safety performance indices</p>
+          <h2>{chrome.title}</h2>
+          <p className="text-muted">{chrome.sub}</p>
         </div>
         {allowManage && (
           <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>

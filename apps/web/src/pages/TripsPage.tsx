@@ -5,7 +5,7 @@ import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
 import { endpoints, apiPost, apiGet, apiGetItems } from "../lib/api";
-import { canDispatchTrips, canManageTrips } from "../lib/rbac";
+import { canDispatchTrips, canManageTrips, pageChrome } from "../lib/rbac";
 import type { Trip, Vehicle, Driver } from "../types";
 import "../components/layout/shell.css";
 
@@ -15,6 +15,7 @@ export default function TripsPage() {
   const { user } = useAuth();
   const allowSchedule = canManageTrips(user);
   const allowDispatch = canDispatchTrips(user);
+  const chrome = pageChrome(user, "trips");
   const [offset, setOffset] = useState(0);
 
   const { data: trips, total, error: tripsError, loading: tripsLoading, refetch: refetchTrips } = useApiList<Trip>(
@@ -229,8 +230,8 @@ export default function TripsPage() {
   return (
     <>
       <div className="page-header">
-        <h2>Trip Dispatcher</h2>
-        <p className="text-muted">Manage scheduled routes, asset dispatches, and active trip logs</p>
+        <h2>{chrome.title}</h2>
+        <p className="text-muted">{chrome.sub}</p>
       </div>
 
       <div className="split-pane-layout">

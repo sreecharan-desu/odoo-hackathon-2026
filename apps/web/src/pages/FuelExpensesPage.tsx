@@ -5,7 +5,7 @@ import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
 import { useAuth } from "../hooks/useAuth";
 import { endpoints, apiPost, apiGetItems } from "../lib/api";
-import { canLogFuel, canManageExpenses } from "../lib/rbac";
+import { canLogFuel, canManageExpenses, pageChrome } from "../lib/rbac";
 import { formatInr } from "../constants";
 import type { FuelLog, Expense, Vehicle } from "../types";
 
@@ -15,6 +15,7 @@ export default function FuelExpensesPage() {
   const { user } = useAuth();
   const allowFuel = canLogFuel(user);
   const allowExpense = canManageExpenses(user);
+  const chrome = pageChrome(user, "fuel");
   const [fuelOffset, setFuelOffset] = useState(0);
   const [expenseOffset, setExpenseOffset] = useState(0);
   const { data: fuelLogs, total: fuelTotal, error: fuelError, loading: fuelLoading, refetch: refetchFuel } = useApiList<FuelLog>(
@@ -147,8 +148,8 @@ export default function FuelExpensesPage() {
     <>
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Fuel & Expenses</h2>
-          <p className="text-muted">Track fuel logs, tolls, and operational charges across assets</p>
+          <h2>{chrome.title}</h2>
+          <p className="text-muted">{chrome.sub}</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
           {allowFuel && <Button onClick={() => setIsFuelModal(true)}>Log Fuel</Button>}
