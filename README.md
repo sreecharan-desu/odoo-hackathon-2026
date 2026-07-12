@@ -106,10 +106,13 @@ bash scripts/setup.sh
 
 ```bash
 cd apps/api
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # first time
 pip install -r requirements.txt
+python scripts/seed.py
 uvicorn app.main:app --reload --port 8000
 ```
+
+Demo login after seed: `fleet@example.com` / `Password123!`
 
 **5. Start the web app** *(terminal 2)*
 
@@ -124,9 +127,31 @@ npm run dev
 | Service | URL |
 |---------|-----|
 | API health | http://localhost:8000/api/health |
+| API docs | http://localhost:8000/docs |
 | Web app | http://localhost:5173 |
 
+> Postgres is mapped to host port **5433** by default (see `.env.example`) so it does not clash with other local Postgres instances.
+
 Makefile shortcuts: `make dev-db` · `make dev-api` · `make dev-web`
+
+---
+
+## How we meet Odoo evaluation criteria
+
+| Criterion | What we built |
+|-----------|----------------|
+| Database design | PostgreSQL with normalized fleet tables (vehicles, drivers, trips, maintenance, fuel, expenses) and FK/unique constraints |
+| Own backend APIs | Custom FastAPI — no Firebase / Supabase / MongoDB Atlas |
+| Dynamic data | Seed script + live CRUD; UI reads from the API, not static JSON |
+| Input validation | Pydantic schemas + service-layer business rules with clear error messages; frontend validators |
+| Collaborative Git | Four contributors; feature branches and PRs from each member |
+| Clean UI | TransitOps mockup-aligned shell (sidebar, KPIs, status badges) |
+| Modularity | Layered API (`controllers` / `services` / `models` / `schemas`) and owned frontend folders |
+| Security | Password hashing, JWT auth, role-based access |
+| Logic / attention to detail | Mandatory fleet rules (capacity, license expiry, status transitions) enforced in services |
+| No trendy fluff | No AI / blockchain — product logic only |
+
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) and [docs/DEMO.md](./docs/DEMO.md).
 
 ---
 
@@ -145,7 +170,9 @@ We use pull requests and review each other's work before merging to `main`. See 
 
 ## Documentation
 
-- [Architecture](./docs/ARCHITECTURE.md) — data model and API contract *(updated on hackathon day)*
+- [Architecture](./docs/ARCHITECTURE.md) — data model and API contract
+- [Team tasks](./docs/TEAM_TASKS.md) — ownership and screens
+- [Demo script](./docs/DEMO.md) — 90-second flow + credentials
 - [Stack decisions](./docs/STACK.md) — when and why we add new technology
 
 ---
