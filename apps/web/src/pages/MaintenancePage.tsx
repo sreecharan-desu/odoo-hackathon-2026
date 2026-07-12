@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Card, Spinner, Button, Pagination } from "../components/ui";
+import { Card, Spinner, Button, Pagination, Skeleton } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useApiList } from "../hooks/useApiList";
@@ -226,7 +226,24 @@ export default function MaintenancePage() {
 
         {/* Main list container */}
         <div>
-          {loading && <Spinner />}
+          {loading && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+              {[1, 2, 3, 4].map(i => (
+                <Card key={i} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <Skeleton width="40%" height={16} />
+                    <Skeleton width="20%" height={18} />
+                  </div>
+                  <Skeleton width="90%" height={14} />
+                  <Skeleton width="60%" height={14} />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                    <Skeleton width="30%" height={12} />
+                    <Skeleton width="30%" height={12} />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
           {apiMissing && (
             <p className="page-empty">Maintenance API not available yet. Work orders will appear here.</p>
           )}
