@@ -1,0 +1,17 @@
+apiVersion: skaffold/v4beta3
+kind: Config
+manifests:
+  rawYaml:
+    - ./k8s/*.yaml
+build:
+  local:
+    push: false
+  artifacts:
+    - image: transitops-api
+      context: apps/api
+      docker:
+        dockerfile: Dockerfile
+    - image: transitops-web
+      context: apps/web
+      docker:
+        dockerfile: Dockerfile
