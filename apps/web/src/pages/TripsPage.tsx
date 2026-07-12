@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
@@ -38,21 +38,30 @@ export default function TripsPage() {
   const [loadingAssets, setLoadingAssets] = useState(false);
   const assetsFetched = useRef(false);
 
-  const fetchAssets = async () => {
-    setLoadingAssets(true);
+  const fetchStaticAssets = async () => {
     try {
-      const [vehicles, drivers, pool, availDrivers] = await Promise.all([
+      const [vehicles, drivers] = await Promise.all([
         apiGetItems<Vehicle>(endpoints.vehicles),
         apiGetItems<Driver>(endpoints.drivers),
-        apiGet<Vehicle[]>(endpoints.vehicleDispatchPool),
-        apiGetItems<Driver>(endpoints.drivers, { status: "Available" }),
       ]);
       setAllVehicles(vehicles);
       setAllDrivers(drivers);
+    } catch (err) {
+      console.error("Failed to load static assets", err);
+    }
+  };
+
+  const fetchDynamicAssets = async () => {
+    setLoadingAssets(true);
+    try {
+      const [pool, availDrivers] = await Promise.all([
+        apiGet<Vehicle[]>(endpoints.vehicleDispatchPool),
+        apiGetItems<Driver>(endpoints.drivers, { status: "Available" }),
+      ]);
       setDispatchPool(pool);
       setAvailableDrivers(availDrivers);
     } catch (err) {
-      console.error("Failed to load assets", err);
+      console.error("Failed to load dynamic assets", err);
     } finally {
       setLoadingAssets(false);
     }
@@ -62,7 +71,8 @@ export default function TripsPage() {
   useEffect(() => {
     if (!assetsFetched.current) {
       assetsFetched.current = true;
-      void fetchAssets();
+      void fetchStaticAssets();
+      void fetchDynamicAssets();
     }
   }, []);
 
@@ -150,7 +160,7 @@ export default function TripsPage() {
       setPlannedDist("");
       void refetchTrips();
       // Also refresh dispatch pool & available drivers after creating a trip
-      void fetchAssets();
+      void fetchDynamicAssets();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to create trip");
     } finally {
@@ -163,7 +173,7 @@ export default function TripsPage() {
     try {
       await apiPost(`/api/trips/${tripId}/dispatch`, {});
       void refetchTrips();
-      void fetchAssets();
+      void fetchDynamicAssets();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to dispatch trip";
       setDispatchError(prev => ({ ...prev, [tripId]: msg }));
@@ -175,7 +185,7 @@ export default function TripsPage() {
     try {
       await apiPost(`/api/trips/${tripId}/cancel`, {});
       void refetchTrips();
-      void fetchAssets();
+      void fetchDynamicAssets();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to cancel trip");
     }
@@ -219,7 +229,7 @@ export default function TripsPage() {
       setFuelConsumed("");
       setFuelCost("");
       void refetchTrips();
-      void fetchAssets();
+      void fetchDynamicAssets();
     } catch (err) {
       setCompleteError(err instanceof Error ? err.message : "Failed to complete trip");
     } finally {
@@ -227,11 +237,89 @@ export default function TripsPage() {
     }
   };
 
+  const stats = useMemo(() => {
+    const list = trips || [];
+    const totalCount = list.length;
+    const completed = list.filter(t => t.status === "Completed").length;
+    const dispatched = list.filter(t => t.status === "Dispatched").length;
+    const draft = list.filter(t => t.status === "Draft").length;
+    const cancelled = list.filter(t => t.status === "Cancelled").length;
+    
+    // total cargo weight currently in transit
+    const activeCargo = list
+      .filter(t => t.status === "Dispatched")
+      .reduce((sum, t) => sum + t.cargo_weight, 0);
+
+    return { totalCount, completed, dispatched, draft, cancelled, activeCargo };
+  }, [trips]);
+
+  const totalTripsForPct = stats.totalCount || 1;
+  const draftPct = (stats.draft / totalTripsForPct) * 100;
+  const dispatchedPct = (stats.dispatched / totalTripsForPct) * 100;
+  const completedPct = (stats.completed / totalTripsForPct) * 100;
+  const cancelledPct = (stats.cancelled / totalTripsForPct) * 100;
+
   return (
     <>
       <div className="page-header">
         <h2>{chrome.title}</h2>
         <p className="text-muted">{chrome.sub}</p>
+      </div>
+
+      {/* Metrics Summary Card with Visualization Chart */}
+      <div style={{ marginBottom: "24px" }}>
+        <Card style={{ padding: "20px" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "0.72rem", letterSpacing: "0.1em", color: "var(--color-muted)", textTransform: "uppercase" }}>
+            Trip Dispatch Metrics
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px", marginBottom: "20px" }}>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Active Dispatches</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.dispatched}</div>
+            </div>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Draft / Scheduled</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.draft}</div>
+            </div>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Cargo In Transit</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.activeCargo.toLocaleString()} kg</div>
+            </div>
+            <div>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>Total Managed</span>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--color-text)", marginTop: "4px" }}>{stats.totalCount}</div>
+            </div>
+          </div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--color-muted)", marginBottom: "6px" }}>
+              <span>STATUS DISTRIBUTION</span>
+              <span>{stats.completed} Completed · {stats.dispatched} Dispatched · {stats.draft} Draft · {stats.cancelled} Cancelled</span>
+            </div>
+            <div style={{
+              display: "flex",
+              height: "10px",
+              borderRadius: "99px",
+              overflow: "hidden",
+              background: "var(--color-surface-2)",
+            }}>
+              {stats.completed > 0 && (
+                <div style={{ width: `${completedPct}%`, background: "var(--color-success, #22c55e)", transition: "width 0.5s" }} title={`Completed: ${stats.completed}`} />
+              )}
+              {stats.dispatched > 0 && (
+                <div style={{ width: `${dispatchedPct}%`, background: "var(--color-info, #3b82f6)", transition: "width 0.5s" }} title={`Dispatched: ${stats.dispatched}`} />
+              )}
+              {stats.draft > 0 && (
+                <div style={{ width: `${draftPct}%`, background: "var(--color-muted)", transition: "width 0.5s" }} title={`Draft: ${stats.draft}`} />
+              )}
+              {stats.cancelled > 0 && (
+                <div style={{ width: `${cancelledPct}%`, background: "var(--color-danger, #ef4444)", transition: "width 0.5s" }} title={`Cancelled: ${stats.cancelled}`} />
+              )}
+            </div>
+            {stats.totalCount === 0 && (
+              <div style={{ fontSize: "0.75rem", color: "var(--color-muted)", fontStyle: "italic", marginTop: "4px" }}>No trips on board to calculate status distribution.</div>
+            )}
+          </div>
+        </Card>
       </div>
 
       <div className="split-pane-layout">
@@ -441,7 +529,17 @@ export default function TripsPage() {
                   const sc = STATUS_COLORS[t.status] ?? STATUS_COLORS["Draft"];
 
                   return (
-                    <div key={t.id} className="trip-live-card">
+                    <div key={t.id} className="trip-live-card" style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "16px",
+                      background: "var(--color-surface-2)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "10px",
+                      gap: "16px",
+                      marginBottom: "12px",
+                    }}>
                       {/* Left column */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
