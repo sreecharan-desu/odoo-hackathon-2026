@@ -13,4 +13,5 @@ export const endpoints = {
   expenses: "/api/expenses",
   kpis: "/api/dashboard/kpis",
   reportsCsv: "/api/reports/operational.csv",
+  operationalCosts: "/api/reports/operational-costs",
 } as const;

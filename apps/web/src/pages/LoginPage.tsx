@@ -1,10 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Button, Card, Spinner } from "../components/ui";
-import { TextField, PasswordField, SelectField } from "../components/forms";
+import { TextField, PasswordField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
-import { ROUTES } from "../types";
+import { canAccessRoute, getHomeRoute } from "../lib/rbac";
 import "../components/layout/shell.css";
 
 type LocationState = {
@@ -21,11 +21,14 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const { user, loading, login } = useAuth();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from ?? ROUTES.dashboard;
+  const requested = (location.state as LocationState | null)?.from;
+  const home = user ? getHomeRoute(user) : "/";
+  const redirectTo =
+    user && requested && canAccessRoute(user, requested) ? requested : home;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState("fleet_manager");
+  const [selectedDemo, setSelectedDemo] = useState("fleet_manager");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,14 +43,13 @@ export default function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    // Client-side validations
     const emailErr = validators.email(email);
     const passErr = validators.password(password);
 
@@ -63,7 +65,6 @@ export default function LoginPage() {
       await login({ email, password });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
-      // Render locked or credential errors cleanly
       if (message.toLowerCase().includes("credentials") || message.toLowerCase().includes("unauthorized")) {
         setError("Invalid credentials. Account locked after 5 failed attempts.");
       } else {
@@ -77,7 +78,7 @@ export default function LoginPage() {
   const handlePreFill = (demoEmail: string, demoPass: string, demoRole: string) => {
     setEmail(demoEmail);
     setPassword(demoPass);
-    setSelectedRole(demoRole);
+    setSelectedDemo(demoRole);
     setEmailError(null);
     setPasswordError(null);
     setError(null);
@@ -85,7 +86,6 @@ export default function LoginPage() {
 
   return (
     <div className="auth-layout" style={{ display: "flex", width: "100%", padding: 0 }}>
-      {/* Left panel - Brand & Demo roles */}
       <div style={{
         flex: 1,
         background: "linear-gradient(135deg, #1b2430, #111823)",
@@ -107,7 +107,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ margin: "0 0 0 var(--space-4)", maxWidth: "400px" }}>
-          <h2 style={{ fontSize: "1.25rem", color: "#fff", margin: "0 0 var(--space-3)" }}>One login, four roles:</h2>
+          <h2 style={{ fontSize: "1.25rem", color: "#fff", margin: "0 0 var(--space-3)" }}>Demo accounts (click to fill):</h2>
           <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
             {DEMO_ACCOUNTS.map((acc) => (
               <li
@@ -118,25 +118,25 @@ export default function LoginPage() {
                   alignItems: "center",
                   gap: "var(--space-2)",
                   cursor: "pointer",
-                  color: selectedRole === acc.roleValue ? "#f0a500" : "var(--color-muted)",
+                  color: selectedDemo === acc.roleValue ? "#f0a500" : "var(--color-muted)",
                   fontSize: "1rem",
-                  fontWeight: selectedRole === acc.roleValue ? "600" : "normal",
+                  fontWeight: selectedDemo === acc.roleValue ? "600" : "normal",
                   transition: "all 0.15s ease"
                 }}
               >
-                <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: selectedRole === acc.roleValue ? "#f0a500" : "var(--color-muted)" }} />
+                <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: selectedDemo === acc.roleValue ? "#f0a500" : "var(--color-muted)" }} />
                 {acc.role}
+                <span style={{ fontSize: "0.8125rem", opacity: 0.7 }}>({acc.email})</span>
               </li>
             ))}
           </ul>
         </div>
 
         <div style={{ margin: "0 0 var(--space-4) var(--space-4)", color: "var(--color-muted)", fontSize: "0.8125rem", letterSpacing: "0.05em" }}>
-          TRANSITOPS &copy; 2026 &middot; RBAC ENABLED
+          TRANSITOPS &copy; 2026 &middot; ROLE FROM ACCOUNT
         </div>
       </div>
 
-      {/* Right panel - Form */}
       <div style={{
         flex: 1,
         background: "var(--color-bg)",
@@ -147,13 +147,15 @@ export default function LoginPage() {
       }}>
         <Card style={{ width: "100%", maxWidth: "450px", padding: "var(--space-4)" }}>
           <h2 style={{ margin: "0 0 4px", fontSize: "1.625rem", fontWeight: 700 }}>Sign in to your account</h2>
-          <p className="text-muted" style={{ margin: "0 0 var(--space-4)", fontSize: "0.9375rem" }}>Enter your credentials to continue</p>
+          <p className="text-muted" style={{ margin: "0 0 var(--space-4)", fontSize: "0.9375rem" }}>
+            Email and password only — your role is loaded from the account after login.
+          </p>
           <form className="auth-form" onSubmit={(e) => void handleSubmit(e)}>
             <TextField
               id="email"
               label="EMAIL"
               type="email"
-              placeholder="Raven.k@transitops.in"
+              placeholder="fleet@example.com"
               autoComplete="email"
               required
               value={email}
@@ -174,19 +176,6 @@ export default function LoginPage() {
                 setPassword(e.target.value);
                 if (passwordError) setPasswordError(null);
               }}
-            />
-            <SelectField
-              id="roleSelect"
-              label="ROLE (RBAC)"
-              required
-              options={[
-                { value: "fleet_manager", label: "Fleet Manager" },
-                { value: "driver", label: "Driver" },
-                { value: "safety_officer", label: "Safety Officer" },
-                { value: "financial_analyst", label: "Financial Analyst" },
-              ]}
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
             />
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-2)", fontSize: "0.875rem" }}>
@@ -235,10 +224,10 @@ export default function LoginPage() {
             <div style={{ fontSize: "0.8125rem", color: "var(--color-muted)", lineHeight: 1.5 }}>
               <p style={{ fontWeight: 600, margin: "0 0 6px" }}>Access is scoped by role after login:</p>
               <ul style={{ listStyleType: "none", padding: 0, margin: 0 }}>
-                <li>&bull; Fleet Manager &rarr; Fleet, Maintenance</li>
-                <li>&bull; Dispatcher &rarr; Dashboard, Trips</li>
-                <li>&bull; Safety Officer &rarr; Drivers, Compliance</li>
-                <li>&bull; Financial Analyst &rarr; Fuel &amp; Expenses, Analytics</li>
+                <li>&bull; Fleet Manager &rarr; full ops (Fleet, Trips, Maintenance, Analytics)</li>
+                <li>&bull; Driver &rarr; Trips-first, deliveries &amp; fuel logs</li>
+                <li>&bull; Safety Officer &rarr; Drivers, licenses &amp; safety scores</li>
+                <li>&bull; Financial Analyst &rarr; Fuel, expenses &amp; Analytics</li>
               </ul>
             </div>
           </form>
