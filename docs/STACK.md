@@ -9,10 +9,11 @@ Technology choices for TransitOps. Prefer a small, understandable stack that sup
 | Database | PostgreSQL 16 | Relational model with constraints |
 | API | FastAPI | Typed routes, Pydantic validation |
 | ORM | SQLAlchemy | Models and queries |
-| Migrations | Alembic (optional) | Add when schema changes need versioning |
+| Migrations | Alembic | Versioned schema changes |
 | Web | React 19 + Vite | SPA client |
 | Language | TypeScript | Shared contracts with the API |
 | Auth | JWT + password hashing | Stateless API sessions |
+| Runtime | Docker Compose | Postgres + API + web in one command |
 
 ## Not used (by design)
 

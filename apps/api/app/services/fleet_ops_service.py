@@ -11,15 +11,22 @@ from app.models.maintenance import MaintenanceLog
 from app.models.vehicle import Vehicle
 from app.schemas import ExpenseCreate, FuelLogCreate, MaintenanceCreate
 from app.services.vehicle_service import VehicleService
+from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
 
 
 class MaintenanceService:
     @staticmethod
-    def list(db: Session, status: str | None = None) -> list[MaintenanceLog]:
+    def list(
+        db: Session,
+        status: str | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[MaintenanceLog]:
         q = db.query(MaintenanceLog).order_by(MaintenanceLog.id.desc())
         if status:
             q = q.filter(MaintenanceLog.status == status)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def open(db: Session, data: MaintenanceCreate) -> MaintenanceLog:
@@ -62,11 +69,17 @@ class MaintenanceService:
 
 class FuelService:
     @staticmethod
-    def list(db: Session, vehicle_id: int | None = None) -> list[FuelLog]:
+    def list(
+        db: Session,
+        vehicle_id: int | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[FuelLog]:
         q = db.query(FuelLog).order_by(FuelLog.id.desc())
         if vehicle_id:
             q = q.filter(FuelLog.vehicle_id == vehicle_id)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def create(db: Session, data: FuelLogCreate) -> FuelLog:
@@ -85,11 +98,17 @@ class FuelService:
 
 class ExpenseService:
     @staticmethod
-    def list(db: Session, vehicle_id: int | None = None) -> list[Expense]:
+    def list(
+        db: Session,
+        vehicle_id: int | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[Expense]:
         q = db.query(Expense).order_by(Expense.id.desc())
         if vehicle_id:
             q = q.filter(Expense.vehicle_id == vehicle_id)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def create(db: Session, data: ExpenseCreate) -> Expense:

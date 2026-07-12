@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../constants";
 import { Card, Spinner, Button } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
-import { apiGet } from "../lib/api";
+import { apiGet, apiGetItems } from "../lib/api";
 import type { Vehicle } from "../types";
 
 type VehicleWithCosts = Vehicle & {
@@ -15,9 +15,14 @@ type VehicleWithCosts = Vehicle & {
 
 export default function AnalyticsPage() {
   const { data: fleetCosts, error, loading } = useAsync<VehicleWithCosts[]>(async () => {
-    const vehicles = await apiGet<Vehicle[]>("/api/vehicles");
+    const vehicles = await apiGetItems<Vehicle>("/api/vehicles");
     const costPromises = vehicles.map(async (v) => {
-      const costs = await apiGet<any>(`/api/vehicles/${v.id}/operational-cost`);
+      const costs = await apiGet<{
+        fuel_cost: number;
+        maintenance_cost: number;
+        other_expenses: number;
+        total_operational_cost: number;
+      }>(`/api/vehicles/${v.id}/operational-cost`);
       return {
         ...v,
         costs

@@ -6,15 +6,22 @@ from sqlalchemy.orm import Session
 from app.exceptions.handlers import AppError
 from app.models.driver import DRIVER_STATUSES, Driver
 from app.schemas import DriverCreate, DriverUpdate
+from app.utils.pagination import DEFAULT_LIMIT, Page, paginate
 
 
 class DriverService:
     @staticmethod
-    def list(db: Session, status: str | None = None) -> list[Driver]:
+    def list(
+        db: Session,
+        status: str | None = None,
+        *,
+        limit: int = DEFAULT_LIMIT,
+        offset: int = 0,
+    ) -> Page[Driver]:
         q = db.query(Driver).order_by(Driver.id.desc())
         if status:
             q = q.filter(Driver.status == status)
-        return q.all()
+        return paginate(q, limit=limit, offset=offset)
 
     @staticmethod
     def get(db: Session, driver_id: int) -> Driver:
