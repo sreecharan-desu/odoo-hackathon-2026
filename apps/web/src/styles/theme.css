@@ -74,9 +74,9 @@ html.dark {
   --color-muted-2:      #8b8b94;
   --color-faint:        #52525b;
 
-  --color-paper:        #0b0b0c;
-  --color-surface:      #161618;
-  --color-surface-2:    #202022;
+  --color-paper:        #000000;
+  --color-surface:      #000000;
+  --color-surface-2:    #0d0d0d;
 
   --color-line:         #2a2a2d;
   --color-line-strong:  #3a3a3e;
