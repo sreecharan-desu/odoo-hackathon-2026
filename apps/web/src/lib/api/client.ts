@@ -52,6 +52,15 @@ async function parseError(response: Response): Promise<string> {
   return "Request failed";
 }
 
+/** Clear stored session on authentication failure */
+function handleAuthFailure(status: number) {
+  if (status === 401 || status === 403) {
+    try {
+      sessionStorage.removeItem("transitops_auth");
+    } catch { /* ignore */ }
+  }
+}
+
 export function withQuery(
   path: string,
   query: Record<string, string | number | boolean | undefined | null> = {},
@@ -70,6 +79,7 @@ export async function apiGet<T>(path: string): Promise<T> {
     headers: getHeaders(),
   });
   if (!response.ok) {
+    handleAuthFailure(response.status);
     throw new ApiError(await parseError(response), response.status);
   }
   return response.json() as Promise<T>;
@@ -91,6 +101,8 @@ export async function apiPost<T>(path: string, payload: unknown): Promise<T> {
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
+    // Don't clear session on failed login attempt
+    if (!path.includes("/auth/login")) handleAuthFailure(response.status);
     throw new ApiError(await parseError(response), response.status);
   }
   return response.json() as Promise<T>;
