@@ -194,7 +194,6 @@ function Td({ children, style }: { children: React.ReactNode; style?: React.CSSP
     </td>
   );
 }
-}
 
 /* ─── Trips table ─── */
 function TripsTable({ trips, vehicles, drivers }: { trips: Trip[]; vehicles: Vehicle[]; drivers: Driver[] }) {
