@@ -22,11 +22,24 @@ function NavIcon({ path }: { path: string }) {
 function ChevronLeft() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
 }
-function ChevronRight() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
-}
+
 function LogoutIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+}
+
+function TransitOpsIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      {/* Left wing */}
+      <path d="M5 22 L38 22 L48 38 L30 38 Z" fill="var(--accent-cyan)" />
+      {/* Right wing */}
+      <path d="M95 22 L62 22 L52 38 L70 38 Z" fill="var(--accent-cyan)" />
+      {/* Left stem */}
+      <path d="M38 40 L46 40 L46 78 L38 68 Z" fill="var(--accent-cyan)" />
+      {/* Right stem */}
+      <path d="M62 40 L54 40 L54 78 L62 68 Z" fill="var(--accent-cyan)" />
+    </svg>
+  );
 }
 
 interface SidebarProps {
@@ -58,14 +71,17 @@ export default function Sidebar({ collapsed, onToggle, onClose, mobileOpen }: Si
         <div className="shell-brand">
           {!collapsed ? (
             <>
-              <h1 className="shell-brand-title">TransitOps</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                <TransitOpsIcon size={24} />
+                <h1 className="shell-brand-title">TransitOps</h1>
+              </div>
               <button className="sidebar-collapse-btn" onClick={onToggle} title="Collapse">
                 <ChevronLeft />
               </button>
             </>
           ) : (
-            <button className="sidebar-collapse-btn" onClick={onToggle} title="Expand" style={{ margin: "0 auto" }}>
-              <ChevronRight />
+            <button className="sidebar-collapse-btn" onClick={onToggle} title="Expand" style={{ margin: "0 auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <TransitOpsIcon size={24} />
             </button>
           )}
         </div>
