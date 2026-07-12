@@ -33,34 +33,122 @@ interface ColumnChartProps {
   data: { label: string; value: number }[];
   ySuffix?: string;
   isPercentage?: boolean;
+  targetAvg?: number;
 }
 
-function ColumnChart({ data, ySuffix = "", isPercentage = false }: ColumnChartProps) {
+function ColumnChart({ data, ySuffix = "", isPercentage = false, targetAvg }: ColumnChartProps) {
   const width = 800;
-  const height = 240;
-  const paddingX = 40;
+  const height = 250;
+  const paddingX = 50;
   const paddingY = 30;
 
-  const maxVal = Math.max(...data.map(d => Math.abs(d.value)), 1);
-  const minVal = Math.min(...data.map(d => d.value), 0);
+  const values = data.map(d => d.value);
+  const maxVal = Math.max(...values.map(v => Math.abs(v)), 1);
+  const minVal = Math.min(...values, 0);
 
   const range = maxVal - minVal;
   const chartHeight = height - 2 * paddingY;
   const yZero = height - paddingY - ((0 - minVal) / range) * chartHeight;
 
+  // Generate grid lines
+  const gridLines = [0.25, 0.5, 0.75, 1].flatMap(pct => {
+    const lines = [];
+    if (maxVal > 0) {
+      const val = pct * maxVal;
+      const y = height - paddingY - ((val - minVal) / range) * chartHeight;
+      lines.push({ y, label: isPercentage ? `${val.toFixed(0)}%` : `${val.toFixed(0)}${ySuffix}` });
+    }
+    if (minVal < 0) {
+      const val = pct * minVal;
+      const y = height - paddingY - ((val - minVal) / range) * chartHeight;
+      lines.push({ y, label: isPercentage ? `${val.toFixed(0)}%` : `${val.toFixed(0)}${ySuffix}` });
+    }
+    return lines;
+  });
+
+  // Calculate coordinates for average line if targetAvg is provided
+  const avgY = targetAvg !== undefined && targetAvg > 0
+    ? height - paddingY - ((targetAvg - minVal) / range) * chartHeight
+    : null;
+
   return (
-    <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-      <div style={{ minWidth: "600px", position: "relative" }}>
+    <div style={{ width: "100%", overflowX: "auto", marginBottom: "24px" }}>
+      <div style={{ minWidth: "700px", position: "relative" }}>
         <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
+          <defs>
+            <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+            <linearGradient id="negGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ef4444" />
+              <stop offset="100%" stopColor="#dc2626" />
+            </linearGradient>
+            <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          {gridLines.map((g, idx) => (
+            <g key={idx}>
+              <line
+                x1={paddingX}
+                y1={g.y}
+                x2={width - paddingX}
+                y2={g.y}
+                stroke="var(--color-border)"
+                strokeDasharray="4 4"
+                strokeOpacity="0.5"
+              />
+              <text
+                x={paddingX - 10}
+                y={g.y + 4}
+                fill="var(--color-muted)"
+                fontSize="9"
+                fontWeight="600"
+                textAnchor="end"
+              >
+                {g.label}
+              </text>
+            </g>
+          ))}
+
           {/* Zero baseline */}
           <line
             x1={paddingX}
             y1={yZero}
             x2={width - paddingX}
             y2={yZero}
-            stroke="var(--color-border)"
-            strokeWidth="2"
+            stroke="var(--color-muted-2, #64748b)"
+            strokeWidth="1.5"
           />
+
+          {/* Target Average Line */}
+          {avgY !== null && targetAvg !== undefined && avgY >= paddingY && avgY <= height - paddingY && (
+            <g>
+              <line
+                x1={paddingX}
+                y1={avgY}
+                x2={width - paddingX}
+                y2={avgY}
+                stroke="#f59e0b"
+                strokeWidth="2"
+                strokeDasharray="6 3"
+              />
+              <text
+                x={width - paddingX - 10}
+                y={avgY - 6}
+                fill="#f59e0b"
+                fontSize="9.5"
+                fontWeight="800"
+                textAnchor="end"
+              >
+                Fleet Average: {targetAvg.toFixed(1)}{ySuffix}
+              </text>
+            </g>
+          )}
 
           {data.map((d, i) => {
             const colWidth = (width - 2 * paddingX) / Math.max(data.length, 1);
@@ -72,7 +160,12 @@ function ColumnChart({ data, ySuffix = "", isPercentage = false }: ColumnChartPr
             const y = d.value >= 0 ? yZero - barH : yZero;
 
             const isPositive = d.value >= 0;
-            const barColor = isPositive ? "var(--color-positive, #22c55e)" : "var(--color-danger, #ef4444)";
+            // Use blue gradient for efficiency, pos/neg for ROI
+            const barFill = ySuffix.includes("km/L")
+              ? "url(#blueGrad)"
+              : isPositive
+                ? "url(#posGrad)"
+                : "url(#negGrad)";
 
             return (
               <g key={i}>
@@ -82,28 +175,30 @@ function ColumnChart({ data, ySuffix = "", isPercentage = false }: ColumnChartPr
                   y={y}
                   width={barW}
                   height={Math.max(barH, 2)}
-                  fill={barColor}
+                  fill={barFill}
                   rx="4"
                   style={{ transition: "all 0.3s" }}
                 />
+                
                 {/* Value label */}
                 <text
                   x={x + barW / 2}
                   y={isPositive ? y - 6 : y + barH + 12}
                   fill="var(--color-text)"
-                  fontSize="10"
+                  fontSize="9.5"
                   fontWeight="700"
                   textAnchor="middle"
                 >
                   {isPercentage ? `${d.value.toFixed(1)}%` : `${d.value.toFixed(1)}${ySuffix}`}
                 </text>
+                
                 {/* Vehicle label */}
                 <text
                   x={x + barW / 2}
                   y={isPositive ? yZero + 15 : yZero - 6}
                   fill="var(--color-muted)"
                   fontSize="9"
-                  fontWeight="600"
+                  fontWeight="700"
                   textAnchor="middle"
                 >
                   {d.label}
@@ -246,26 +341,32 @@ export default function AnalyticsPage() {
               {isFinance ? "Cost Distribution by Vehicle" : "Operating Cost Distribution"}
             </h3>
             {/* Legend */}
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px", fontSize: "0.75rem", color: "var(--color-muted)" }}>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "20px", fontSize: "0.75rem", color: "var(--color-muted)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#3b82f6" }} />
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #3b82f6, #60a5fa)" }} />
                 <span>Fuel Cost</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#f59e0b" }} />
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #f59e0b, #fbbf24)" }} />
                 <span>Maintenance</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#a855f7" }} />
+                <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "linear-gradient(to right, #a855f7, #c084fc)" }} />
                 <span>Other Expenses</span>
               </div>
             </div>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "var(--space-2)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginTop: "var(--space-2)" }}>
               {fleetCosts.map((v) => {
-                const fuelPct = (v.fuel_cost / maxCost) * 100;
-                const maintPct = (v.maintenance_cost / maxCost) * 100;
-                const otherPct = (v.other_expenses / maxCost) * 100;
+                const totalCost = v.total_operational_cost || 1;
+                const fuelRatio = v.fuel_cost / totalCost;
+                const maintRatio = v.maintenance_cost / totalCost;
+                const otherRatio = v.other_expenses / totalCost;
+
+                const overallWidthPct = (totalCost / maxCost) * 100;
+                const fuelPct = fuelRatio * overallWidthPct;
+                const maintPct = maintRatio * overallWidthPct;
+                const otherPct = otherRatio * overallWidthPct;
 
                 return (
                   <div key={v.vehicle_id} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -283,13 +384,41 @@ export default function AnalyticsPage() {
                       width: "100%",
                     }}>
                       {v.fuel_cost > 0 && (
-                        <div style={{ width: `${fuelPct}%`, background: "#3b82f6", height: "100%" }} title={`Fuel: ${formatInr(v.fuel_cost, 2)}`} />
+                        <div style={{ width: `${fuelPct}%`, background: "linear-gradient(to right, #3b82f6, #60a5fa)", height: "100%" }} title={`Fuel: ${formatInr(v.fuel_cost, 2)}`} />
                       )}
                       {v.maintenance_cost > 0 && (
-                        <div style={{ width: `${maintPct}%`, background: "#f59e0b", height: "100%" }} title={`Maintenance: ${formatInr(v.maintenance_cost, 2)}`} />
+                        <div style={{ width: `${maintPct}%`, background: "linear-gradient(to right, #f59e0b, #fbbf24)", height: "100%" }} title={`Maintenance: ${formatInr(v.maintenance_cost, 2)}`} />
                       )}
                       {v.other_expenses > 0 && (
-                        <div style={{ width: `${otherPct}%`, background: "#a855f7", height: "100%" }} title={`Other Expenses: ${formatInr(v.other_expenses, 2)}`} />
+                        <div style={{ width: `${otherPct}%`, background: "linear-gradient(to right, #a855f7, #c084fc)", height: "100%" }} title={`Other Expenses: ${formatInr(v.other_expenses, 2)}`} />
+                      )}
+                    </div>
+                    
+                    <div style={{
+                      display: "flex",
+                      gap: "12px",
+                      fontSize: "0.68rem",
+                      color: "var(--color-muted-2)",
+                      fontWeight: 600,
+                      marginTop: "2px"
+                    }}>
+                      {v.fuel_cost > 0 && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#3b82f6" }} />
+                          Fuel: {formatInr(v.fuel_cost)} ({((v.fuel_cost / totalCost) * 100).toFixed(0)}%)
+                        </span>
+                      )}
+                      {v.maintenance_cost > 0 && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#f59e0b" }} />
+                          Maint: {formatInr(v.maintenance_cost)} ({((v.maintenance_cost / totalCost) * 100).toFixed(0)}%)
+                        </span>
+                      )}
+                      {v.other_expenses > 0 && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#a855f7" }} />
+                          Other: {formatInr(v.other_expenses)} ({((v.other_expenses / totalCost) * 100).toFixed(0)}%)
+                        </span>
                       )}
                     </div>
                   </div>
@@ -305,18 +434,19 @@ export default function AnalyticsPage() {
             </p>
 
             {/* Visual Tabs switcher */}
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid var(--color-border)" }}>
               <button
                 onClick={() => setActiveTab("roi")}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  background: activeTab === "roi" ? "var(--color-primary, #3b82f6)" : "transparent",
-                  color: activeTab === "roi" ? "var(--btn-primary-text)" : "var(--color-text)",
+                  padding: "10px 4px",
+                  background: "transparent",
+                  color: activeTab === "roi" ? "var(--color-accent)" : "var(--color-muted)",
                   border: "none",
-                  fontWeight: 600,
-                  fontSize: "0.82rem",
+                  borderBottom: activeTab === "roi" ? "2.5px solid var(--color-accent)" : "2.5px solid transparent",
+                  fontWeight: 700,
+                  fontSize: "0.86rem",
                   cursor: "pointer",
+                  transition: "all 0.2s ease"
                 }}
               >
                 ROI Performance (%)
@@ -324,14 +454,15 @@ export default function AnalyticsPage() {
               <button
                 onClick={() => setActiveTab("efficiency")}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  background: activeTab === "efficiency" ? "var(--color-primary, #3b82f6)" : "transparent",
-                  color: activeTab === "efficiency" ? "var(--btn-primary-text)" : "var(--color-text)",
+                  padding: "10px 4px",
+                  background: "transparent",
+                  color: activeTab === "efficiency" ? "var(--color-accent)" : "var(--color-muted)",
                   border: "none",
-                  fontWeight: 600,
-                  fontSize: "0.82rem",
+                  borderBottom: activeTab === "efficiency" ? "2.5px solid var(--color-accent)" : "2.5px solid transparent",
+                  fontWeight: 700,
+                  fontSize: "0.86rem",
                   cursor: "pointer",
+                  transition: "all 0.2s ease"
                 }}
               >
                 Fuel Efficiency (km/L)
@@ -342,7 +473,7 @@ export default function AnalyticsPage() {
             {activeTab === "roi" ? (
               <ColumnChart data={roiData} isPercentage={true} />
             ) : (
-              <ColumnChart data={efficiencyData} ySuffix=" km/L" />
+              <ColumnChart data={efficiencyData} ySuffix=" km/L" targetAvg={avgEfficiency} />
             )}
 
             <div style={{ overflowX: "auto" }}>
