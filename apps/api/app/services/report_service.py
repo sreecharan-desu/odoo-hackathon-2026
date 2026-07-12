@@ -191,6 +191,91 @@ class ReportService:
 
         return [section_title, row1, Spacer(1, 6), row2, config_note, Spacer(1, 18)]
 
+    # ── Data table ─────────────────────────────────────────────
+    @staticmethod
+    def _build_data_table(rows: list[dict]) -> list:
+        """Build the per-vehicle operational cost table."""
+        HEADER_STYLE = ParagraphStyle(
+            "TH", fontName="Helvetica-Bold", fontSize=7, textColor=colors.white, leading=9,
+        )
+        CELL_STYLE = ParagraphStyle(
+            "TD", fontName="Helvetica", fontSize=7, textColor=BRAND_DARK, leading=9,
+        )
+        CELL_BOLD = ParagraphStyle(
+            "TDBold", fontName="Helvetica-Bold", fontSize=7, textColor=BRAND_DARK, leading=9,
+        )
+
+        headers = [
+            Paragraph("Vehicle", HEADER_STYLE),
+            Paragraph("Type", HEADER_STYLE),
+            Paragraph("Status", HEADER_STYLE),
+            Paragraph("Distance", HEADER_STYLE),
+            Paragraph("Fuel Eff.", HEADER_STYLE),
+            Paragraph("Fuel Cost", HEADER_STYLE),
+            Paragraph("Maint.", HEADER_STYLE),
+            Paragraph("Other", HEADER_STYLE),
+            Paragraph("Total Cost", HEADER_STYLE),
+            Paragraph("Revenue", HEADER_STYLE),
+            Paragraph("ROI", HEADER_STYLE),
+        ]
+
+        data = [headers]
+
+        for v in rows:
+            roi_val = v.get("roi")
+            roi_color = BRAND_SUCCESS if roi_val is not None and roi_val >= 0 else BRAND_DANGER
+            roi_style = ParagraphStyle("ROI", fontName="Helvetica-Bold", fontSize=7, textColor=roi_color, leading=9)
+
+            data.append([
+                Paragraph(f"{v.get('registration_number', '')}<br/><font size=5 color='#94a3b8'>{v.get('name', '')}</font>", CELL_BOLD),
+                Paragraph(v.get("vehicle_type", "—") or "—", CELL_STYLE),
+                Paragraph(v.get("status", "—"), CELL_STYLE),
+                Paragraph(f"{v.get('distance_km', 0):.0f} km", CELL_STYLE),
+                Paragraph(f"{v['fuel_efficiency_km_per_l']:.1f}" if v.get("fuel_efficiency_km_per_l") else "—", CELL_STYLE),
+                Paragraph(_fmt_inr(v.get("fuel_cost", 0)), CELL_STYLE),
+                Paragraph(_fmt_inr(v.get("maintenance_cost", 0)), CELL_STYLE),
+                Paragraph(_fmt_inr(v.get("other_expenses", 0)), CELL_STYLE),
+                Paragraph(_fmt_inr(v.get("total_operational_cost", 0)), CELL_BOLD),
+                Paragraph(_fmt_inr(v.get("estimated_revenue", 0)), CELL_STYLE),
+                Paragraph(_fmt_roi(roi_val), roi_style),
+            ])
+
+        col_widths = [70, 42, 42, 42, 35, 52, 47, 42, 52, 52, 35]
+
+        table = Table(data, colWidths=col_widths, repeatRows=1)
+        style_commands = [
+            # Header row
+            ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 7),
+            # Grid
+            ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ]
+
+        # Alternating row backgrounds
+        for i in range(1, len(data)):
+            if i % 2 == 0:
+                style_commands.append(("BACKGROUND", (0, i), (-1, i), ROW_ALT_BG))
+
+        table.setStyle(TableStyle(style_commands))
+
+        section_title = Paragraph(
+            "Vehicle Operational Costs",
+            ParagraphStyle("TableSectionTitle", fontName="Helvetica-Bold", fontSize=12, textColor=BRAND_DARK, spaceAfter=8),
+        )
+        note = Paragraph(
+            "ROI = (Estimated revenue - Maintenance - Fuel) / Acquisition cost.  Revenue = completed trip km x Rs 40.",
+            ParagraphStyle("TableNote", fontName="Helvetica", fontSize=6.5, textColor=BRAND_MUTED, spaceBefore=6),
+        )
+
+        return [section_title, table, note, Spacer(1, 12)]
+
     @staticmethod
     def pdf_bytes(fleet_data: list[dict] | None = None, *, revenue_rate: float = 40.0, reminder_days: int = 30) -> bytes:
         """Return a fully-formatted PDF as raw bytes.
@@ -227,6 +312,8 @@ class ReportService:
         rows = fleet_data or []
         if rows:
             elements.extend(ReportService._build_kpi_summary(rows, revenue_rate, reminder_days))
+            # Data table
+            elements.extend(ReportService._build_data_table(rows))
 
         doc.build(elements)
         return buf.getvalue()
