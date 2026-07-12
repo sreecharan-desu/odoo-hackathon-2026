@@ -1,4 +1,7 @@
-"""Seed TransitOps demo data (PDF Steps 1–9)."""
+"""Seed TransitOps demo data (PDF Steps 1–9).
+
+Run:  python scripts/seed.py
+"""
 
 from __future__ import annotations
 
@@ -11,40 +14,47 @@ sys.path.insert(0, str(ROOT))
 
 from app.core.security import hash_password  # noqa: E402
 from app.db.session import Base, SessionLocal, engine  # noqa: E402
-from app.models import Driver, FuelLog, MaintenanceLog, Trip, User, Vehicle  # noqa: E402
+from app.models import Driver, Expense, FuelLog, MaintenanceLog, Trip, User, Vehicle  # noqa: E402
 import app.models  # noqa: E402, F401
+
+DEMO_PASSWORD = "Password123!"
 
 
 def seed() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        # Reset demo tables for a clean demo run
-        for model in (FuelLog, MaintenanceLog, Trip, Vehicle, Driver, User):
+        # ── Reset demo tables for a clean demo run ──────────────────────
+        for model in (Expense, FuelLog, MaintenanceLog, Trip, Vehicle, Driver, User):
             db.query(model).delete()
         db.commit()
 
+        # ── Users (4 roles, same password) ──────────────────────────────
         users = [
             ("fleet@example.com", "Fleet Manager", "fleet_manager"),
             ("driver@example.com", "Alex Driver", "driver"),
             ("safety@example.com", "Safety Officer", "safety_officer"),
             ("finance@example.com", "Finance Analyst", "financial_analyst"),
         ]
-        password = hash_password("Password123!")
+        password = hash_password(DEMO_PASSWORD)
         for email, name, role in users:
             db.add(User(email=email, name=name, password_hash=password, role=role))
 
-        van = Vehicle(
-            registration_number="VAN-05",
-            name="Van-05",
-            vehicle_type="Van",
-            max_load_kg=500,
-            odometer=12000,
-            acquisition_cost=850000,
-            status="Available",
-            region="West",
+        # ── Vehicles ────────────────────────────────────────────────────
+        # VAN-05: primary demo vehicle (Steps 2-7)
+        db.add(
+            Vehicle(
+                registration_number="VAN-05",
+                name="Van-05",
+                vehicle_type="Van",
+                max_load_kg=500,
+                odometer=12000,
+                acquisition_cost=850000,
+                status="Available",
+                region="West",
+            )
         )
-        db.add(van)
+        # TRK-12: In Shop — Step 8 fail beat (cannot dispatch)
         db.add(
             Vehicle(
                 registration_number="TRK-12",
@@ -53,21 +63,38 @@ def seed() -> None:
                 max_load_kg=2000,
                 odometer=45000,
                 acquisition_cost=1500000,
-                status="Available",
+                status="In Shop",
                 region="North",
             )
         )
-
-        alex = Driver(
-            name="Alex",
-            license_number="DL-ALEX-001",
-            license_category="LMV",
-            license_expiry=date.today() + timedelta(days=365),
-            contact_number="+91-9000000001",
-            safety_score=92,
-            status="Available",
+        # VAN-99: Retired — hidden from dispatch pool entirely
+        db.add(
+            Vehicle(
+                registration_number="VAN-99",
+                name="Van-99",
+                vehicle_type="Van",
+                max_load_kg=300,
+                odometer=80000,
+                acquisition_cost=400000,
+                status="Retired",
+                region="East",
+            )
         )
-        db.add(alex)
+
+        # ── Drivers ─────────────────────────────────────────────────────
+        # Alex: valid license, available — primary demo driver (Steps 3-6)
+        db.add(
+            Driver(
+                name="Alex",
+                license_number="DL-ALEX-001",
+                license_category="LMV",
+                license_expiry=date.today() + timedelta(days=365),
+                contact_number="+91-9000000001",
+                safety_score=92,
+                status="Available",
+            )
+        )
+        # Expired Sam: expired license — Step 8 fail beat (cannot assign)
         db.add(
             Driver(
                 name="Expired Sam",
@@ -79,10 +106,15 @@ def seed() -> None:
                 status="Available",
             )
         )
+
         db.commit()
-        print("Seed complete.")
-        print("Login: fleet@example.com / Password123!")
-        print("Vehicle VAN-05 (500kg), Driver Alex ready for Steps 1–9.")
+        print("✓ Seed complete.")
+        print(f"  Login: fleet@example.com / {DEMO_PASSWORD}")
+        print("  VAN-05 (500 kg, Available) — primary demo vehicle")
+        print("  TRK-12 (2000 kg, In Shop)  — Step 8 fail beat")
+        print("  VAN-99 (300 kg, Retired)    — hidden from dispatch")
+        print("  Alex (valid license)        — primary demo driver")
+        print("  Expired Sam (expired -10d)  — Step 8 fail beat")
     finally:
         db.close()
 
