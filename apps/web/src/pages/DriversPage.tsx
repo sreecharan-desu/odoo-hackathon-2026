@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, DateField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost, apiPatch } from "../lib/api";
+import { endpoints, apiGet, apiPost, apiPatch } from "../lib/api";
 import { canManageDrivers, pageChrome } from "../lib/rbac";
-import type { Driver } from "../types";
+import type { Driver, LicenseReminder } from "../types";
 import "../components/layout/shell.css";
 
 const PAGE_SIZE = 50;
@@ -41,6 +41,8 @@ export default function DriversPage() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reminders, setReminders] = useState<LicenseReminder[]>([]);
+  const [reminderLoading, setReminderLoading] = useState(false);
 
   const handleAddDriver = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +109,34 @@ export default function DriversPage() {
     return expiry < today;
   };
 
+  const loadReminders = async () => {
+    setReminderLoading(true);
+    try {
+      const rows = await apiGet<LicenseReminder[]>(endpoints.licenseReminders);
+      setReminders(rows);
+    } catch (err) {
+      console.error("Failed to load reminders", err);
+    } finally {
+      setReminderLoading(false);
+    }
+  };
+
+  const sendReminders = async () => {
+    try {
+      await apiPost(endpoints.sendLicenseReminders, {});
+      await loadReminders();
+      alert("Reminder emails sent");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to send reminders");
+    }
+  };
+
+  useEffect(() => {
+    if (allowManage) {
+      void loadReminders();
+    }
+  }, [allowManage]);
+
   // Map mock Completion Rate based on Driver name (Mockup 3 compatibility)
   const getCompletionRate = (driverName: string): string => {
     const nameLower = driverName.toLowerCase();
@@ -125,9 +155,29 @@ export default function DriversPage() {
           <p className="text-muted">{chrome.sub}</p>
         </div>
         {allowManage && (
-          <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <Button onClick={() => setIsAdding(true)} style={{ background: "#f0a500", borderColor: "#f0a500", color: "#000", fontWeight: 700 }}>+ Add Driver</Button>
+            <Button variant="ghost" onClick={() => void sendReminders()} disabled={reminderLoading || reminders.length === 0}>
+              Send License Reminders
+            </Button>
+          </div>
         )}
       </div>
+
+      {allowManage && reminders.length > 0 && (
+        <Card style={{ marginBottom: "var(--space-3)" }}>
+          <h3 style={{ margin: "0 0 var(--space-2)" }}>Expiring Licenses</h3>
+          <p className="text-muted" style={{ marginTop: 0 }}>Drivers within the reminder window.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {reminders.slice(0, 5).map((r) => (
+              <div key={r.driver_id} style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                <span>{r.driver_name}</span>
+                <span style={{ color: "var(--color-muted)" }}>{r.days_remaining} days left</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card>
         {loading && <Spinner />}

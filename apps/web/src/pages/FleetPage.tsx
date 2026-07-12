@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, Spinner, Button, Pagination } from "../components/ui";
 import { TextField, NumberField, SelectField } from "../components/forms";
 import * as validators from "../lib/validators";
 import { useAuth } from "../hooks/useAuth";
 import { useApiList } from "../hooks/useApiList";
-import { endpoints, apiPost } from "../lib/api";
+import { API_BASE_URL } from "../constants";
+import { endpoints, apiGet, apiPost } from "../lib/api";
 import { canManageFleet, pageChrome } from "../lib/rbac";
 import { formatInr } from "../constants";
-import type { Vehicle } from "../types";
+import type { Vehicle, VehicleDocument } from "../types";
 import "../components/layout/shell.css";
 
 const PAGE_SIZE = 50;
@@ -46,6 +47,12 @@ export default function FleetPage() {
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchReg, setSearchReg] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [documents, setDocuments] = useState<VehicleDocument[]>([]);
+  const [docType, setDocType] = useState("Registration");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [docSubmitting, setDocSubmitting] = useState(false);
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +111,51 @@ export default function FleetPage() {
     const matchesSearch = !searchReg || v.registration_number.toLowerCase().includes(searchReg.toLowerCase());
     return matchesType && matchesStatus && matchesSearch;
   });
+
+  const loadDocuments = async (vehicleId: number) => {
+    try {
+      const rows = await apiGet<VehicleDocument[]>(`${endpoints.vehicles}/${vehicleId}/documents`);
+      setDocuments(rows);
+    } catch (err) {
+      console.error("Failed to load documents", err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedVehicleId !== null) {
+      void loadDocuments(selectedVehicleId);
+    } else {
+      setDocuments([]);
+    }
+  }, [selectedVehicleId]);
+
+  const uploadDocument = async () => {
+    if (selectedVehicleId === null || !docFile) {
+      setDocError("Select a vehicle and file first");
+      return;
+    }
+    setDocError(null);
+    setDocSubmitting(true);
+    try {
+      const rawToken = sessionStorage.getItem("transitops_auth");
+      const token = rawToken ? JSON.parse(rawToken).token : null;
+      const formData = new FormData();
+      formData.append("doc_type", docType);
+      formData.append("file", docFile);
+      const response = await fetch(`${API_BASE_URL}${endpoints.vehicles}/${selectedVehicleId}/documents`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Document upload failed");
+      setDocFile(null);
+      await loadDocuments(selectedVehicleId);
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : "Failed to upload document");
+    } finally {
+      setDocSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -178,6 +230,11 @@ export default function FleetPage() {
               <tbody>
                 {filteredVehicles.map((v) => (
                   <tr key={v.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                    <td style={{ padding: "var(--space-2)" }}>
+                      <Button variant="ghost" style={{ padding: "2px 8px" }} onClick={() => setSelectedVehicleId(v.id)}>
+                        Docs
+                      </Button>
+                    </td>
                     <td style={{ padding: "var(--space-2)", fontWeight: "bold" }}>{v.registration_number}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.name}</td>
                     <td style={{ padding: "var(--space-2)" }}>{v.vehicle_type}</td>
@@ -218,6 +275,49 @@ export default function FleetPage() {
           <Pagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         )}
       </Card>
+
+      {selectedVehicleId !== null && (
+        <Card style={{ marginTop: "var(--space-4)" }}>
+          <h3 style={{ margin: "0 0 var(--space-2)" }}>Vehicle Documents</h3>
+          <p className="text-muted" style={{ marginTop: 0 }}>
+            Selected vehicle ID: {selectedVehicleId}
+          </p>
+          <div style={{ display: "grid", gap: "var(--space-2)", gridTemplateColumns: "1fr auto" }}>
+            <SelectField
+              id="docType"
+              label="Document Type"
+              options={[
+                { value: "Registration", label: "Registration" },
+                { value: "Insurance", label: "Insurance" },
+                { value: "Permit", label: "Permit" },
+                { value: "Fitness", label: "Fitness" },
+                { value: "Other", label: "Other" },
+              ]}
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+            />
+            <div style={{ display: "flex", alignItems: "end", gap: "8px" }}>
+              <input type="file" onChange={(e) => setDocFile(e.target.files?.[0] ?? null)} />
+              <Button onClick={() => void uploadDocument()} disabled={docSubmitting}>
+                Upload
+              </Button>
+            </div>
+          </div>
+          {docError && <p className="error">{docError}</p>}
+          <div style={{ marginTop: "var(--space-3)", display: "flex", flexDirection: "column", gap: "8px" }}>
+            {documents.length === 0 ? (
+              <p className="page-empty">No documents uploaded yet.</p>
+            ) : (
+              documents.map((doc) => (
+                <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                  <span>{doc.doc_type}</span>
+                  <span style={{ color: "var(--color-muted)" }}>{doc.file_name}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Add Vehicle Modal */}
       {isAdding && (
