@@ -394,7 +394,7 @@ export default function FleetPage() {
                   </div>
                   {/* Docs button */}
                   <Button variant="ghost" style={{ padding: "6px 12px", fontSize: "0.8rem", alignSelf: "flex-start", marginTop: "2px" }} onClick={() => setSelectedVehicleId(v.id)}>
-                    📄 View Documents
+                    View Documents
                   </Button>
                 </div>
               ))}

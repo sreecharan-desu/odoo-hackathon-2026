@@ -101,7 +101,7 @@ Enforced in the service layer (not UI-only):
 8. Open maintenance (e.g. Oil Change) → vehicle **In Shop**, hidden from dispatch  
 9. Reports refresh operational cost and fuel efficiency  
 
-Seed also includes fail-beats such as **TRK-12** (In Shop), **VAN-99** (Retired), and **Expired Sam**.
+Seed also includes fail-beats: **Truck 12** (`DL01XY9876`, In Shop), **Van 99** (`GJ05ZZ5555`, Retired) and the driver **Expired Sam**.
 
 ---
 
@@ -183,7 +183,7 @@ erDiagram
 | Vehicle document management | Not required for core demo |
 | Search, filters, sorting | Partial on list pages |
 | Dark mode toggle | App ships with a dark UI |
-| Kubernetes / Skaffold | Optional — see note below |
+| Kubernetes / Skaffold | Manifests only, not verified |
 
 ---
 
@@ -207,36 +207,32 @@ k8s/        Optional Kubernetes manifests (future scaling)
 skaffold.yaml   Optional Skaffold dev workflow config
 ```
 
-### ☸️ Kubernetes — Optional Future Enhancement
+### Kubernetes (optional, not verified)
 
-> **Not required to run the project.** The standard setup is Docker Compose (see Quick start above).
+`k8s/` and `skaffold.yaml` hold Kubernetes manifests (Postgres, API, web, ingress) contributed as a possible path beyond a single Docker host. They are not part of the default setup and have not been tested against a cluster as part of this repo. To try them on minikube or kind: `kubectl apply -f k8s/` or `skaffold dev`.
 
-The `k8s/` directory and `skaffold.yaml` were contributed as a **forward-looking, production-scaling path** for when the platform outgrows a single Docker host. They are **not wired into the default development or demo workflow**.
+---
 
-| Manifest | Purpose |
-|----------|---------|
-| `k8s/postgres-deployment-and-service.yaml` | PostgreSQL pod + ClusterIP service |
-| `k8s/database-persistent-volume-claim.yaml` | 2 Gi persistent volume for data durability |
-| `k8s/backend-deployment-and-service.yaml` | FastAPI pod + ClusterIP service |
-| `k8s/frontend-deployment-and-service.yaml` | React/Nginx pod + NodePort service |
-| `k8s/ingress.yaml` | NGINX Ingress — routes `/api` → API, `/` → Web |
-| `skaffold.yaml` | Skaffold build & deploy pipeline for local K8s dev |
+## Performance (measured)
 
-**When would you actually use this?**
-- Horizontal scaling (multiple API replicas behind a load balancer)
-- Zero-downtime rolling deploys via `kubectl rollout`
-- Managed cloud clusters (GKE, EKS, AKS)
-- Environments where Docker Compose is not available
+Measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. Raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh).
 
-**To try it** (requires a running cluster such as minikube or kind):
+| Endpoint (authenticated) | VUs | req/s | p50 | p95 | p99 | Errors |
+|---|---|---|---|---|---|---|
+| `GET /api/vehicles` | 50 | 906 | 48.2 ms | 146.7 ms | 207.2 ms | 0% |
+| `GET /api/trips` | 50 | 1,042 | 41.7 ms | 139.7 ms | 203.0 ms | 0% |
+| `GET /api/dashboard/kpis` | 50 | 603 | 82.1 ms | 114.1 ms | 130.1 ms | 0% |
+| `POST /api/auth/login` (bcrypt) | 20 | 33 | 603.6 ms | 719.8 ms | 763.2 ms | 0% |
+| `GET /api/health` | 50 | 12,311 | 3.7 ms | 6.4 ms | 8.8 ms | 0% |
 
-```bash
-# One-shot apply
-kubectl apply -f k8s/
+Functional check: the repo's live integration script (`apps/api/scripts/vast_integration_test.py`) passed 66/66 against the same stack ([output](benchmarks/results-2026-10-19/integration-test.txt)).
 
-# Or iterative dev with live reload
-skaffold dev
-```
+## Known issues
+
+- No unit-test suite; the only automated check besides CI's import check is the live integration script above.
+- `ecdsa` (pulled in by `python-jose`) has an advisory with no fixed release (PYSEC-2026-1325). `python-jose` is now pinned to `>=3.4.0`, which fixes its own two advisories. Moving JWT handling to `PyJWT` would drop `ecdsa` entirely.
+- `npm audit` in `apps/web` reports 8 high and 1 moderate advisories (19 Oct 2026).
+- The Kubernetes manifests have not been exercised.
 
 ---
 
