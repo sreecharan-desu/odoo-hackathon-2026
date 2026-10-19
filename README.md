@@ -1,219 +1,64 @@
-# TransitOps
+# odoo-hackathon-2026
 
-**Smart Transport Operations Platform** · Odoo Hackathon 2026 (8 hours)
+transitops: transport operations for vehicles, drivers, dispatch, maintenance, fuel and expenses, with business rules enforced in the api and role-based access for four desks. built in 8 hours at odoo hackathon 2026.
 
-End-to-end transport operations: vehicles, drivers, dispatch, maintenance, fuel & expenses, and analytics — with **business rules enforced in the API** and **role-based access** for four operator desks.
+## features
 
-**PostgreSQL · FastAPI · React · Docker Compose**
+- auth: email/password + jwt. role comes from the account, each role gets its own nav and home.
+- dashboard: active / available / in-maintenance vehicles, active and pending trips, drivers on duty, fleet utilization, filters by type, status and region.
+- vehicle registry and drivers with license expiry, safety score and status.
+- trips: draft → dispatched → completed / cancelled.
+- maintenance moves a vehicle to in shop and out of the dispatch pool.
+- fuel, expenses and analytics (fuel efficiency, utilization, cost, vehicle roi) with csv export.
 
----
+rules enforced in the service layer:
 
-## Quick start
+- registration numbers are unique
+- retired or in-shop vehicles never show up for dispatch
+- drivers with an expired license or suspended status can't be assigned
+- a vehicle or driver already on a trip can't take another
+- cargo weight must not exceed the vehicle's max load
+- dispatch sets both to on trip; complete or cancel sets both back to available
 
-**Need:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Mac/Windows) or Docker Engine + Compose (Linux). No local Node, Python, or Postgres required.
+| role | focus | demo login |
+|---|---|---|
+| fleet manager | assets, maintenance, lifecycle | `fleet@example.com` |
+| driver | trips, assignments, deliveries | `driver@example.com` |
+| safety officer | compliance, license validity, safety scores | `safety@example.com` |
+| financial analyst | fuel, expenses, profitability | `finance@example.com` |
+
+password for all: `Password123!`
+
+## stack
+
+postgres 16 + alembic · fastapi + sqlalchemy · react 19 + typescript + vite · docker compose (db + api + web)
+
+```
+apps/api/   fastapi: controllers → services → models
+apps/web/   react spa (role-scoped nav)
+docs/       architecture, demo, stack
+k8s/        optional kubernetes manifests (not verified)
+```
+
+walkthrough: [docs/DEMO.md](docs/DEMO.md) · architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+## run locally
+
+needs docker with compose. no local node, python or postgres required.
 
 ```bash
-git clone https://github.com/sreecharan-desu/odoo-hackathon-2026.git
-cd odoo-hackathon-2026
-cp .env.example .env                 # Windows CMD: copy .env.example .env
-docker compose up --build            # or: docker-compose up --build
+cp .env.example .env
+docker compose up --build              # app http://localhost:8080, api docs http://localhost:8080/docs
+docker compose down -v && docker compose up --build   # wipe db + reseed
 ```
 
-| | |
-|--|--|
-| **App** | http://localhost:8080 |
-| **API docs** | http://localhost:8080/docs |
-| **Login** | `fleet@example.com` / `Password123!` |
+busy ports: `WEB_PORT=8081`, `POSTGRES_PORT=5434` or `BACKEND_PORT=8001` before `docker compose up`.
 
-The web UI calls `/api` on the same origin (nginx → API), so the app works even if host port `8000` is already taken.
+## env
 
-```bash
-docker compose down                  # stop
-docker compose down -v && docker compose up --build   # wipe DB + reseed
-```
+copy `.env.example` to `.env`. the defaults work for local docker.
 
-Walkthrough: [docs/DEMO.md](./docs/DEMO.md) · Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-
----
-
-## Objective
-
-Digitize the full transport operations lifecycle so logistics teams stop relying on spreadsheets and logbooks — reducing scheduling conflicts, missed maintenance, expired licenses, inaccurate expenses, and poor visibility.
-
----
-
-## Target users (RBAC)
-
-Role is assigned on the **user account after email/password login** (not chosen on the login form). Each role gets a dedicated nav and home.
-
-| Role | Focus | Demo login |
-|------|--------|------------|
-| **Fleet Manager** | Fleet assets, maintenance, lifecycle, operational efficiency | `fleet@example.com` |
-| **Driver** | Create trips, assign vehicle/driver, monitor deliveries | `driver@example.com` |
-| **Safety Officer** | Driver compliance, license validity, safety scores | `safety@example.com` |
-| **Financial Analyst** | Expenses, fuel, maintenance costs, profitability | `finance@example.com` |
-
-Password for all: `Password123!`
-
----
-
-## Functional coverage
-
-| § | Area | In this repo |
-|---|------|----------------|
-| **3.1** | Auth | Email/password + JWT; only authenticated users reach the app |
-| **3.2** | Dashboard | Active / Available / In Maintenance vehicles; Active & Pending trips; Drivers on duty; Fleet utilization %; filters by type, status, region |
-| **3.3** | Vehicle registry | Unique registration, name/model, type, max load, odometer, acquisition cost, status (`Available`, `On Trip`, `In Shop`, `Retired`) |
-| **3.4** | Drivers | Name, license #, category, expiry, contact, safety score, status (`Available`, `On Trip`, `Off Duty`, `Suspended`) |
-| **3.5** | Trips | Source, destination, available vehicle & driver, cargo, distance; lifecycle **Draft → Dispatched → Completed / Cancelled** |
-| **3.6** | Maintenance | Open log → vehicle **In Shop** (removed from dispatch pool) |
-| **3.7** | Fuel & expenses | Liters, cost, date + other expenses; operational cost per vehicle |
-| **3.8** | Analytics | Fuel efficiency (distance/fuel), utilization, operational cost, vehicle ROI; **CSV export** (PDF optional / not required) |
-
-Amounts are shown in **₹**.
-
----
-
-## Mandatory business rules
-
-Enforced in the service layer (not UI-only):
-
-- Vehicle registration number is unique
-- **Retired** / **In Shop** vehicles never appear in dispatch selection
-- Expired license or **Suspended** drivers cannot be assigned
-- Vehicle or driver already **On Trip** cannot take another trip
-- Cargo weight ≤ vehicle max load
-- **Dispatch** → vehicle & driver become **On Trip**
-- **Complete** or **cancel** (dispatched) → both return to **Available**
-- Open maintenance → **In Shop**; close → **Available** (unless Retired)
-
----
-
-## Example workflow (demo spine)
-
-1. Register vehicle **Van-05** (max 500 kg) → Available  
-2. Register driver **Alex** with a valid license  
-3. Create trip with cargo **450 kg**  
-4. System allows dispatch (450 ≤ 500)  
-5. Vehicle & driver → **On Trip**  
-6. Complete with final odometer + fuel  
-7. Both → **Available**  
-8. Open maintenance (e.g. Oil Change) → vehicle **In Shop**, hidden from dispatch  
-9. Reports refresh operational cost and fuel efficiency  
-
-Seed also includes fail-beats: **Truck 12** (`DL01XY9876`, In Shop), **Van 99** (`GJ05ZZ5555`, Retired) and the driver **Expired Sam**.
-
----
-
-## Database entities
-
-Users (with role) · Vehicles · Drivers · Trips · Maintenance logs · Fuel logs · Expenses
-
-```mermaid
-erDiagram
-  users ||--o| drivers : "user_id"
-  users ||--o{ trips : "created_by"
-  vehicles ||--o{ trips : "vehicle_id"
-  drivers ||--o{ trips : "driver_id"
-  vehicles ||--o{ maintenance_logs : "vehicle_id"
-  vehicles ||--o{ fuel_logs : "vehicle_id"
-  vehicles ||--o{ expenses : "vehicle_id"
-  trips ||--o{ fuel_logs : "trip_id"
-
-  users {
-    int id PK
-    string email UK
-    string role
-  }
-  vehicles {
-    int id PK
-    string registration_number UK
-    string status
-  }
-  drivers {
-    int id PK
-    string license_number UK
-    int user_id FK
-    string status
-  }
-  trips {
-    int id PK
-    int vehicle_id FK
-    int driver_id FK
-    string status
-  }
-  maintenance_logs {
-    int id PK
-    int vehicle_id FK
-    string status
-  }
-  fuel_logs {
-    int id PK
-    int vehicle_id FK
-    int trip_id FK
-  }
-  expenses {
-    int id PK
-    int vehicle_id FK
-  }
-```
-
----
-
-## Deliverables checklist
-
-| Deliverable | Status |
-|-------------|--------|
-| Responsive web UI | Done |
-| Authentication with RBAC | Done |
-| CRUD for vehicles & drivers | Done |
-| Trip management + validations | Done |
-| Automatic status transitions | Done |
-| Maintenance workflow | Done |
-| Fuel & expense tracking | Done |
-| Dashboard with KPIs | Done |
-
-### Bonus (optional)
-
-| Bonus | Notes |
-|-------|--------|
-| Charts / visual analytics | Partial (cost bars, dashboard visuals) |
-| PDF export | Optional — CSV is implemented |
-| Email license reminders | Not required for core demo |
-| Vehicle document management | Not required for core demo |
-| Search, filters, sorting | Partial on list pages |
-| Dark mode toggle | App ships with a dark UI |
-| Kubernetes / Skaffold | Manifests only, not verified |
-
----
-
-## Stack
-
-| Layer | Choice |
-|-------|--------|
-| Database | PostgreSQL 16 + Alembic |
-| API | FastAPI + SQLAlchemy + JWT / RBAC |
-| Web | React 19 + TypeScript + Vite |
-| Run | Docker Compose (db + api + web) |
-
-Owned backend and database — no Firebase / Supabase / Atlas. See [docs/STACK.md](./docs/STACK.md).
-
-```
-apps/api/   FastAPI — controllers → services → models
-apps/web/   React SPA (role-scoped nav)
-docker/     Compose helpers
-docs/       Architecture, demo, stack
-k8s/        Optional Kubernetes manifests (future scaling)
-skaffold.yaml   Optional Skaffold dev workflow config
-```
-
-### Kubernetes (optional, not verified)
-
-`k8s/` and `skaffold.yaml` hold Kubernetes manifests (Postgres, API, web, ingress) contributed as a possible path beyond a single Docker host. They are not part of the default setup and have not been tested against a cluster as part of this repo. To try them on minikube or kind: `kubectl apply -f k8s/` or `skaffold dev`.
-
----
-
-## Performance (measured)
+## performance (measured)
 
 Measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. Raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh).
 
@@ -227,33 +72,20 @@ Measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on th
 
 Functional check: the repo's live integration script (`apps/api/scripts/vast_integration_test.py`) passed 66/66 against the same stack ([output](benchmarks/results-2026-10-19/integration-test.txt)).
 
-## Known issues
+## known issues
 
-- No unit-test suite; the only automated check besides CI's import check is the live integration script above.
-- `ecdsa` (pulled in by `python-jose`) has an advisory with no fixed release (PYSEC-2026-1325). `python-jose` is now pinned to `>=3.4.0`, which fixes its own two advisories. Moving JWT handling to `PyJWT` would drop `ecdsa` entirely.
-- `npm audit` in `apps/web` reports 8 high and 1 moderate advisories (19 Oct 2026).
-- The Kubernetes manifests have not been exercised.
+- no unit-test suite. the only automated check besides ci's import check is the live integration script.
+- `ecdsa` (via `python-jose`) has an advisory with no fixed release. moving to `PyJWT` would drop it.
+- `npm audit` in `apps/web` reports 8 high and 1 moderate advisories (19 oct 2026).
+- the kubernetes manifests have not been exercised.
 
----
+## team
 
-## Troubleshooting
+| member | focus |
+|---|---|
+| sreecharan desu | backend, database, integration |
+| bhanu prakash alahari | web application |
+| anand velpuri | forms, validation, seed |
+| naga mohan madicharla | design system and ui |
 
-| Problem | Fix (Mac / Linux) | Fix (Windows PowerShell) |
-|---------|-------------------|---------------------------|
-| Port `8080` busy | `WEB_PORT=8081 docker compose up --build` | `$env:WEB_PORT=8081; docker compose up --build` |
-| Port `8000` busy | App at `:8080` still works; optional `BACKEND_PORT=8001 …` | Same — app does not depend on host `:8000` |
-| Port `5433` busy | `POSTGRES_PORT=5434 docker compose up --build` | `$env:POSTGRES_PORT=5434; docker compose up --build` |
-| Empty / stale data | `docker compose down -v && docker compose up --build` | Same |
-
----
-
-## Team
-
-| Member | Focus |
-|--------|--------|
-| SreeCharan Desu | Backend, database, integration |
-| Bhanu Prakash Alahari | Web application |
-| Anand Velpuri | Forms, validation, seed |
-| Naga Mohan Madicharla | Design system & UI |
-
-Branch / PR workflow: [CONTRIBUTING.md](./CONTRIBUTING.md)
+branch and pr workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
