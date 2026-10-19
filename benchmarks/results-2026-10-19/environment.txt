@@ -1,0 +1,9 @@
+date: 2026-10-19T11:06:15+00:00
+cpu: 8 x  Intel(R) Xeon(R) Processor
+ram_mb: 16002
+Linux 6.12.94+
+Python 3.11.17
+psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)
+k6 v0.54.0 (commit/baba871c8a, go1.23.1, linux/amd64)
+uvicorn workers: 4
+load generator: k6 on the same machine

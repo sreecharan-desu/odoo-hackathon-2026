@@ -1,0 +1,71 @@
+Vast integration tests → http://127.0.0.1:8000
+
+PASS  health — 200
+PASS  no-token vehicles — 401
+PASS  no-token kpis — 401
+PASS  bad-token kpis — 401
+PASS  login fleet_manager — fleet@example.com
+PASS  login driver — driver@example.com
+PASS  login safety_officer — safety@example.com
+PASS  login financial_analyst — finance@example.com
+PASS  vehicles page shape — 200
+PASS  pagination keys
+PASS  pagination offset distinct
+PASS  VAN-05 exists — Available
+PASS  TRK-12 In Shop — In Shop
+PASS  VAN-99 Retired — Retired
+PASS  Alex exists — Available
+PASS  Expired Sam exists — Available
+PASS  dispatch-pool — 200
+PASS  pool excludes In Shop / Retired
+PASS  pool only Available — n=13
+PASS  reject trip TRK-12 In Shop — 400
+PASS  reject trip VAN-99 Retired — 400
+PASS  reject Expired Sam — 400
+PASS  reject overweight cargo — 400
+PASS  create draft trip — 200
+PASS  trip status Draft
+PASS  dispatch trip — 200
+PASS  trip Dispatched
+PASS  assets On Trip after dispatch
+PASS  reject double-book On Trip vehicle — 400
+PASS  complete trip — 200
+PASS  trip Completed
+PASS  assets Available after complete
+PASS  odometer advanced
+PASS  reject complete odometer decrease — 400
+PASS  cancel dispatched trip — 200
+PASS  trip Cancelled
+PASS  vehicle Available after cancel
+PASS  open maintenance — 200
+PASS  vehicle In Shop after open maint
+PASS  In Shop hidden from dispatch pool
+PASS  close maintenance — 200
+PASS  maintenance Closed
+PASS  vehicle Available after close maint
+PASS  log fuel — 200
+PASS  log expense — 200
+PASS  operational-cost — 200
+PASS  operational-cost fields
+PASS  operational-costs bulk — 200
+PASS  operational-costs bulk fields — n=23
+PASS  CSV report — bytes~2319
+PASS  dashboard kpis — 200
+PASS  kpi fields present
+PASS  driver cannot create vehicle — 403
+PASS  driver cannot open maintenance — 403
+PASS  driver cannot dispatch — 403
+PASS  driver cannot read operational cost — 403
+PASS  driver cannot read operational costs bulk — 403
+PASS  safety cannot create vehicle — 403
+PASS  safety can create driver — 200
+PASS  finance can log expense — 200
+PASS  finance cannot dispatch — 403
+PASS  create vehicle — 200
+PASS  reject duplicate plate — 409
+PASS  patch vehicle — 200
+PASS  invalid login — 401
+PASS  invalid email register — 422
+
+=== SUMMARY ===
+PASS=66  FAIL=0  SKIP=0  TOTAL=66
