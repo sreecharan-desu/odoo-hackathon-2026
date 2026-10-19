@@ -13,6 +13,10 @@ from typing import Any
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8080"
 PASSWORDS = "Password123!"
+# Registration numbers of the demo-spine vehicles created by scripts/seed.py
+VAN05_REG = "MH04AB1234"  # Van 05, Available
+TRK12_REG = "DL01XY9876"  # Truck 12, In Shop
+VAN99_REG = "GJ05ZZ5555"  # Van 99, Retired
 
 
 @dataclass
@@ -169,9 +173,9 @@ def main() -> int:
     # ── 3. Seed spine presence ─────────────────────────────────────────
     vehicles = all_items("/api/vehicles", fleet)
     drivers = all_items("/api/drivers", fleet)
-    van05 = find_by(vehicles, "registration_number", "VAN-05")
-    trk12 = find_by(vehicles, "registration_number", "TRK-12")
-    van99 = find_by(vehicles, "registration_number", "VAN-99")
+    van05 = find_by(vehicles, "registration_number", VAN05_REG)
+    trk12 = find_by(vehicles, "registration_number", TRK12_REG)
+    van99 = find_by(vehicles, "registration_number", VAN99_REG)
     alex = find_by(drivers, "name", "Alex")
     expired = find_by(drivers, "name", "Expired Sam")
 
@@ -190,10 +194,10 @@ def main() -> int:
     # ── 4. Dispatch pool rules ─────────────────────────────────────────
     pool = expect_code("dispatch-pool", "GET", "/api/vehicles/dispatch-pool", 200, token=fleet) or []
     pool_regs = {v["registration_number"] for v in pool}
-    if "TRK-12" not in pool_regs and "VAN-99" not in pool_regs:
+    if TRK12_REG not in pool_regs and VAN99_REG not in pool_regs:
         R.ok("pool excludes In Shop / Retired")
     else:
-        R.bad("pool excludes In Shop / Retired", str(pool_regs & {"TRK-12", "VAN-99"}))
+        R.bad("pool excludes In Shop / Retired", str(pool_regs & {TRK12_REG, VAN99_REG}))
     if any(v["status"] != "Available" for v in pool):
         R.bad("pool only Available", "non-available found")
     else:
@@ -272,7 +276,7 @@ def main() -> int:
         for d in all_items("/api/drivers", fleet)
         if d["status"] == "Available" and d["name"] != "Expired Sam"
     ]
-    trip_vehicle = next((v for v in pool_now if v["registration_number"] != "VAN-05"), None) or (
+    trip_vehicle = next((v for v in pool_now if v["registration_number"] != VAN05_REG), None) or (
         pool_now[0] if pool_now else None
     )
     trip_driver = avail_drivers[0] if avail_drivers else None
