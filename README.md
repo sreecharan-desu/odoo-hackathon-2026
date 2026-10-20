@@ -58,9 +58,9 @@ busy ports: `WEB_PORT=8081`, `POSTGRES_PORT=5434` or `BACKEND_PORT=8001` before 
 
 copy `.env.example` to `.env`. the defaults work for local docker.
 
-## performance (measured)
+## local benchmark
 
-measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh).
+local benchmark, single run on one machine: 8 vCPU Intel Xeon, 16 GB RAM, Linux 6.12, Python 3.11.17, PostgreSQL 17.11, k6 v0.54.0. k6 ran on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh). these are numbers from one local box, not a production deployment.
 
 | Endpoint (authenticated) | VUs | req/s | p50 | p95 | p99 | Errors |
 |---|---|---|---|---|---|---|
