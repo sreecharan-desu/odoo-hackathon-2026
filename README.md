@@ -60,7 +60,7 @@ copy `.env.example` to `.env`. the defaults work for local docker.
 
 ## performance (measured)
 
-Measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. Raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh).
+measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on the same box, against the API run directly with 4 uvicorn workers and a local PostgreSQL 17 seeded by `scripts/seed.py`. raw output: [`benchmarks/results-2026-10-19/`](benchmarks/results-2026-10-19/), environment: [`environment.txt`](benchmarks/results-2026-10-19/environment.txt), reproduce: [`benchmarks/run.sh`](benchmarks/run.sh).
 
 | Endpoint (authenticated) | VUs | req/s | p50 | p95 | p99 | Errors |
 |---|---|---|---|---|---|---|
@@ -70,7 +70,7 @@ Measured on a single machine (8 vCPU Intel Xeon, 16 GB RAM, Linux) with k6 on th
 | `POST /api/auth/login` (bcrypt) | 20 | 33 | 603.6 ms | 719.8 ms | 763.2 ms | 0% |
 | `GET /api/health` | 50 | 12,311 | 3.7 ms | 6.4 ms | 8.8 ms | 0% |
 
-Functional check: the repo's live integration script (`apps/api/scripts/vast_integration_test.py`) passed 66/66 against the same stack ([output](benchmarks/results-2026-10-19/integration-test.txt)).
+functional check: the repo's live integration script (`apps/api/scripts/vast_integration_test.py`) passed 66/66 against the same stack ([output](benchmarks/results-2026-10-19/integration-test.txt)).
 
 ## known issues
 
