@@ -89,3 +89,7 @@ functional check: the repo's live integration script (`apps/api/scripts/vast_int
 | naga mohan madicharla | design system and ui |
 
 branch and pr workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+built by [sreecharan desu](https://www.sreecharandesu.in) · [more projects](https://www.sreecharandesu.in/work)
